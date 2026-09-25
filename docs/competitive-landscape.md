@@ -1,75 +1,46 @@
-# AI communication coaching: market and entry assessment
+# AI voice development: market and entry assessment
 
-Research date: 25 September 2026. Scope: scalable AI products that coach spoken professional communication. Features, user counts, and prices below come from first-party pages. These are public claims, not independently audited active users, paying customers, or revenue.
+Research date: 25 September 2026. Scope: AI products that help people use their voice more effectively in everyday life, online content, and work. Figures below are public platform counts or company claims, not independently audited paying or active users.
 
-**Assessment:** There is a plausible entry, but no demonstrated business yet. Vinh Giang's Stage Academy audience is a useful initial channel. The AI feature set is crowded, so success depends on making the feedback more useful in real conversations, then proving repeat use and willingness to pay.
+**Positioning:** “Find the power of your voice.” The intended change is that someone can express themselves with more choice and impact, whether they are recording their first video, speaking up with friends, or presenting at work. [Stage Academy's own audience description](https://vinhgiang.com/programs/stage-academy) includes introverts who want to be heard, professionals, founders, and anyone tired of playing small. The five voice lessons in this repository support this wider promise. The MVP should apply the lessons to a user's recording without requiring a persona or archetype.
 
-## AI competitors
+## AI product landscape
 
-| Product | Overlap with the proposed product |
+| Use people seek | AI products and current overlap |
 |---|---|
-| [Speeko](https://www.speeko.co/ai-info) | AI analysis of pace, pauses, intonation, and real meetings; exercises for professional confidence. Broadest consumer overlap. |
-| [Yoodli](https://yoodli.ai/blog/announcing-our-13-7m-fundraise-and-launching-the-ai-roleplays-category) | AI roleplays and feedback for sales, leadership, interviews, and other workplace conversations. |
-| [Read AI Speaker Coach](https://www.read.ai/coaching) | Reviews actual meetings, identifies speaking moments, and tracks clarity and impact. |
-| [Orai](https://orai.com/) | Consumer AI feedback on pace, fillers, clarity, energy, and next steps. |
-| [ProsodyFlow](https://www.prosodyflow.com/) | Invites users to submit real conversations for pace and tone feedback and a revised take. Public self-service access is unclear. |
-| [Intone](https://www.intone.app/) | AI analysis of pace, tone, pitch variation, filler words, and hedging. |
+| General voice confidence and delivery | [Vocal Image](https://www.vocalimage.app/en/) is the closest broad consumer competitor. It offers short personalized lessons, recording analysis, before/after comparisons, and voice and social practice. Its [Google Play listing](https://play.google.com/store/apps/details?id=app.vocalimage.bessia) describes feedback on pace, tone, and clarity, plus roleplay for work and personal relationships. [Speeko](https://www.speeko.co/ai-info), [Orai](https://orai.com/), and [Intone](https://www.intone.app/) also analyze vocal delivery. |
+| Creator delivery | [Backstage](https://backstage.ltd/) reviews private TikTok, Reels, and Shorts drafts for hook, pacing, clarity, and ending. [Vocal Image](https://www.vocalimage.app/en/courses/13-podcaster/) has a creator challenge. |
+| Everyday and difficult conversations | [Convo](https://www.tryconvo.app/) provides live AI voice practice for small talk, relationships, and awkward interactions. [Vocal Image](https://play.google.com/store/apps/details?id=app.vocalimage.bessia) also supports social roleplay. These products emphasize practice with an AI partner; this is adjacent to analysis of an existing recording. |
+| Workplace communication | [Yoodli](https://yoodli.ai/blog/announcing-our-13-7m-fundraise-and-launching-the-ai-roleplays-category) emphasizes AI roleplays for workplace conversations. [Read AI Speaker Coach](https://www.read.ai/coaching) analyzes meetings. [Speeko](https://www.speeko.co/ai-info) spans workplace and other speaking practice. |
 
-[Poised](https://poised.com/) offered real-time AI coaching during work calls. Its homepage announces an **8 October 2026 shutdown** without giving a reason; the reason cannot be inferred from the notice.
+[Poised](https://poised.com/) announces an 8 October 2026 shutdown. Its reason is not public, so it cannot be used as evidence that demand is weak or strong.
 
-## Observed demand and its limits
+**Competitive implication:** Vocal Image already covers much of the broad vision. The slogan, Vinh's face, acoustic charts, and a generic “confidence score” cannot by themselves establish a product advantage. We should test whether Vinh's specific lessons produce feedback that users find more accurate, kind, and actionable on their own speech, and whether they keep practicing.
 
-- [Speeko says](https://www.speeko.co/ai-info) approximately **500,000 people** have used it since its 2018 founding. That is cumulative use, not paid or active users.
-- [Yoodli said](https://yoodli.ai/blog/announcing-our-13-7m-fundraise-and-launching-the-ai-roleplays-category) in May 2025 that it had **hundreds of thousands of users** and **$20 million+** in total funding. Funding is not revenue.
-- [Orai advertises](https://orai.com/) **500,000+ downloads**. Downloads are not distinct active buyers.
-- [Speeko lists](https://www.speeko.co/subscriptions) **$8.33/month billed annually**, about **$100/year**, plus a $29.99 monthly plan and a free tier. This is a published price point, not evidence of how many people pay it.
+## What market size can be supported
 
-These counts cannot be added: the companies report different measures and users may overlap. Public evidence does not establish a reliable annual revenue figure for the narrow AI communication coaching category. Broad AI training market reports include unrelated products and should not be presented as this market's size.
+- [Vocal Image says](https://www.vocalimage.app/en/) **4M+ users** and elsewhere on the same page calls the figure app downloads. [Google Play](https://play.google.com/store/apps/details?id=app.vocalimage.bessia) independently shows **1M+ Android downloads**. These support substantial consumer discovery, but do not reveal active or paying users.
+- [Speeko says](https://www.speeko.co/ai-info) roughly **500,000 cumulative users**. [Orai advertises](https://orai.com/) **500,000+ downloads**. [Yoodli said](https://yoodli.ai/blog/announcing-our-13-7m-fundraise-and-launching-the-ai-roleplays-category) in May 2025 that it had **hundreds of thousands of users**. Definitions and dates differ; these figures cannot be summed.
+- [YouTube says](https://blog.youtube/news-and-events/youtube-partner-program-updates-2027-new-opportunities-earn/) over **3 million creators** are in its Partner Program. This is a creator-audience indicator, not a count of people who need a voice coach; it omits aspiring creators and other platforms.
+- [Speeko lists](https://www.speeko.co/subscriptions) **$8.33/month billed annually**, about **$100/year**, and a free tier. This is evidence of an offered consumer price, not conversion or revenue.
 
-## Transparent US market scenario
+There is no dependable public figure for annual paid spending on **AI voice development** across creators, social confidence, and work. The existing professional-worker calculation was too narrow and was not a market measurement. Large “AI coaching” and “creator economy” totals include other products and cannot be assigned to this niche. A credible market estimate needs paid conversion, retention, acquisition cost, and pricing by use case. The visible products establish audience interest and competition; they do not establish a venture-scale paid market.
 
-The [US Bureau of Labor Statistics](https://www.bls.gov/cps/cpsaat25b.pdf) reports a 2025 labor force of **73.149 million** in management, professional, and related occupations, with **1.811 million unemployed**. That leaves roughly **71.338 million employed** people in this broad group. Many would never buy this product. This is a population reference, **not a measured addressable market**. It also excludes relevant sales workers and other countries.
+## Reach and initial economics
 
-At approximately **$100/year**, the following are *illustrative annual consumer-spend scenarios*, not actual market revenue or forecasts:
+[Stage Academy reports](https://vinhgiang.com/programs/stage-academy) **100,000+ graduates**, a concrete starting audience across life situations. At an illustrative $100/year, conversion of 1%, 5%, or 10% of 100,000 graduates would be $100,000, $500,000, or $1 million in annual gross subscriptions respectively. These are scenarios before fees and costs, not forecasts. Graduates may be unreachable, may already feel well served, or may prefer one-time payment. Vinh's follower and view counts are reach signals, not buyers.
 
-| Share of that US group paying for an AI communication coach | People | Annual spend |
-|---:|---:|---:|
-| 0.1% | 71,000 | $7.1 million |
-| 1% | 713,000 | $71 million |
-| 5% | 3.57 million | $357 million |
+## Entry hypothesis and test
 
-The unknown is the paying share and retention, not whether the workforce is large. The scenario indicates room for a meaningful consumer business even at low penetration; it does not show that anyone currently captures that spend.
+The first product behavior remains **upload or record a short speech sample, receive a few timestamped suggestions grounded in the five lessons, then try another take**. A creator might use a video introduction, a shy person might practice telling a story or introducing themselves, and a professional might use a presentation opening. The engine can be common across these examples; a user should not have to choose an archetype first. Feedback should describe observable delivery and offer choices rather than declare someone's confidence or personality from audio.
 
-## Vinh's reachable starting audience
+Run a 100–200-person directional beta through Vinh's audience, including creators, everyday/social users, and professionals. Compare equivalent recordings with Vocal Image and at least one more relevant AI product. Proposed decision thresholds, **not industry benchmarks**:
 
-[Stage Academy reports](https://vinhgiang.com/programs/stage-academy) **100,000+ graduates**. That first-party claim is a more concrete initial channel than advertising to generic professionals, though graduates are not necessarily active or reachable now. At a hypothetical **$100/year**:
+1. At least 60% prefer the MVP's most useful suggestion on correctness, specificity, and next action.
+2. At least 80% of high-priority suggestions are actionable, with fewer than 10% of acceptable clips receiving unsupported strong criticism, consistent with the [MVP research](mvp-research.md).
+3. At least 25% of activated users analyze another recording within four weeks.
+4. At least 5% of activated users make a genuine purchase commitment near the tested price, then measure actual paid conversion and refunds.
 
-| Share of 100,000 graduates who pay | Paid users | Annual subscription revenue |
-|---:|---:|---:|
-| 1% | 1,000 | $100,000 |
-| 5% | 5,000 | $500,000 |
-| 10% | 10,000 | $1 million |
+Report those results separately for creators, everyday/social users, and professionals. The first two weeks should also interview users about the moment that made them record, what improvement they wanted, and whether the suggestion felt fair. This identifies the strongest entry path without turning the product into three separate builds.
 
-These are simple scenarios before store fees, refunds, inference costs, support, and marketing. Prior purchase of Stage Academy does not prove willingness to pay for an additional subscription. Followers and video views can expand reach but should not be counted as buyers.
-
-## Entry hypothesis
-
-The first use case should be **analyze a real professional speaking moment and practice one improvement**. A user uploads a short clip from a meeting, interview, client discussion, or presentation. The AI highlights a few precise moments, plays them back, connects each suggestion to one of Vinh's vocal lessons, and compares a new take. The experience can scale without a one-to-one session.
-
-This is a hypothesis, not an established unique feature. Speeko and Read already analyze real meetings; Yoodli has large distribution and customizable learning methods. A brand, pace chart, or general “confidence score” can be copied. The potential advantage is Vinh's audience, a faithful and trusted implementation of his method, and evidence that learners improve across repeated real conversations.
-
-Voice is the focused first feature. The broader Stage Academy promise involves content clarity, storytelling, listening, body language, and how people communicate at work and in relationships. An audio-only MVP should not claim to measure all of that.
-
-## Break-in test
-
-Run a limited beta through Vinh's audience before funding a broad product. The following are **proposed decision thresholds, not industry benchmarks**:
-
-1. **Better advice:** On identical recordings, at least 60% of target users prefer the MVP's most useful suggestion to that of an accessible AI competitor such as Speeko or Read. Ask about correctness, specificity, and whether the next action helps.
-2. **Accuracy:** At least 80% of high-priority suggestions are actionable; fewer than 10% of clearly acceptable clips get an unsupported strong criticism. This continues the [MVP research](mvp-research.md) acceptance target.
-3. **Repeat use:** At least 25% of activated users analyze another real recording within four weeks. A novelty demo alone will not sustain a subscription.
-4. **Payment:** At least 5% of activated target users buy or make a genuine purchase commitment at roughly **$100/year**. A survey answer about hypothetical willingness is weaker evidence.
-5. **Channel:** Measure the full path from invited Stage Academy learner to first analysis, second take, payment, and renewal. This shows whether Vinh's distribution actually lowers acquisition cost.
-
-An initial 100–200-person beta can give a directional read, not a precise national forecast. Track recording completion, feedback acceptance, second takes, four-week return, paid conversion, and refunds. Include graduates and new followers.
-
-**Go/no-go:** Build the focused MVP and test it through Vinh's channel. The visible AI products demonstrate demand and consumer pricing. A durable entry is credible only if this product gives better feedback on real conversations and retains paying users. Public data cannot yet support a claim of large market share, unique technology, or subscription scale.
+**Assessment:** There is room to test entry because a broad consumer competitor has millions of claimed users and Vinh has a reachable teaching audience. It is a crowded space, and the closest competitor already offers much of the desired experience. Break-in depends on superior, lesson-faithful feedback and repeat use that converts to payment. Public data does not yet justify a precise TAM or a claim that Vinh's audience alone guarantees distribution.

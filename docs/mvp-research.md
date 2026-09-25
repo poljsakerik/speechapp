@@ -2,7 +2,7 @@
 
 Research date: 25 September 2026. Scope: research and a local feasibility probe, not a finished application.
 
-**Product aim:** help people become more effective and confident professional communicators through Vinh Giang's Stage Academy approach. This includes ordinary meetings, interviews, client conversations, and other meaningful exchanges. The five vocal foundations provide a focused first feature; speech analysis is one part of the broader development path. See the [competitive landscape and positioning](competitive-landscape.md).
+**Product aim:** “Find the power of your voice.” Help people express themselves with more choice and impact through Vinh Giang's Stage Academy approach. This includes creating online video, speaking in everyday conversations, and communicating at work. The five vocal foundations provide a focused first feature; speech analysis is one part of the broader development path. See the [competitive landscape and positioning](competitive-landscape.md).
 
 **Recommendation:** build an upload-and-review prototype using timestamped transcription, local acoustic measurements, and an audio-capable model supplied with a small rubric extracted from the coaching videos. Start with English, one speaker, and 30-second to 5-minute recordings. Apply the five lessons directly across speech purposes; archetypes and persona selection come later. No custom model training is needed to test the idea.
 
