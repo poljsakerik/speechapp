@@ -1,0 +1,15 @@
+version: 1
+id: default
+name: Speechapp verified workflow
+planner: planner
+implementer: implementer
+reviewers:
+  - ponytail
+checks:
+  - id: diff-check
+    name: Git whitespace check
+    run: git diff --check
+    timeoutMs: 300000
+limits:
+  maxRevisionCycles: 3
+  identicalFailureLimit: 2
