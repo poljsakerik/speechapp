@@ -1,10 +1,10 @@
-# Voice coaching MVP research
+# Communication coaching MVP research
 
 Research date: 25 September 2026. Scope: research and a local feasibility probe, not a finished application.
 
-**Product aim:** “Find the power of your voice.” Help people express themselves with more choice and impact through Vinh Giang's Stage Academy approach. This includes creating online video, speaking in everyday conversations, and communicating at work. The five vocal foundations provide a focused first feature; speech analysis is one part of the broader development path. See the [competitive landscape and positioning](competitive-landscape.md).
+**Product aim:** “Find the power of your voice.” Help people express themselves with more choice and impact through Vinh Giang's Stage Academy approach. This includes creating online video, speaking in everyday conversations, and communicating at work. Analyze both vocal and visible delivery when a video is available. The five local lessons cover voice; the visual lesson materials still need to be added for a faithful visual rubric. See the [visual-review research](visual-review.md) and [competitive landscape](competitive-landscape.md).
 
-**Recommendation:** build an upload-and-review prototype using timestamped transcription, local acoustic measurements, and an audio-capable model supplied with a small rubric extracted from the coaching videos. Start with English, one speaker, and 30-second to 5-minute recordings. Apply the five lessons directly across speech purposes; archetypes and persona selection come later. No custom model training is needed to test the idea.
+**Recommendation:** build an upload-and-review prototype for short single-speaker video, with audio-only support. Combine timestamped transcription, acoustic measurements, visual landmarks, and a model that can review synchronized sound and video. Start with English and 30-second to 5-minute recordings. Apply the lessons directly across speech purposes; archetypes and persona selection come later. No custom model training is needed to test the idea, but visual coaching accuracy must be validated separately.
 
 The central experiment is whether the system can identify a few useful moments and explain a specific improvement that a human listener agrees with. A fluent paragraph of generic coaching is not sufficient evidence.
 
@@ -20,32 +20,36 @@ The same sentence can have multiple good deliveries. Evaluate the coach's princi
 
 ## 2. What the first product should do
 
-Upload or record speech and see a transcript with clickable highlighted passages. There is no archetype setup step. Clicking a passage plays the relevant audio with a little surrounding context. Each feedback card contains:
+Upload or record a video or audio clip and see a transcript with clickable highlighted passages. There is no archetype setup step. Clicking a passage plays the original clip with context. Each feedback card contains:
 
 - The passage and its original recording timestamps.
-- One observation grounded in audio, such as a pace increase or a falling phrase ending.
+- One observation grounded in sound or visible behavior, such as a pace increase or a gesture outside the coached range.
 - Why that might weaken the intended effect.
 - One concrete instruction for another take.
-- The related principle and timestamp from the coaching lesson.
+- The related principle and timestamp from the coaching lesson when that lesson is available.
 - A visible uncertainty label when the interpretation is tentative.
 
 Show at most three priority improvements and one successful moment initially. Include “That was intentional” and transcript correction. Re-recording the selected passage and comparing the two takes closes the coaching loop. Do not begin with an unexplained overall score.
 
 **Illustrative feedback, not a result measured in this research:** “00:42–00:48: This is your main takeaway, but you accelerate through it and continue immediately. Try slowing the final phrase and leaving a short pause after it.”
 
-Defer overlapping conversations, live interruption, automatic accent correction, clinical voice assessment, custom voice cloning, and universal emotion scoring. Accepting common file formats is feasible; reliable coaching on every possible recording is a later validation problem.
+For video, show the visual suggestion on the same timeline as the transcript and voice feedback. The first visual targets are hand placement/gesture range and major movement or framing changes; posture and facial-expression congruence need stricter visibility and human-review gates. See [visual-review research](visual-review.md). Defer overlapping conversations, live interruption, automatic accent correction, clinical voice assessment, custom voice cloning, and universal emotion scoring. Accepting common file formats is feasible; reliable coaching on every possible recording is a later validation problem.
 
 ## 3. Recommended architecture
 
 ```mermaid
 flowchart TD
-    A[Recording] --> B[Decode audio and check recording quality]
+    A[Audio or video recording] --> B[Decode audio and check recording quality]
+    A --> V[Sample video frames and check visibility]
     B --> C[Transcribe with word timestamps]
     B --> D[Measure pitch, level, speech activity and pauses]
+    V --> L[Track body, hands and face when visible]
     C --> E[Interpret rhetorical intent and important phrases]
     R[Small rubric from coach lessons] --> E
-    C --> F[Audio model reviews timestamped passages]
+    C --> F[Multimodal model reviews timestamped passages]
     B --> F
+    V --> F
+    L --> F
     E --> F
     D --> F
     R --> F
@@ -88,24 +92,24 @@ Use `12 × log2(F0 / speaker_baseline_F0)` for relative pitch in semitones. Summ
 
 Loudness feedback should say “quieter than the surrounding passage,” not “you spoke at 50 dB SPL.” A normal uncalibrated recording does not establish physical room volume. A naturally high or low pitch is not a speaking defect. Compare the speaker with their own relevant baseline, not with the coach's absolute voice.
 
-### D. Interpret context and review audio
+### D. Interpret context and review sound and video
 
-Use an audio-capable **Gemini Flash** model as the first contextual reviewer, with an explicit model ID pinned in configuration. Google's current audio guide demonstrates `gemini-3.8-flash`, audio understanding, structured output, and timestamped segment analysis. This establishes an available integration route, not coaching accuracy. [Gemini audio understanding](https://ai.google.dev/gemini-api/docs/audio)
+Use an audio/video-capable **Gemini Flash** model as the first contextual reviewer, with an explicit model ID pinned in configuration. Google's current guides demonstrate `gemini-3.8-flash`, audio understanding, and video understanding with timestamps. This establishes an available integration route, not coaching accuracy. [Gemini audio understanding](https://ai.google.dev/gemini-api/docs/audio), [Gemini video understanding](https://ai.google.dev/gemini-api/docs/video-understanding)
 
-For short recordings, supply the full audio once, the transcript, rubric, and computed phrase features. Ask the model to refer to existing segment/word IDs; the server owns the actual timestamps and numerical measurements. If a second pass is needed, send only uncertain passages with surrounding context.
+For short audio recordings, supply the full audio once, the transcript, rubric, and computed phrase features. For video, supply synchronized sound and video plus visual tracking evidence and the same transcript; avoid an extra audio-model call unless it proves useful. Ask the model to refer to existing segment/word IDs; the server owns the actual timestamps and numerical measurements. If a second pass is needed, send only uncertain passages with surrounding context. Video frames are sampled, so use denser local frame analysis for brief gestures before claiming their timing.
 
 Use two logical stages, which can be combined into one call initially:
 
 - An intent planner proposes rhetorical roles, important words, and acceptable delivery options from the text and surrounding passage. It records uncertainty and alternative readings; it does not assign an archetype.
-- An audio reviewer compares the observed delivery with those options and the coach's rubric. It can return “no issue” or “insufficient evidence.”
+- A multimodal reviewer compares observed delivery with those options and the coach's rubric. It can return “no issue” or “insufficient evidence.” For video, it must distinguish visual observations from interpretation of expression or posture.
 
 Do not ask the model to invent precise WPM, decibels, or pitch values by listening. Supply computed measurements. Do not use model-generated timestamps as the canonical alignment. Treat all transcript content as data rather than instructions.
 
 ### E. Validate the feedback
 
-The response should identify `segment_id`, `word_ids`, `dimension`, `rule_id`, `observed_feature_ids`, `interpretation`, `suggested_action`, and an uncertainty tier. The server attaches validated times and quotations. Reject nonexistent evidence, merge duplicate suggestions, and cap the number shown.
+The response should identify `segment_id`, `word_ids`, `dimension`, `rule_id`, `observed_feature_ids`, `interpretation`, `suggested_action`, and an uncertainty tier. For visual feedback, include frame/time IDs and visibility quality. The server attaches validated times and quotations. Reject nonexistent evidence, merge duplicate suggestions, and cap the number shown.
 
-Keep separate confidence fields for transcript quality, acoustic reliability, and contextual interpretation. Model confidence is initially a heuristic, not a calibrated probability. If the acoustic evidence and model judgment disagree, prefer withholding a claim over fabricating certainty.
+Keep separate confidence fields for transcript quality, acoustic reliability, landmark/visibility reliability, and contextual interpretation. Model confidence is initially a heuristic, not a calibrated probability. If measurements and model judgment disagree, prefer withholding a claim over fabricating certainty.
 
 ## 4. Tool choices and alternatives
 
@@ -116,7 +120,8 @@ Keep separate confidence fields for transcript quality, acoustic reliability, an
 | faster-whisper | Local ASR | Used for this research; useful for avoiding audio uploads |
 | WhisperX | Better alignment when needed | Add only if the initial timestamps fail evaluation |
 | Praat/Parselmouth + NumPy | Physical delivery measurements | Use from the beginning |
-| Gemini audio understanding | Context-aware listening and feedback | Test directly against the coaching examples |
+| MediaPipe Pose, Hand, and Face Landmarkers | Frame-level visual geometry | Prototype for visible video; validate coverage and false detections |
+| Gemini audio/video understanding | Context-aware review of synchronized delivery | Test directly against the coaching examples |
 | Hume Expression Measurement | Specialized expression features | Optional comparison experiment, not a required dependency |
 | Wispr Flow | Dictation and text capture | Not the recommended backend for this job |
 
@@ -126,7 +131,7 @@ Hume's current product page advertises offline Tagger and real-time Prosody anal
 
 If “Whisper flow” means **Wispr Flow**, it is primarily a dictation product. Its public overview does not establish the file-upload API with aligned raw words we need. A supported transcription API is a clearer integration path. If it means **OpenAI Whisper**, that is an appropriate option. [Wispr Flow overview](https://docs.wisprflow.ai/articles/2772472373-what-is-flow)
 
-Do not start by training on the five videos or building a vector database. A small, versioned rubric with example references fits directly in the prompt. Keep lessons, demonstrations, and held-out evaluation clips distinct. More recordings and human judgments will be needed before training would be justified.
+Do not start by training on the five videos or building a vector database. A small, versioned rubric with example references fits directly in the prompt. Keep lessons, demonstrations, and held-out evaluation clips distinct. The visual lessons are not in this repository yet; obtain them before finalizing the visual rubric. More recordings and human judgments will be needed before training would be justified.
 
 ## 5. Fastest experiment before building the UI
 
@@ -135,6 +140,8 @@ Run the same short clips through three configurations:
 1. **Text only:** transcript + rubric. This is a baseline for generic advice.
 2. **Direct audio:** audio + transcript + rubric.
 3. **Hybrid:** the same inputs plus aligned acoustic evidence and output validation.
+
+For video, add a separate comparison of synchronized video alone against video plus landmark evidence and the visual rubric. Evaluate visual categories separately from the voice experiment using the [visual-review protocol](visual-review.md).
 
 Use both the coach's demonstrations and fresh recordings. Hide lesson names, “before/after” labels, introductions, and coach commentary from the evaluator. They otherwise reveal the intended answer. The course examples help construct the rubric and serve as smoke tests; they are not an independent accuracy benchmark.
 
@@ -163,9 +170,9 @@ Published pricing checked on the research date:
 - Deepgram Nova-3 monolingual prerecorded ASR: **$0.0043/minute**, or **$0.0215 for five minutes**, before optional add-ons. [Deepgram pricing](https://deepgram.com/pricing)
 - Gemini's audio guide lists 1,920 input tokens per minute. Its current `gemini-3.8-flash` standard pricing is $0.75/million input tokens and $3.75/million output tokens through 31 December 2026. [Audio token accounting](https://ai.google.dev/gemini-api/docs/audio), [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing)
 
-Illustrative five-minute request: 9,600 audio tokens + 4,000 text/rubric tokens + 2,000 billed output tokens costs approximately **$0.0177** for Gemini. With ASR, that is approximately **$0.0392**. This assumes one audio pass and that the output allowance includes all billed thinking tokens. Retries, extra passes, longer prompts, storage, local compute, and tax are excluded. Use **$0.05–$0.20 per five-minute analysis as an initial planning allowance**, then replace it with measured usage. Published model rates and account availability must be checked again when implementing.
+Illustrative **audio-only** five-minute request: 9,600 audio tokens + 4,000 text/rubric tokens + 2,000 billed output tokens costs approximately **$0.0177** for Gemini. With ASR, that is approximately **$0.0392**. This assumes one audio pass and that the output allowance includes all billed thinking tokens. Retries, extra passes, longer prompts, storage, local compute, and tax are excluded. Use **$0.05–$0.20 per five-minute audio analysis as an initial planning allowance**, then replace it with measured usage. Video has a separate token, processing, and review cost; [Google's video guide](https://ai.google.dev/gemini-api/docs/video-understanding) gives about 100 input tokens per second for low-resolution static processing and 300 at high resolution. Measure billed usage on sample clips rather than carrying over the audio estimate. Published model rates and account availability must be checked again when implementing.
 
-My engineering estimate for one developer, assuming working API access and no custom training:
+My **audio-only** engineering estimate for one developer, assuming working API access and no custom training:
 
 | Milestone | Estimate | Deliverable |
 |---|---|---|
@@ -173,13 +180,13 @@ My engineering estimate for one developer, assuming working API access and no cu
 | Integrated local demo | 2–3 more days | Upload, analysis, clickable transcript, evidence-backed cards |
 | Validation and refinement | 2–5 more days | Held-out listener review, fewer false alarms, second-take comparison |
 
-A useful first demo is plausible in roughly 3–5 working days. A tested pilot is closer to 1–2 weeks. These are estimates, not evidence that nuanced tone feedback is already solved.
+An audio-only demo is plausible in roughly 3–5 working days. An audio-only tested pilot is closer to 1–2 weeks. Video capture, landmarks, visibility handling, synchronized playback, and separate validation add work; estimate that scope after a small visual feasibility test and review of Vinh's visual lessons. These are estimates, not evidence that nuanced delivery feedback is solved.
 
 Use a small React/TypeScript interface and Python/FastAPI worker, or Streamlit for a throwaway experiment. Store local files and JSON/SQLite records initially. An in-process queue is enough for one-user research; a durable job queue matters when deploying for multiple users. No vector database, complex accounts, or microservice architecture is needed for the feasibility test.
 
 ## 7. Decisions to carry into implementation
 
-1. The initial promise is a few trustworthy, timestamped coaching suggestions for short solo speech.
+1. The initial promise is a few trustworthy, timestamped coaching suggestions for short solo speech, covering voice and visible delivery when the recording supports it.
 2. Archetypes are deferred. Infer passage-level intent only as needed to apply the lessons; ambiguous intent produces conditional advice or abstention.
 3. Preserve audio dynamics and timeline; evaluate relative change within the same speaker and recording setup.
 4. Use the coach's principles as an explicit style rubric, not universal laws about good speech.

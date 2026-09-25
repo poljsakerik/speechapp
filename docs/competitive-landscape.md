@@ -15,7 +15,7 @@ Research date: 25 September 2026. Scope: AI products that help people use their 
 
 [Poised](https://poised.com/) announces an 8 October 2026 shutdown. Its reason is not public, so it cannot be used as evidence that demand is weak or strong.
 
-**Competitive implication:** Vocal Image already covers much of the broad vision. The slogan, Vinh's face, acoustic charts, and a generic “confidence score” cannot by themselves establish a product advantage. We should test whether Vinh's specific lessons produce feedback that users find more accurate, kind, and actionable on their own speech, and whether they keep practicing.
+**Competitive implication:** Vocal Image already covers much of the broad vision. [Yoodli has also described](https://yoodli.ai/our-partnerships/yoodli-powered-by-google-cloud) AI video feedback on eye contact, gestures, and facial expressions. The slogan, Vinh's face, acoustic charts, visual scores, and a generic “confidence score” cannot by themselves establish a product advantage. We should test whether Vinh's specific voice and body-language lessons produce feedback that users find more accurate, kind, and actionable on their own recordings, and whether they keep practicing.
 
 ## What market size can be supported
 
@@ -32,7 +32,7 @@ There is no dependable public figure for annual paid spending on **AI voice deve
 
 ## Entry hypothesis and test
 
-The first product behavior remains **upload or record a short speech sample, receive a few timestamped suggestions grounded in the five lessons, then try another take**. A creator might use a video introduction, a shy person might practice telling a story or introducing themselves, and a professional might use a presentation opening. The engine can be common across these examples; a user should not have to choose an archetype first. Feedback should describe observable delivery and offer choices rather than declare someone's confidence or personality from audio.
+The first product behavior is **upload or record a short video or audio sample, receive a few timestamped suggestions grounded in Vinh's lessons, then try another take**. A creator might use a video introduction, a shy person might practice telling a story or introducing themselves, and a professional might use a presentation opening. Video can cover voice plus visible delivery; audio-only clips receive voice feedback. The engine can be common across these examples; a user should not have to choose an archetype first. Feedback should describe observable delivery and offer choices rather than declare someone's confidence or personality from a recording. See [visual-review research](visual-review.md); the corresponding Vinh video lessons are still needed to complete its rubric.
 
 Run a 100–200-person directional beta through Vinh's audience, including creators, everyday/social users, and professionals. Compare equivalent recordings with Vocal Image and at least one more relevant AI product. Proposed decision thresholds, **not industry benchmarks**:
 
