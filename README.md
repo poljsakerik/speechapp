@@ -6,6 +6,7 @@ Research for a Vinh Giang AI communication coach built around “Find the power 
 - [Video and body-language review research](docs/visual-review.md)
 - [Video lesson review, timestamped examples, and local probe results](docs/video-review.md)
 - [AI competitors, market evidence, and entry assessment](docs/competitive-landscape.md)
+- [Yoodli product, user-count, and build-versus-partner assessment](docs/yoodli-assessment.md)
 - [Reproducible local research script](scripts/research_probe.py)
 
 The current repository contains research and a feature-extraction probe, not a working coaching app. The local probe demonstrates measurable rate and level contrasts in course examples; contextual coaching quality remains to be evaluated.
