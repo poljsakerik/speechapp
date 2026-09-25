@@ -1,43 +1,75 @@
-# Communication coaching product landscape
+# AI communication coaching: market and entry assessment
 
-Research date: 25 September 2026. This is a review of public product claims and positioning, not hands-on testing of paid features or an independent comparison of coaching quality.
+Research date: 25 September 2026. Scope: scalable AI products that coach spoken professional communication. Features, user counts, and prices below come from first-party pages. These are public claims, not independently audited active users, paying customers, or revenue.
 
-## Product ambition
+**Assessment:** There is a plausible entry, but no demonstrated business yet. Vinh Giang's Stage Academy audience is a useful initial channel. The AI feature set is crowded, so success depends on making the feedback more useful in real conversations, then proving repeat use and willingness to pay.
 
-The intended product helps someone become a more confident and effective professional communicator using Vinh Giang's teaching. A recording analysis tool is the first mechanism, not the full outcome. Stage Academy itself addresses careers, leadership, relationships, and presence across eight modules; its audience includes professionals who lead meetings, aspiring leaders, founders, career changers, and people who want to be heard. [Stage Academy](https://vinhgiang.com/programs/stage-academy)
+## AI competitors
 
-The five vocal foundations in this repository make a focused first feature. Over time, the broader promise may require work on clarity of ideas, storytelling, listening, body language, and using skills in real conversations. Voice metrics alone cannot demonstrate professional confidence.
+| Product | Overlap with the proposed product |
+|---|---|
+| [Speeko](https://www.speeko.co/ai-info) | AI analysis of pace, pauses, intonation, and real meetings; exercises for professional confidence. Broadest consumer overlap. |
+| [Yoodli](https://yoodli.ai/blog/announcing-our-13-7m-fundraise-and-launching-the-ai-roleplays-category) | AI roleplays and feedback for sales, leadership, interviews, and other workplace conversations. |
+| [Read AI Speaker Coach](https://www.read.ai/coaching) | Reviews actual meetings, identifies speaking moments, and tracks clarity and impact. |
+| [Orai](https://orai.com/) | Consumer AI feedback on pace, fillers, clarity, energy, and next steps. |
+| [ProsodyFlow](https://www.prosodyflow.com/) | Invites users to submit real conversations for pace and tone feedback and a revised take. Public self-service access is unclear. |
+| [Intone](https://www.intone.app/) | AI analysis of pace, tone, pitch variation, filler words, and hedging. |
 
-## Closest products
+[Poised](https://poised.com/) offered real-time AI coaching during work calls. Its homepage announces an **8 October 2026 shutdown** without giving a reason; the reason cannot be inferred from the notice.
 
-| Product | Publicly described overlap | What to investigate before positioning against it |
-|---|---|---|
-| [Speeko](https://www.speeko.co/ai-info) | Broadest direct overlap: confidence, executive presence, everyday and workplace communication; AI analysis of pace, pauses, and intonation; real meeting analysis, roleplay, human coaching, and expert vocal content from Roger Love. | Compare the specificity and trustworthiness of advice tied to Vinh's lessons. A famous coach plus AI is already an established pattern here. |
-| [Yoodli](https://yoodli.ai/for-business/corporate-communications) | Executive communication, roleplay, and feedback on clarity, tone, pacing, and delivery. Supports professional coaches and teams. | Its current public emphasis is rehearsing scenarios and enterprise coaching. Test whether reviewing an ordinary past conversation feels meaningfully different. |
-| [Read AI Speaker Coach](https://www.read.ai/coaching) | Uses actual meetings to provide private coaching with metrics and replayable moments. [Its help center](https://support.read.ai/hc/en-us/articles/29349563165715-How-does-Read-s-coaching-work) lists talking pace, filler words, interruptions, and impact measures. | Compare usefulness of the moment-specific advice and how well it connects a delivery choice with the speaker's intended meaning. |
-| [Orai](https://orai.com/) | Consumer coach for confidence, pace, fillers, clarity, energy, and concrete next steps. Its [Journey program](https://orai.com/journey/) also covers pausing, confidence, and coach-created lessons. | Determine whether a lesson-linked review of real professional speech provides stronger value than a scorecard and guided exercises. |
-| [ProsodyFlow](https://www.prosodyflow.com/) | Very close concept: submit any meeting or conversation, identify moments where pace or tone could improve, then hear an improved rendition. | The public page currently invites people to send a recording for a free report. Verify what is automated and available before treating it as a mature self-service competitor. |
-| [Intone](https://www.intone.app/) | Record a voice sample; receive feedback on pace, tone, pitch variation, fillers, and hedging; track progress. | Compare how actionable its feedback is in specific passages rather than summary metrics. |
+## Observed demand and its limits
 
-[Poised](https://poised.com/) is another close historical example: private coaching during work calls with feedback on pace, volume, and confidence. Its current homepage announces a **8 October 2026 shutdown**. It demonstrates that this category exists, and also that a compelling feature list does not guarantee a lasting business. The public notice does not explain why it is closing.
+- [Speeko says](https://www.speeko.co/ai-info) approximately **500,000 people** have used it since its 2018 founding. That is cumulative use, not paid or active users.
+- [Yoodli said](https://yoodli.ai/blog/announcing-our-13-7m-fundraise-and-launching-the-ai-roleplays-category) in May 2025 that it had **hundreds of thousands of users** and **$20 million+** in total funding. Funding is not revenue.
+- [Orai advertises](https://orai.com/) **500,000+ downloads**. Downloads are not distinct active buyers.
+- [Speeko lists](https://www.speeko.co/subscriptions) **$8.33/month billed annually**, about **$100/year**, plus a $29.99 monthly plan and a free tier. This is a published price point, not evidence of how many people pay it.
 
-## What this means for differentiation
+These counts cannot be added: the companies report different measures and users may overlap. Public evidence does not establish a reliable annual revenue figure for the narrow AI communication coaching category. Broad AI training market reports include unrelated products and should not be presented as this market's size.
 
-There is no defensible claim that AI speech analysis, professional confidence coaching, expert-led lessons, or feedback on real meetings is new. Speeko in particular combines all four at the category level. Vinh's participation can bring a trusted teaching method, content, and an existing learner audience, but his presence by itself is unlikely to distinguish the product's function.
+## Transparent US market scenario
 
-A more specific hypothesis is a **continuous learning loop attached to his curriculum**: after learning a foundation, a person submits a real conversation, sees exactly where that principle applies, hears or records a better take, and can track whether it carries into later work. Vinh can be the visible coach guiding that journey; the feedback should use his explanations and exercises, with him or his team reviewing what counts as helpful advice. This is a proposed difference to validate, not a feature gap proven on competitors.
+The [US Bureau of Labor Statistics](https://www.bls.gov/cps/cpsaat25b.pdf) reports a 2025 labor force of **73.149 million** in management, professional, and related occupations, with **1.811 million unemployed**. That leaves roughly **71.338 million employed** people in this broad group. Many would never buy this product. This is a population reference, **not a measured addressable market**. It also excludes relevant sales workers and other countries.
 
-Suggested initial positioning for testing: **“Bring Vinh's communication lessons into the conversations that shape your career.”** The app helps people notice how their voice lands in meetings, interviews, client conversations, and presentations, then practice one change at a time. This aligns with Stage Academy's stated aim while avoiding a public-speaking-only category frame.
+At approximately **$100/year**, the following are *illustrative annual consumer-spend scenarios*, not actual market revenue or forecasts:
 
-Avoid a generic “confidence score” as the core promise. The videos make room for valid expressive choices, and a number cannot establish how confident someone actually feels or how the listener perceived them. A better first demonstration is a specific before/after moment: “Your key recommendation was rushed; the second take gives it space.”
+| Share of that US group paying for an AI communication coach | People | Annual spend |
+|---:|---:|---:|
+| 0.1% | 71,000 | $7.1 million |
+| 1% | 713,000 | $71 million |
+| 5% | 3.57 million | $357 million |
 
-## Validation against existing products
+The unknown is the paying share and retention, not whether the workforce is large. The scenario indicates room for a meaningful consumer business even at low penetration; it does not show that anyone currently captures that spend.
 
-Before building broad coverage, run a small comparative study on the same user-owned recordings:
+## Vinh's reachable starting audience
 
-1. Recruit Stage Academy learners and other professionals. Use a mix of meetings, interviews, sales conversations, and short prepared remarks. Obtain participants' permission for the recordings and keep other speakers' material out of the earliest test.
-2. Run the recordings through the MVP and at least Speeko plus one product focused on real meetings, subject to what each product actually accepts.
-3. Have participants and Vinh or his coaching team rate the top suggestions for correctness, specificity, fit with the lesson, and whether the proposed second take is better. Hide product names where practical.
-4. Look for repeat use after a real work conversation, rather than only interest in a demo. Track whether users re-record a passage and adopt the suggestion later.
+[Stage Academy reports](https://vinhgiang.com/programs/stage-academy) **100,000+ graduates**. That first-party claim is a more concrete initial channel than advertising to generic professionals, though graduates are not necessarily active or reachable now. At a hypothetical **$100/year**:
 
-The go/no-go question is whether the curriculum-linked feedback is meaningfully more useful and engaging than existing coaching tools for Stage Academy's audience. Technical detection of a rushed phrase is necessary, but it is not the competitive advantage.
+| Share of 100,000 graduates who pay | Paid users | Annual subscription revenue |
+|---:|---:|---:|
+| 1% | 1,000 | $100,000 |
+| 5% | 5,000 | $500,000 |
+| 10% | 10,000 | $1 million |
+
+These are simple scenarios before store fees, refunds, inference costs, support, and marketing. Prior purchase of Stage Academy does not prove willingness to pay for an additional subscription. Followers and video views can expand reach but should not be counted as buyers.
+
+## Entry hypothesis
+
+The first use case should be **analyze a real professional speaking moment and practice one improvement**. A user uploads a short clip from a meeting, interview, client discussion, or presentation. The AI highlights a few precise moments, plays them back, connects each suggestion to one of Vinh's vocal lessons, and compares a new take. The experience can scale without a one-to-one session.
+
+This is a hypothesis, not an established unique feature. Speeko and Read already analyze real meetings; Yoodli has large distribution and customizable learning methods. A brand, pace chart, or general “confidence score” can be copied. The potential advantage is Vinh's audience, a faithful and trusted implementation of his method, and evidence that learners improve across repeated real conversations.
+
+Voice is the focused first feature. The broader Stage Academy promise involves content clarity, storytelling, listening, body language, and how people communicate at work and in relationships. An audio-only MVP should not claim to measure all of that.
+
+## Break-in test
+
+Run a limited beta through Vinh's audience before funding a broad product. The following are **proposed decision thresholds, not industry benchmarks**:
+
+1. **Better advice:** On identical recordings, at least 60% of target users prefer the MVP's most useful suggestion to that of an accessible AI competitor such as Speeko or Read. Ask about correctness, specificity, and whether the next action helps.
+2. **Accuracy:** At least 80% of high-priority suggestions are actionable; fewer than 10% of clearly acceptable clips get an unsupported strong criticism. This continues the [MVP research](mvp-research.md) acceptance target.
+3. **Repeat use:** At least 25% of activated users analyze another real recording within four weeks. A novelty demo alone will not sustain a subscription.
+4. **Payment:** At least 5% of activated target users buy or make a genuine purchase commitment at roughly **$100/year**. A survey answer about hypothetical willingness is weaker evidence.
+5. **Channel:** Measure the full path from invited Stage Academy learner to first analysis, second take, payment, and renewal. This shows whether Vinh's distribution actually lowers acquisition cost.
+
+An initial 100–200-person beta can give a directional read, not a precise national forecast. Track recording completion, feedback acceptance, second takes, four-week return, paid conversion, and refunds. Include graduates and new followers.
+
+**Go/no-go:** Build the focused MVP and test it through Vinh's channel. The visible AI products demonstrate demand and consumer pricing. A durable entry is credible only if this product gives better feedback on real conversations and retains paying users. Public data cannot yet support a claim of large market share, unique technology, or subscription scale.
