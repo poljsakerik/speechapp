@@ -27,6 +27,18 @@ The app shows the model's JSON review directly. It asks for feedback on each fou
 
 Mistral requests retry briefly when the API returns a transient rate limit. If reviews continue to return 429, check your account's [API limits and workspace spending cap](https://docs.mistral.ai/admin/billing-usage/usage-limits). A workspace that has exhausted its monthly cap will keep returning 429 until its limit or billing period changes.
 
+## MicMane web app
+
+The public page and component showcase live in `web/` (React, Vite, restyled shadcn/ui). The free review on the page calls `api.py`, a small FastAPI wrapper around the same pipeline.
+
+```sh
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn api:app --port 8000      # review API, reads .env
+cd web && npm install && npm run dev       # http://localhost:5173, /components for the showcase
+```
+
+The dev server proxies `/api` to port 8000. The page's sample take is generated with macOS `say` by `web/scripts/make_sample.py`; its review is written by hand in `web/src/lib/sample.ts` and labeled as a sample on the page. The API has no rate limiting or abuse protection yet.
+
 ## Research and evaluation
 
 - [MVP research](docs/mvp-research.md)

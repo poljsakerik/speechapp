@@ -1,0 +1,716 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T15:48:28.837804+00:00",
+  "title": "Design System: MicMane",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(0.985 0.003 80)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 80.0)",
+          "oklch(0.26 0.003 80.0)",
+          "oklch(0.37 0.003 80.0)",
+          "oklch(0.48 0.003 80.0)",
+          "oklch(0.59 0.003 80.0)",
+          "oklch(0.70 0.003 80.0)",
+          "oklch(0.82 0.003 80.0)",
+          "oklch(0.95 0.003 80.0)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0.0 0.0)",
+          "oklch(0.26 0.0 0.0)",
+          "oklch(0.37 0.0 0.0)",
+          "oklch(0.48 0.0 0.0)",
+          "oklch(0.59 0.0 0.0)",
+          "oklch(0.70 0.0 0.0)",
+          "oklch(0.82 0.0 0.0)",
+          "oklch(0.95 0.0 0.0)"
+        ]
+      },
+      "sunken": {
+        "role": "neutral",
+        "displayName": "Sunken",
+        "canonical": "oklch(0.965 0.004 80)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 80.0)",
+          "oklch(0.26 0.004 80.0)",
+          "oklch(0.37 0.004 80.0)",
+          "oklch(0.48 0.004 80.0)",
+          "oklch(0.59 0.004 80.0)",
+          "oklch(0.70 0.004 80.0)",
+          "oklch(0.82 0.004 80.0)",
+          "oklch(0.95 0.004 80.0)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "oklch(0.905 0.005 75)",
+        "tonalRamp": [
+          "oklch(0.15 0.005 75.0)",
+          "oklch(0.26 0.005 75.0)",
+          "oklch(0.37 0.005 75.0)",
+          "oklch(0.48 0.005 75.0)",
+          "oklch(0.59 0.005 75.0)",
+          "oklch(0.70 0.005 75.0)",
+          "oklch(0.82 0.005 75.0)",
+          "oklch(0.95 0.005 75.0)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Line Strong",
+        "canonical": "oklch(0.8 0.006 70)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 70.0)",
+          "oklch(0.26 0.006 70.0)",
+          "oklch(0.37 0.006 70.0)",
+          "oklch(0.48 0.006 70.0)",
+          "oklch(0.59 0.006 70.0)",
+          "oklch(0.70 0.006 70.0)",
+          "oklch(0.82 0.006 70.0)",
+          "oklch(0.95 0.006 70.0)"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Graphite Ink",
+        "canonical": "oklch(0.19 0.008 55)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 55.0)",
+          "oklch(0.26 0.008 55.0)",
+          "oklch(0.37 0.008 55.0)",
+          "oklch(0.48 0.008 55.0)",
+          "oklch(0.59 0.008 55.0)",
+          "oklch(0.70 0.008 55.0)",
+          "oklch(0.82 0.008 55.0)",
+          "oklch(0.95 0.008 55.0)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "oklch(0.4 0.01 60)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 60.0)",
+          "oklch(0.26 0.01 60.0)",
+          "oklch(0.37 0.01 60.0)",
+          "oklch(0.48 0.01 60.0)",
+          "oklch(0.59 0.01 60.0)",
+          "oklch(0.70 0.01 60.0)",
+          "oklch(0.82 0.01 60.0)",
+          "oklch(0.95 0.01 60.0)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "oklch(0.52 0.01 65)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 65.0)",
+          "oklch(0.26 0.01 65.0)",
+          "oklch(0.37 0.01 65.0)",
+          "oklch(0.48 0.01 65.0)",
+          "oklch(0.59 0.01 65.0)",
+          "oklch(0.70 0.01 65.0)",
+          "oklch(0.82 0.01 65.0)",
+          "oklch(0.95 0.01 65.0)"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "oklch(0.22 0.004 60)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 60.0)",
+          "oklch(0.26 0.004 60.0)",
+          "oklch(0.37 0.004 60.0)",
+          "oklch(0.48 0.004 60.0)",
+          "oklch(0.59 0.004 60.0)",
+          "oklch(0.70 0.004 60.0)",
+          "oklch(0.82 0.004 60.0)",
+          "oklch(0.95 0.004 60.0)"
+        ]
+      },
+      "graphite-deep": {
+        "role": "neutral",
+        "displayName": "Graphite Deep",
+        "canonical": "oklch(0.17 0.003 60)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 60.0)",
+          "oklch(0.26 0.003 60.0)",
+          "oklch(0.37 0.003 60.0)",
+          "oklch(0.48 0.003 60.0)",
+          "oklch(0.59 0.003 60.0)",
+          "oklch(0.70 0.003 60.0)",
+          "oklch(0.82 0.003 60.0)",
+          "oklch(0.95 0.003 60.0)"
+        ]
+      },
+      "graphite-line": {
+        "role": "neutral",
+        "displayName": "Graphite Line",
+        "canonical": "oklch(0.33 0.004 60)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 60.0)",
+          "oklch(0.26 0.004 60.0)",
+          "oklch(0.37 0.004 60.0)",
+          "oklch(0.48 0.004 60.0)",
+          "oklch(0.59 0.004 60.0)",
+          "oklch(0.70 0.004 60.0)",
+          "oklch(0.82 0.004 60.0)",
+          "oklch(0.95 0.004 60.0)"
+        ]
+      },
+      "on-graphite": {
+        "role": "neutral",
+        "displayName": "Light on Graphite",
+        "canonical": "oklch(0.97 0.002 80)",
+        "tonalRamp": [
+          "oklch(0.15 0.002 80.0)",
+          "oklch(0.26 0.002 80.0)",
+          "oklch(0.37 0.002 80.0)",
+          "oklch(0.48 0.002 80.0)",
+          "oklch(0.59 0.002 80.0)",
+          "oklch(0.70 0.002 80.0)",
+          "oklch(0.82 0.002 80.0)",
+          "oklch(0.95 0.002 80.0)"
+        ]
+      },
+      "on-graphite-muted": {
+        "role": "neutral",
+        "displayName": "Muted on Graphite",
+        "canonical": "oklch(0.85 0.004 70)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 70.0)",
+          "oklch(0.26 0.004 70.0)",
+          "oklch(0.37 0.004 70.0)",
+          "oklch(0.48 0.004 70.0)",
+          "oklch(0.59 0.004 70.0)",
+          "oklch(0.70 0.004 70.0)",
+          "oklch(0.82 0.004 70.0)",
+          "oklch(0.95 0.004 70.0)"
+        ]
+      },
+      "glass": {
+        "role": "secondary",
+        "displayName": "Orange Glass",
+        "canonical": "oklch(0.7 0.175 48)",
+        "tonalRamp": [
+          "oklch(0.15 0.175 48.0)",
+          "oklch(0.26 0.175 48.0)",
+          "oklch(0.37 0.175 48.0)",
+          "oklch(0.48 0.175 48.0)",
+          "oklch(0.59 0.175 48.0)",
+          "oklch(0.70 0.175 48.0)",
+          "oklch(0.82 0.175 48.0)",
+          "oklch(0.95 0.175 48.0)"
+        ]
+      },
+      "glass-hot": {
+        "role": "secondary",
+        "displayName": "Hot Glass",
+        "canonical": "oklch(0.8 0.15 62)",
+        "tonalRamp": [
+          "oklch(0.15 0.15 62.0)",
+          "oklch(0.26 0.15 62.0)",
+          "oklch(0.37 0.15 62.0)",
+          "oklch(0.48 0.15 62.0)",
+          "oklch(0.59 0.15 62.0)",
+          "oklch(0.70 0.15 62.0)",
+          "oklch(0.82 0.15 62.0)",
+          "oklch(0.95 0.15 62.0)"
+        ]
+      },
+      "glass-ink": {
+        "role": "secondary",
+        "displayName": "Glass Ink",
+        "canonical": "oklch(0.5 0.15 42)",
+        "tonalRamp": [
+          "oklch(0.15 0.15 42.0)",
+          "oklch(0.26 0.15 42.0)",
+          "oklch(0.37 0.15 42.0)",
+          "oklch(0.48 0.15 42.0)",
+          "oklch(0.59 0.15 42.0)",
+          "oklch(0.70 0.15 42.0)",
+          "oklch(0.82 0.15 42.0)",
+          "oklch(0.95 0.15 42.0)"
+        ]
+      },
+      "f-rate": {
+        "role": "tertiary",
+        "displayName": "Rate Sky",
+        "canonical": "oklch(0.86 0.075 220)",
+        "tonalRamp": [
+          "oklch(0.15 0.075 220.0)",
+          "oklch(0.26 0.075 220.0)",
+          "oklch(0.37 0.075 220.0)",
+          "oklch(0.48 0.075 220.0)",
+          "oklch(0.59 0.075 220.0)",
+          "oklch(0.70 0.075 220.0)",
+          "oklch(0.82 0.075 220.0)",
+          "oklch(0.95 0.075 220.0)"
+        ]
+      },
+      "f-rate-ink": {
+        "role": "tertiary",
+        "displayName": "Rate Ink",
+        "canonical": "oklch(0.47 0.1 228)",
+        "tonalRamp": [
+          "oklch(0.15 0.1 228.0)",
+          "oklch(0.26 0.1 228.0)",
+          "oklch(0.37 0.1 228.0)",
+          "oklch(0.48 0.1 228.0)",
+          "oklch(0.59 0.1 228.0)",
+          "oklch(0.70 0.1 228.0)",
+          "oklch(0.82 0.1 228.0)",
+          "oklch(0.95 0.1 228.0)"
+        ]
+      },
+      "f-volume": {
+        "role": "tertiary",
+        "displayName": "Volume Lilac",
+        "canonical": "oklch(0.83 0.085 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.085 295.0)",
+          "oklch(0.26 0.085 295.0)",
+          "oklch(0.37 0.085 295.0)",
+          "oklch(0.48 0.085 295.0)",
+          "oklch(0.59 0.085 295.0)",
+          "oklch(0.70 0.085 295.0)",
+          "oklch(0.82 0.085 295.0)",
+          "oklch(0.95 0.085 295.0)"
+        ]
+      },
+      "f-volume-ink": {
+        "role": "tertiary",
+        "displayName": "Volume Ink",
+        "canonical": "oklch(0.47 0.14 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.14 295.0)",
+          "oklch(0.26 0.14 295.0)",
+          "oklch(0.37 0.14 295.0)",
+          "oklch(0.48 0.14 295.0)",
+          "oklch(0.59 0.14 295.0)",
+          "oklch(0.70 0.14 295.0)",
+          "oklch(0.82 0.14 295.0)",
+          "oklch(0.95 0.14 295.0)"
+        ]
+      },
+      "f-pitch": {
+        "role": "tertiary",
+        "displayName": "Pitch Rose",
+        "canonical": "oklch(0.85 0.075 355)",
+        "tonalRamp": [
+          "oklch(0.15 0.075 355.0)",
+          "oklch(0.26 0.075 355.0)",
+          "oklch(0.37 0.075 355.0)",
+          "oklch(0.48 0.075 355.0)",
+          "oklch(0.59 0.075 355.0)",
+          "oklch(0.70 0.075 355.0)",
+          "oklch(0.82 0.075 355.0)",
+          "oklch(0.95 0.075 355.0)"
+        ]
+      },
+      "f-pitch-ink": {
+        "role": "tertiary",
+        "displayName": "Pitch Ink",
+        "canonical": "oklch(0.5 0.15 360)",
+        "tonalRamp": [
+          "oklch(0.15 0.15 360.0)",
+          "oklch(0.26 0.15 360.0)",
+          "oklch(0.37 0.15 360.0)",
+          "oklch(0.48 0.15 360.0)",
+          "oklch(0.59 0.15 360.0)",
+          "oklch(0.70 0.15 360.0)",
+          "oklch(0.82 0.15 360.0)",
+          "oklch(0.95 0.15 360.0)"
+        ]
+      },
+      "f-tonality": {
+        "role": "tertiary",
+        "displayName": "Tonality Straw",
+        "canonical": "oklch(0.9 0.085 88)",
+        "tonalRamp": [
+          "oklch(0.15 0.085 88.0)",
+          "oklch(0.26 0.085 88.0)",
+          "oklch(0.37 0.085 88.0)",
+          "oklch(0.48 0.085 88.0)",
+          "oklch(0.59 0.085 88.0)",
+          "oklch(0.70 0.085 88.0)",
+          "oklch(0.82 0.085 88.0)",
+          "oklch(0.95 0.085 88.0)"
+        ]
+      },
+      "f-tonality-ink": {
+        "role": "tertiary",
+        "displayName": "Tonality Ink",
+        "canonical": "oklch(0.5 0.1 72)",
+        "tonalRamp": [
+          "oklch(0.15 0.1 72.0)",
+          "oklch(0.26 0.1 72.0)",
+          "oklch(0.37 0.1 72.0)",
+          "oklch(0.48 0.1 72.0)",
+          "oklch(0.59 0.1 72.0)",
+          "oklch(0.70 0.1 72.0)",
+          "oklch(0.82 0.1 72.0)",
+          "oklch(0.95 0.1 72.0)"
+        ]
+      },
+      "f-pauses": {
+        "role": "tertiary",
+        "displayName": "Pauses Mint",
+        "canonical": "oklch(0.88 0.075 160)",
+        "tonalRamp": [
+          "oklch(0.15 0.075 160.0)",
+          "oklch(0.26 0.075 160.0)",
+          "oklch(0.37 0.075 160.0)",
+          "oklch(0.48 0.075 160.0)",
+          "oklch(0.59 0.075 160.0)",
+          "oklch(0.70 0.075 160.0)",
+          "oklch(0.82 0.075 160.0)",
+          "oklch(0.95 0.075 160.0)"
+        ]
+      },
+      "f-pauses-ink": {
+        "role": "tertiary",
+        "displayName": "Pauses Ink",
+        "canonical": "oklch(0.47 0.09 162)",
+        "tonalRamp": [
+          "oklch(0.15 0.09 162.0)",
+          "oklch(0.26 0.09 162.0)",
+          "oklch(0.37 0.09 162.0)",
+          "oklch(0.48 0.09 162.0)",
+          "oklch(0.59 0.09 162.0)",
+          "oklch(0.70 0.09 162.0)",
+          "oklch(0.82 0.09 162.0)",
+          "oklch(0.95 0.09 162.0)"
+        ]
+      },
+      "destructive": {
+        "role": "error",
+        "displayName": "Destructive",
+        "canonical": "oklch(0.55 0.19 32)",
+        "tonalRamp": [
+          "oklch(0.15 0.19 32.0)",
+          "oklch(0.26 0.19 32.0)",
+          "oklch(0.37 0.19 32.0)",
+          "oklch(0.48 0.19 32.0)",
+          "oklch(0.59 0.19 32.0)",
+          "oklch(0.70 0.19 32.0)",
+          "oklch(0.82 0.19 32.0)",
+          "oklch(0.95 0.19 32.0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Single page headline, wide 125."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings, wide 125."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Foundation names, promise titles, retake steps, recorder prompts."
+      },
+      "monitor": {
+        "displayName": "Monitor",
+        "purpose": "The transcript line in the editor monitor."
+      },
+      "body-lead": {
+        "displayName": "Body Lead",
+        "purpose": "Section intro paragraphs in ink-2, max 46ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "List and card copy, max 52ch."
+      },
+      "body-sm": {
+        "displayName": "Body Sm",
+        "purpose": "Notes, captions, nav links."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Lane labels, note headers; sentence case."
+      },
+      "time": {
+        "displayName": "Time",
+        "purpose": "Timecodes and measured values only."
+      }
+    },
+    "gradients": [
+      {
+        "name": "film",
+        "value": "linear-gradient(100deg, var(--f-rate) 0%, var(--f-volume) 26%, var(--f-pitch) 50%, var(--f-tonality) 74%, var(--f-pauses) 100%)",
+        "purpose": "Iridescent film; live input-level bars while recording only."
+      }
+    ],
+    "shadows": [
+      {
+        "name": "contact",
+        "value": "0 1px 2px oklch(0.2 0.01 55 / 0.05)",
+        "purpose": "Cards; 0.08 alpha with a line-strong ring for active tabs and toggles."
+      },
+      {
+        "name": "ink-button",
+        "value": "inset 0 1px 0 oklch(1 0 0 / 0.14), 0 1px 2px oklch(0.2 0.01 55 / 0.3)",
+        "purpose": "Primary and graphite buttons."
+      },
+      {
+        "name": "scroll-cue",
+        "value": "inset 0 10px 10px -10px oklch(0.2 0.01 55 / 0.25)",
+        "purpose": "Top of the rail's note list once scrolled."
+      },
+      {
+        "name": "note-lift",
+        "value": "0 0 0 1px var(--line), 0 4px 14px -8px oklch(0.2 0.005 60 / 0.25)",
+        "purpose": "Active rail note: a white block lifted off paper."
+      },
+      {
+        "name": "glass-lit",
+        "value": "0 1px 2px oklch(0.3 0.005 60 / 0.25), 0 8px 20px -10px oklch(0.55 0.17 45 / 0.7)",
+        "purpose": "Any lit orange glass."
+      },
+      {
+        "name": "glass-dim",
+        "value": "0 1px 2px oklch(0.2 0.005 60 / 0.3)",
+        "purpose": "Unlit glass on graphite."
+      },
+      {
+        "name": "instrument",
+        "value": "0 1px 2px oklch(0.2 0.01 55 / 0.06), 0 30px 80px -40px oklch(0.25 0.005 60 / 0.35)",
+        "purpose": "The editor frame."
+      },
+      {
+        "name": "instrument-dark",
+        "value": "inset 0 1px 0 oklch(1 0 0 / 0.1), 0 1px 2px oklch(0.2 0.005 60 / 0.3), 0 40px 80px -40px oklch(0.25 0.005 60 / 0.6)",
+        "purpose": "The graphite recorder."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 3px color-mix(in oklch, var(--glass) 22%, transparent)",
+        "purpose": "Input focus."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The single house easing."
+      },
+      {
+        "name": "control",
+        "value": "200ms",
+        "purpose": "Buttons, inputs, tabs, toggles."
+      },
+      {
+        "name": "lane-reveal",
+        "value": "1100ms clip-path, 150ms stagger per lane, once on first view; off under reduced motion",
+        "purpose": "Editor lanes wake left to right."
+      },
+      {
+        "name": "foundation-light",
+        "value": "700ms",
+        "purpose": "Foundation swatches lighting in sequence while a review runs."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Graphite ink primary action on white chrome.",
+      "html": "<button class=\"ds-btn-primary\">Try a free review</button>",
+      "css": ".ds-btn-primary{background:var(--ink);color:var(--paper);height:36px;padding:0 14px;border:1px solid transparent;border-radius:4.8px;font:500 14px 'Archivo Variable',sans-serif;box-shadow:inset 0 1px 0 oklch(1 0 0/.14),0 1px 2px oklch(.2 .01 55/.3);transition:background-color .2s cubic-bezier(.16,1,.3,1),transform .2s;cursor:pointer}.ds-btn-primary:hover{background:color-mix(in oklch,var(--ink),var(--graphite) 45%)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--glass)}.ds-btn-primary:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Hairline on white.",
+      "html": "<button class=\"ds-btn-outline\">Record another take</button>",
+      "css": ".ds-btn-outline{background:var(--surface);color:var(--ink);height:36px;padding:0 14px;border:1px solid var(--line-strong);border-radius:4.8px;font:500 14px 'Archivo Variable',sans-serif;transition:background-color .2s,border-color .2s;cursor:pointer}.ds-btn-outline:hover{border-color:var(--ink-3);background:var(--sunken)}.ds-btn-outline:focus-visible{outline:none;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--glass)}"
+    },
+    {
+      "name": "Glass Button",
+      "kind": "button",
+      "refersTo": "button-glass",
+      "description": "Lit orange glass; recording and live playback only.",
+      "html": "<button class=\"ds-btn-glass\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2M12 19v3\"/></svg>Start recording</button>",
+      "css": ".ds-btn-glass{display:inline-flex;align-items:center;gap:8px;background:var(--glass);color:var(--ink);height:44px;padding:0 20px;border:1px solid transparent;border-radius:4.8px;font:500 15px 'Archivo Variable',sans-serif;box-shadow:0 1px 2px oklch(.3 .005 60/.25),0 8px 20px -10px oklch(.55 .17 45/.7);transition:background-color .2s cubic-bezier(.16,1,.3,1);cursor:pointer}.ds-btn-glass:hover{background:var(--glass-hot)}.ds-btn-glass:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+    },
+    {
+      "name": "Graphite Button",
+      "kind": "button",
+      "refersTo": "button-graphite",
+      "description": "The recorder's body color as a button.",
+      "html": "<button class=\"ds-btn-graphite\">Upload a file</button>",
+      "css": ".ds-btn-graphite{background:var(--graphite);color:oklch(.96 .002 80);height:36px;padding:0 14px;border:1px solid transparent;border-radius:4.8px;font:500 14px 'Archivo Variable',sans-serif;box-shadow:inset 0 1px 0 oklch(1 0 0/.12),0 1px 2px oklch(.2 .005 60/.35);cursor:pointer}.ds-btn-graphite:hover{background:color-mix(in oklch,var(--graphite),white 8%)}.ds-btn-graphite:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+    },
+    {
+      "name": "Foundation Badges",
+      "kind": "chip",
+      "refersTo": "badge-foundation-volume",
+      "description": "Square-shouldered tags: pastel field, deep ink text; sample is dashed.",
+      "html": "<span class=\"ds-badge\" style=\"background:var(--f-rate);color:var(--f-rate-ink)\">Rate of speech</span> <span class=\"ds-badge\" style=\"background:var(--f-volume);color:var(--f-volume-ink)\">Volume</span> <span class=\"ds-badge\" style=\"background:var(--f-pitch);color:var(--f-pitch-ink)\">Pitch &amp; melody</span> <span class=\"ds-badge\" style=\"background:var(--f-tonality);color:var(--f-tonality-ink)\">Tonality</span> <span class=\"ds-badge\" style=\"background:var(--f-pauses);color:var(--f-pauses-ink)\">Pauses</span> <span class=\"ds-badge ds-badge-sample\">Sample · synthetic voice</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid transparent;border-radius:3px;font:500 11px/1 'Archivo Variable',sans-serif;white-space:nowrap}.ds-badge-sample{background:var(--surface);color:var(--ink-3);border:1px dashed var(--line-strong)}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White field, glass-ink focus with a soft glass halo.",
+      "html": "<input class=\"ds-input\" placeholder=\"you@example.com\">",
+      "css": ".ds-input{height:40px;width:280px;padding:4px 12px;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:4.8px;font:400 14px 'Archivo Variable',sans-serif;box-shadow:inset 0 1px 1px oklch(.2 .01 55/.05);transition:border-color .2s,box-shadow .2s;outline:none}.ds-input::placeholder{color:var(--ink-3)}.ds-input:hover{border-color:var(--ink-3)}.ds-input:focus-visible{border-color:var(--glass-ink);box-shadow:0 0 0 3px color-mix(in oklch,var(--glass) 22%,transparent)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White container with a one-pixel edge; the paper footer is a pane split by a line.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-body\"><div class=\"ds-card-title\">Night shift</div><div class=\"ds-card-desc\">Recorded today · 15.6 s · six notes</div></div><div class=\"ds-card-foot\"><button class=\"ds-btn-primary\">Open review</button></div></div>",
+      "css": ".ds-card{width:320px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 1px 2px oklch(.2 .01 55/.05);font-family:'Archivo Variable',sans-serif}.ds-card-body{padding:20px}.ds-card-title{font-weight:600;font-size:16px}.ds-card-desc{font-size:14px;color:var(--ink-2);margin-top:4px}.ds-card-foot{padding:20px;background:var(--paper);border-top:1px solid var(--line)}.ds-btn-primary{background:var(--ink);color:var(--paper);height:32px;padding:0 12px;border:0;border-radius:4.8px;font:500 13px 'Archivo Variable',sans-serif;cursor:pointer}.ds-btn-primary:hover{background:color-mix(in oklch,var(--ink),var(--graphite) 45%)}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Slim 56px sticky nav; once scrolled, translucent paper with a one-pixel line bottom border as the scroll edge.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-wm\">MicMane</span><a href=\"#\">Foundations</a><a href=\"#\">The retake</a><a href=\"#\">Promises</a><button class=\"ds-nav-cta\">Try a free review</button></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:24px;height:56px;padding:0 24px;background:oklch(0.985 0.003 80 / 0.84);border-bottom:1px solid var(--line);backdrop-filter:blur(12px);font-family:'Archivo Variable',sans-serif}.ds-wm{font-weight:800;font-size:17px;letter-spacing:-.02em;font-variation-settings:'wdth' 125;color:var(--ink);margin-right:8px}.ds-nav a{font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:none;transition:color .2s}.ds-nav a:hover{color:var(--ink)}.ds-nav-cta{margin-left:auto;background:var(--ink);color:var(--paper);height:32px;padding:0 12px;border:0;border-radius:4.8px;font:500 13px 'Archivo Variable',sans-serif;cursor:pointer}.ds-nav-cta:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+    },
+    {
+      "name": "Note Pins",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "State by stroke: filled strength, open-ring improvement, dashed when tentative.",
+      "html": "<div class=\"ds-pins\"><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"5\" fill=\"var(--f-volume-ink)\" stroke=\"var(--f-volume-ink)\" stroke-width=\"1.5\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"5\" fill=\"var(--surface)\" stroke=\"var(--f-pitch-ink)\" stroke-width=\"2\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"5\" fill=\"var(--surface)\" stroke=\"var(--f-rate-ink)\" stroke-width=\"2\" stroke-dasharray=\"2.2 1.6\"/></svg><span class=\"ds-time\">00:13.5</span></div>",
+      "css": ".ds-pins{display:flex;align-items:center;gap:12px}.ds-time{font:400 12px 'Martian Mono Variable',monospace;font-variant-numeric:tabular-nums;color:var(--ink-3)}"
+    },
+    {
+      "name": "Scrubber",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "One-pixel track, ink range, lit-glass thumb: the playhead in miniature.",
+      "html": "<div class=\"ds-scrub\"><div class=\"ds-track\"><div class=\"ds-range\"></div></div><div class=\"ds-thumb\" tabindex=\"0\"></div></div>",
+      "css": ".ds-scrub{position:relative;width:280px;height:20px}.ds-track{position:absolute;top:10px;left:0;right:0;height:1px;background:var(--line-strong)}.ds-range{width:55%;height:1px;background:var(--ink)}.ds-thumb{position:absolute;top:0;left:55%;width:10px;height:20px;margin-left:-5px;border-radius:3px;background:var(--glass);box-shadow:0 1px 2px oklch(.3 .005 60/.25),0 8px 20px -10px oklch(.55 .17 45/.7);transition:transform .2s cubic-bezier(.16,1,.3,1)}.ds-thumb:hover{transform:scaleY(1.1)}.ds-thumb:focus-visible{outline:2px solid var(--glass);outline-offset:3px}"
+    },
+    {
+      "name": "Separator",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Free-standing separator outside any container; fades to transparent at both ends.",
+      "html": "<div class=\"ds-sep-demo\"><p>Rate of speech</p><div class=\"ds-sep\"></div><p>Volume</p></div>",
+      "css": ".ds-sep-demo{width:280px;font:400 14px 'Archivo Variable',sans-serif;color:var(--ink)}.ds-sep-demo p{margin:12px 0}.ds-sep{height:1px;width:100%;background:linear-gradient(to right,transparent,var(--line-strong),transparent)}"
+    },
+    {
+      "name": "Rail Note",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Rounded note blocks on paper; the active note lifts as a white block.",
+      "html": "<ul class=\"ds-rail\"><li class=\"ds-note\"><span class=\"ds-t\">00:04.7</span><span class=\"ds-f\" style=\"color:var(--f-rate-ink)\">Rate</span> Opening rushes</li><li class=\"ds-note ds-note-active\"><span class=\"ds-t\">00:13.5</span><span class=\"ds-f\" style=\"color:var(--f-volume-ink)\">Volume</span> The ending drops away</li></ul>",
+      "css": ".ds-rail{list-style:none;margin:0;padding:8px 0;width:320px;background:var(--paper);font:400 13px 'Archivo Variable',sans-serif;color:var(--ink-2)}.ds-note{margin:0 8px;padding:12px 16px;border-radius:4.8px;display:flex;gap:12px;align-items:baseline;transition:background-color .2s,box-shadow .2s;cursor:pointer}.ds-note:hover{background:var(--sunken)}.ds-note-active,.ds-note-active:hover{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 4px 14px -8px oklch(0.2 0.005 60 / 0.25)}.ds-t{font:400 11px 'Martian Mono Variable',monospace;font-variant-numeric:tabular-nums;color:var(--ink-3)}.ds-f{font-weight:600;font-size:12px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Daylight Braindance Editor",
+    "overview": "MicMane is built like a professional editing suite that a Night City company would sell for the human voice: white chrome, gray and black structure, and a timeline you can scrub. Everything reads as an instrument. Headlines are set in a wide, heavy Archivo that feels stamped onto the product; times and measurements run in Martian Mono with tabular figures; body copy stays at a normal width and a calm gray.\n\nColor is rationed. The canvas is a nearly achromatic white. Five pastel foundation hues (rate, volume, pitch, tonality, pauses) appear only where a foundation is actually present: a lane, a swatch, a badge, a highlighted word. Dark surfaces are neutral graphite, never brown. The single warm color in the system is orange glass: the playhead, the recorder's glass, the slider thumb, the progress fill, the focus ring. When nothing is live, the glass is unlit graphite.\n\nState is carried by stroke rather than by extra color: a solid leader is a clear note, a dashed one is tentative; a filled pin is a strength, an open ring an improvement; sample content wears a dashed badge edge. Depth is almost flat. Lines mark structure, not lists: a one-pixel rule appears only where a fixed region meets scrolling content or where two panes share one container. Rows and sections separate by spacing on a shared grid. The only large soft shadows sit under the two instruments (the editor frame and the graphite recorder).",
+    "keyCharacteristics": [
+      "White editor chrome; one-pixel lines mark scroll edges and pane splits, never rows or sections.",
+      "Five foundation hues, each a pastel field plus a deep ink, shown only where that foundation is active.",
+      "Neutral graphite for dark surfaces; orange glass as the only warm color, lit only while something is live.",
+      "Wide, extra-bold Archivo display type against mono timecodes.",
+      "State by stroke: solid or dashed, filled or open."
+    ],
+    "rules": [
+      {
+        "name": "The Active-Only Rule",
+        "body": "A foundation color appears only where that foundation is present in the data: its lane, its swatch, its badge, its note. Never as decoration, section tint, or brand accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Warm Light Rule",
+        "body": "Orange glass marks the single live or draggable thing: the playhead, recording, playback in progress, focus. Unlit glass is graphite-line. If two unrelated things are orange, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Brown Rule",
+        "body": "Dark surfaces are neutral graphite (chroma 0.004 or less), and nothing dark exceeds the chroma of ink itself (0.008). No brown or walnut surfaces, text or shadows; shadows tint neutral. Orange glass is the only warm color. This is a founder decision recorded in PRODUCT.md.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fill and Ink Rule",
+        "body": "Every foundation hue is a pair: pastel for fields, deep ink for text, strokes and pins. Pastel never carries text by itself; foundation text is always the ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono Means Measured Rule",
+        "body": "Martian Mono is used only for times and measured values. Words are never set in mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence-Case Rule",
+        "body": "Labels are small, semibold and sentence case. The build has no uppercase tracked labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lines Mark Structure, Not Lists Rule",
+        "body": "A one-pixel line rule is used in exactly two cases. Scroll edge: a fixed region sits over content that scrolls (the scrolled nav's bottom border, the rail summary above the note list, the phone notes sheet header). Pane split: two panes share one container (editor toolbar and viewer, viewer and timeline, label column, notes rail, figure caption and takes, card and dialog footers, phone note pane and all-notes bar, the tabs line rail the active indicator rides on). Rows and section breaks get no line: foundation rows, lanes, rail notes, promises, accordion items, the \"Listening for\" list and page sections separate by spacing and sit on the shared grid. Data lines are exempt (ruler baseline, retake timeline, waveform, leaders).",
+        "section": "elevation"
+      },
+      {
+        "name": "The Fading Separator Rule",
+        "body": "A free-standing separator, outside any container, fades to transparent at both ends (line-strong at its midpoint).",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the canvas paper, surface and graphite; let color enter only through an active foundation or live glass.",
+      "Do pair every foundation fill with its ink, and set foundation text in the ink.",
+      "Do separate rows and sections by spacing on the shared heading/lead grid (lg: minmax(0, 1.35fr) and minmax(0, 1fr), 64px gap).",
+      "Do draw a one-pixel line where a fixed region meets scrolling content, or where two panes share one container.",
+      "Do express state by stroke: solid for clear, dashed for tentative or sample, filled for strength, open ring for improvement.",
+      "Do set times and measured values in Martian Mono with tabular figures.",
+      "Do use the glass focus ring (2px, offset 2px) on every interactive element."
+    ],
+    "donts": [
+      "Don't use a foundation hue for decoration, section backgrounds, or emphasis unrelated to that foundation.",
+      "Don't light glass when nothing is live, or use it for a second, unrelated highlight on the same screen.",
+      "Don't round badges, tags or lane tiles into pills; keep them at 3px or less.",
+      "Don't put large drop shadows on anything other than the editor frame and the recorder.",
+      "Don't set words or labels in mono, or in uppercase with tracking.",
+      "Don't draw lines between list rows, lanes, notes, accordion items or page sections.",
+      "Don't use the iridescent film as a background, border or button fill.",
+      "Don't use brown or walnut tones for surfaces, text or shadows; dark means neutral graphite."
+    ]
+  }
+}

@@ -4,3 +4,8 @@ videos/
 __pycache__/
 .pytest_cache/
 *.pyc
+node_modules/
+web/dist/
+.impeccable/config.local.json
+.impeccable/questions/
+.impeccable/review/
