@@ -10,7 +10,7 @@ The public page and component showcase live in `web/` (React, Vite, restyled sha
 cd web && npm install && npm run dev       # http://localhost:5173, /components for the showcase
 ```
 
-The dev server proxies `/api` to port 8000. The page's sample take is generated with macOS `say` by `web/scripts/make_sample.py`; its review is written by hand in `web/src/lib/sample.ts` and labeled as a sample on the page.
+The dev server proxies `/api` to port 8000. The page's sample take was voiced with macOS `say`; its review is written by hand in `web/src/lib/sample.ts` and labeled as a sample on the page.
 
 ## Research and evaluation
 
@@ -19,6 +19,5 @@ The dev server proxies `/api` to port 8000. The page's sample take is generated 
 - [Visual review research](docs/visual-review.md)
 - [Competitive landscape](docs/competitive-landscape.md)
 - [Yoodli assessment](docs/yoodli-assessment.md)
-- [Reproducible local research probe](scripts/research_probe.py)
 
 The repository's course clips demonstrate measurable differences, but they do not establish coaching accuracy. No blinded human pilot or competitor comparison has been run yet.

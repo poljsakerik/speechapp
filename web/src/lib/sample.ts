@@ -2,7 +2,7 @@ import type { Review } from "@/lib/review"
 
 /*
  * The landing page's sample review. The take is voiced by a synthetic voice
- * (web/scripts/make_sample.py) and this review was written by hand in the
+ * (macOS `say`) and this review was written by hand in the
  * format the real coach returns. Both are labeled as a sample on the page.
  */
 export const SAMPLE_TITLE = "Night shift"
