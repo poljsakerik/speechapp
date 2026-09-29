@@ -18,6 +18,6 @@ const result = await markImportance(words, { complete: openaiCompletion() })
 if (flag === "--json") {
   console.log(JSON.stringify(result, null, 2))
 } else {
-  const show = { important: (t: string) => t.toUpperCase(), unimportant: (t: string) => t, filler: (t: string) => `[${t}]` }
+  const show = { message: (t: string) => `**${t.toUpperCase()}**`, important: (t: string) => t.toUpperCase(), unimportant: (t: string) => t, filler: (t: string) => `[${t}]` }
   console.log(result.phrases.map((p) => show[p.importance](p.text)).join(" "))
 }

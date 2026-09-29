@@ -15,13 +15,13 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { wordsFromDeepgram } from "../src/deepgram.ts"
+import { alignMarks, type GoldenMark } from "../src/golden.ts"
 import { markImportance, type Importance, type Word } from "../src/importance.ts"
 import { openaiCompletion, type ReasoningEffort } from "../src/openai.ts"
 
 const RECORDINGS = join(import.meta.dirname, "../../recordings")
 const RULES = { RATE_IMPORTANCE_FAST: "important", RATE_IMPORTANCE_SLOW: "unimportant", PAUSE_FILLERS: "filler" } as const
 type Rule = keyof typeof RULES
-type Mark = { startIndex: number; endIndex: number; rule: string }
 type Recording = { id: string; words: Word[]; expected: Map<number, Rule>; spans: { rule: Rule; words: number[] }[] }
 
 function loadRecordings(): Recording[] {
@@ -29,24 +29,13 @@ function loadRecordings(): Recording[] {
   return ids.flatMap((id) => {
     const golden = join(RECORDINGS, id, `${id}.golden.json`)
     if (!existsSync(golden)) return []
-    const marks = (JSON.parse(readFileSync(golden, "utf8")) as Mark[]).filter((m) => m.rule in RULES)
+    const marks = (JSON.parse(readFileSync(golden, "utf8")) as GoldenMark[]).filter((m) => m.rule in RULES)
     if (!marks.length) return []
     const text = readFileSync(join(RECORDINGS, id, `${id}.txt`), "utf8")
     const words = wordsFromDeepgram(JSON.parse(readFileSync(join(RECORDINGS, id, `${id}.json`), "utf8")))
-    // Golden marks index characters of the .txt transcript; find each word in it.
+    const spans = alignMarks(text, words, marks).map((covered, k) => ({ rule: marks[k].rule as Rule, words: covered }))
     const expected = new Map<number, Rule>()
-    const spans = marks.map((m) => ({ rule: m.rule as Rule, words: [] as number[] }))
-    let cursor = 0
-    words.forEach((w, i) => {
-      const start = text.indexOf(w.text, cursor)
-      if (start < 0) return
-      cursor = start + w.text.length
-      marks.forEach((m, k) => {
-        if (start >= m.endIndex || cursor <= m.startIndex) return
-        if (!expected.has(i)) expected.set(i, m.rule as Rule)
-        spans[k].words.push(i)
-      })
-    })
+    for (const span of spans) for (const i of span.words) if (!expected.has(i)) expected.set(i, span.rule)
     return [{ id, words, expected, spans: spans.filter((s) => s.words.length) }]
   })
 }
@@ -62,7 +51,7 @@ for (const spec of specs) {
   const complete = openaiCompletion({ model, effort: effort as ReasoningEffort })
   const hits: Record<Rule, [number, number]> = { RATE_IMPORTANCE_FAST: [0, 0], RATE_IMPORTANCE_SLOW: [0, 0], PAUSE_FILLERS: [0, 0] }
   const spanHits: Record<Rule, [number, number]> = { RATE_IMPORTANCE_FAST: [0, 0], RATE_IMPORTANCE_SLOW: [0, 0], PAUSE_FILLERS: [0, 0] }
-  const share: Record<Importance, number> = { important: 0, unimportant: 0, filler: 0 }
+  const share: Record<Importance, number> = { message: 0, important: 0, unimportant: 0, filler: 0 }
   let total = 0
   const started = performance.now()
   let failed = ""

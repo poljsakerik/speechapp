@@ -22,6 +22,21 @@ npm run importance -- ../recordings/recording-03-pauses/recording-03-pauses.json
 npm run eval:importance -- gpt-6-luna:low gpt-6-sol:low gpt-6-sol:medium         # score models against the golden set
 ```
 
+`src/importance.ts` also has a message-first mode, `markMessage`. The model first says what the speaker is trying to get across, then labels the few words that carry that message `message`, other words worth stressing (punchlines, key facts) `important`, and the rest `unimportant` or `filler`.
+
+The second stage, `src/rate.ts`, looks at whether pace varies and marks only the few places that get in the way, leaving out filler words and the time they take:
+
+- `RATE_MONOTONE`: a stretch where pace barely changes, with a message phrase to slow down on and an unimportant one to speed up through.
+- `RATE_IMPORTANCE_FAST`: a message phrase said at normal pace or faster, with no pause around it and no slowing relative to its surroundings.
+- `RATE_IMPORTANCE_SLOW`: an unimportant phrase dragged far past normal pace.
+
+Marks are ranked by impact, the seconds a fix would add or save; small ones are dropped, and at most about one mark per minute is kept. Every threshold is in `RateConfig` (`DEFAULT_RATE_CONFIG`). The defaults are calibrated on the one good delivery, the recording-03 re-record, which gets no marks. The other recordings are practice takes and don't define normal.
+
+```sh
+npm run rate -- ../recordings/recording-03/recording-03.m4a   # audio → Deepgram → importance → rate marks; needs DEEPGRAM_API_KEY too
+npm run eval:rate -- recording-03 [--strategy importance]    # compare with the golden marks and the good retake
+```
+
 ## Research and evaluation
 
 - [MVP research](docs/mvp-research.md)

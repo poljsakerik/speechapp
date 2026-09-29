@@ -30,6 +30,7 @@
     --f-pitch_melody: oklch(0.85 0.075 355);  --f-pitch_melody-ink: oklch(0.5 0.15 360);
     --f-tonality: oklch(0.9 0.085 88);        --f-tonality-ink: oklch(0.5 0.1 72);
     --f-pauses: oklch(0.88 0.075 160);        --f-pauses-ink: oklch(0.47 0.09 162);
+    --rule-fast-ink: oklch(0.55 0.15 50);
     --sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, sans-serif;
     --mono: "Martian Mono Variable", "Martian Mono", ui-monospace, monospace;
     --cur: var(--f-rate);
@@ -87,10 +88,13 @@
   .track .fill { position: absolute; left: 0; top: 12px; height: 4px; background: var(--on-graphite-muted); border-radius: 2px; }
   .track .seg { position: absolute; top: 4px; height: 20px; border-radius: 2px; opacity: 0.35; min-width: 2px; }
   .track .seg.on { opacity: 0.95; }
+  .track .pseg { position: absolute; top: 25px; height: 3px; border-radius: 1px; min-width: 2px; }
+  .track .split-line { position: absolute; top: 0; width: 0; height: 28px; border-left: 1px dashed var(--on-graphite-muted); }
   .track .head { position: absolute; top: 3px; width: 2px; height: 22px; background: var(--glass); }
   .rates { display: flex; gap: 2px; }
   .rates button { border: 0; background: transparent; color: var(--on-graphite-muted); padding: 3px 6px; border-radius: 4px; }
   .rates button[aria-pressed="true"] { background: var(--graphite-line); color: var(--on-graphite); }
+  .toggles { display: flex; gap: 14px; }
   .toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 0.75rem; color: var(--on-graphite-muted); cursor: pointer; }
 
   /* Main */
@@ -107,6 +111,13 @@
   .transcript .w.focus { background: var(--cur-ink); color: var(--surface); box-shadow: 0 0 0 2px var(--cur-ink); }
   .transcript .w.now { box-shadow: inset 0 -3px 0 var(--glass); }
   .transcript .w.cur.now { box-shadow: 0 0 0 2px var(--cur), inset 0 -3px 0 var(--glass); }
+  .transcript .w.pred { text-decoration: underline 3px solid var(--f-rate-ink); text-underline-offset: 7px; }
+  .transcript .w.pred.pfast { text-decoration-color: var(--rule-fast-ink); }
+  .transcript .w.pred.pmono { text-decoration: underline 2px dotted var(--ink-3); }
+  .transcript .w.pred.psug { text-decoration-style: dashed; text-decoration-thickness: 3px; }
+  .transcript .part { display: none; font: 600 0.6875rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .transcript.show-pred .part { display: block; padding: 6px 0; }
+  .transcript.show-pred .part.test { margin-top: 18px; border-top: 1px dashed var(--line-strong); padding-top: 14px; }
   .transcript ::selection { background: var(--cur-ink); color: var(--surface); }
   .loading { color: var(--ink-3); }
 
@@ -137,6 +148,18 @@
   .mark .del:hover { color: var(--destructive); }
   .empty { font-size: 0.8125rem; color: var(--ink-3); }
   .others { font-size: 0.75rem; color: var(--ink-3); margin-top: 4px; }
+  .marks h3 { margin: 16px 0 4px; font-size: 0.875rem; font-weight: 700; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.75rem; color: var(--ink-2); margin-bottom: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+  .legend i.u { height: 3px; vertical-align: 2px; }
+  .score { font-size: 0.6875rem; color: var(--ink-2); margin: 0 0 8px; line-height: 1.6; }
+  .mark.pred { background: var(--surface); }
+  .mark.pred.sug { margin-left: 16px; }
+  .pred-summary { font-size: 0.75rem; line-height: 1.5; color: var(--ink-2); margin: 0 0 8px; }
+  .mark .part-tag { font-family: var(--mono); font-size: 0.625rem; text-transform: uppercase; color: var(--ink-3); }
+  .mark .hit { font-size: 0.75rem; font-weight: 600; }
+  .mark .hit.yes { color: var(--f-pauses-ink); }
+  .mark .hit.no { color: var(--destructive); }
 
   .json-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .json-head h2 { margin: 0; }
@@ -194,7 +217,10 @@
   <div class="time mono" id="time">0:00.0 / 0:00</div>
   <div class="track" id="track"><div class="rail"></div><div class="fill" id="fill"></div><div id="segs"></div><div class="head" id="head"></div></div>
   <div class="rates" id="rates"></div>
-  <label class="toggle"><input type="checkbox" id="follow" checked> Follow</label>
+  <div class="toggles">
+    <label class="toggle" id="predToggle" hidden><input type="checkbox" id="showPred" checked> Pipeline</label>
+    <label class="toggle"><input type="checkbox" id="follow" checked> Follow</label>
+  </div>
 </div>
 
 <main>
@@ -272,6 +298,11 @@ let scope = "one";
 let pending = null;  // selection awaiting a rule
 let stopAt = null;
 let nowIdx = -1;
+let pred = null;     // pipeline rate marks and train/test split, from <id>.rate.pred.json
+const RULE_FAST = "RATE_IMPORTANCE_FAST", RULE_MONO = "RATE_MONOTONE";
+const predColor = m => m.rule === RULE_FAST ? "var(--rule-fast-ink)" : m.rule === RULE_MONO ? "var(--ink-3)" : "var(--f-rate-ink)";
+const predClasses = m => ["pred", ...(m.rule === RULE_FAST ? ["pfast"] : []), ...(m.rule === RULE_MONO ? ["pmono"] : []), ...(m.suggestion ? ["psug"] : [])];
+const showingPred = () => !!pred && foundation === "rate" && $("showPred").checked;
 
 const fmt = (t, d = 1) => {
   t = Math.max(0, t || 0);
@@ -340,12 +371,15 @@ async function load(id) {
   audio.pause(); stopAt = null;
   $("transcript").innerHTML = '<span class="loading">Loading…</span>';
   const base = `/recordings/${id}/${id}`;
-  const [txt, dg] = await Promise.all([
+  const [txt, dg, pr] = await Promise.all([
     fetch(`${base}.txt`).then(r => r.text()),
     fetch(`${base}.json`).then(r => r.json()),
+    fetch(`${base}.rate.pred.json`).then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
   if (recordingId !== id) return;
   text = txt;
+  pred = pr;
+  $("predToggle").hidden = !pred;
   audio.src = `${base}.m4a`;
   marks = (allGolden[id] || []).slice();
 
@@ -361,8 +395,18 @@ async function load(id) {
   }
 
   const frag = document.createDocumentFragment();
-  let pos = 0;
+  const part = (cls, label) => {
+    const el = document.createElement("span");
+    el.className = `part ${cls}`; el.textContent = label;
+    return el;
+  };
+  if (pred) frag.append(part("train", `Train · before ${fmt(pred.split, 0)}`));
+  let pos = 0, splitShown = !pred;
   words.forEach((w, i) => {
+    if (!splitShown && w.t0 >= pred.split) {
+      frag.append(text.slice(pos, w.s).replace(/^\s+/, ""), part("test", `Test · from ${fmt(pred.split, 0)}`));
+      pos = w.s; splitShown = true;
+    }
     if (w.s > pos) frag.append(text.slice(pos, w.s));
     const span = document.createElement("span");
     span.className = "w"; span.dataset.i = i;
@@ -388,9 +432,11 @@ function renderAll() {
 }
 
 function renderText() {
-  for (const w of words) w.el.className = "w";
+  for (const w of words) { w.el.className = "w"; w.el.style.textDecorationColor = ""; }
+  $("transcript").classList.toggle("show-pred", showingPred());
   for (const m of marks) {
     const cur = m.foundationType === foundation;
+    if (showingPred()) break; // only the pipeline's marks are shown
     let first = true;
     for (const w of words) {
       if (w.s >= m.startIndex && w.e <= m.endIndex) {
@@ -398,6 +444,16 @@ function renderText() {
         if (!cur) w.el.style.textDecorationColor = `var(--f-${m.foundationType}-ink)`;
         if (cur && first) w.el.classList.add("first");
         first = false;
+      }
+    }
+  }
+  if (showingPred()) {
+    // Monotone stretches first, so the suggestions inside them draw over their underline.
+    for (const m of [...pred.marks].sort((a, b) => (b.rule === RULE_MONO) - (a.rule === RULE_MONO))) {
+      for (const w of words) {
+        if (w.s < m.startIndex || w.e > m.endIndex) continue;
+        if (m.rule !== RULE_MONO) w.el.classList.remove("pmono");
+        w.el.classList.add(...predClasses(m));
       }
     }
   }
@@ -412,11 +468,11 @@ const clean = list => sortedMarks(list).map(({ startAt, endAt, startIndex, endIn
   ({ startAt, endAt, startIndex, endIndex, foundationType, rule }));
 
 function renderMarks() {
-  const mine = sortedMarks().filter(m => m.foundationType === foundation);
+  const mine = showingPred() ? [] : sortedMarks().filter(m => m.foundationType === foundation);
   $("markCount").textContent = mine.length || "";
   const list = $("marks");
   list.innerHTML = "";
-  if (!mine.length) list.innerHTML = `<p class="empty">No ${byKey[foundation].label.toLowerCase()} marks in this recording yet.</p>`;
+  if (!mine.length && !showingPred()) list.innerHTML = `<p class="empty">No ${byKey[foundation].label.toLowerCase()} marks in this recording yet.</p>`;
   for (const m of mine) {
     const el = document.createElement("div");
     el.className = "mark";
@@ -431,7 +487,38 @@ function renderMarks() {
     list.append(el);
   }
   const other = marks.length - mine.length;
-  if (other) list.insertAdjacentHTML("beforeend", `<p class="others">${other} mark${other > 1 ? "s" : ""} in other foundations (dotted underline).</p>`);
+  if (other && !showingPred()) list.insertAdjacentHTML("beforeend", `<p class="others">${other} mark${other > 1 ? "s" : ""} in other foundations (dotted underline).</p>`);
+  if (showingPred()) renderPred(list);
+}
+
+// Pipeline marks, colored by rule: rushed point, dragging, monotone stretch (dotted) and its suggestions (dashed).
+function renderPred(list) {
+  const c = pred.config, esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+  const pace = pred.speakerPace ? `pace ×${(pred.speakerPace / c.referencePace).toFixed(2)} of the ${c.referencePace} s/syllable reference` : "";
+  const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)} (monotone below ${c.monotoneBelow})` : "";
+  list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
+    ${pred.message ? `<p class="pred-summary"><b>Message:</b> ${esc(pred.message.message)}</p>` : ""}
+    <p class="pred-summary">${[pace, variation].filter(Boolean).join(" · ")}</p>
+    <div class="legend">
+      <span><i class="u" style="background:var(--rule-fast-ink)"></i>point rushed</span><span><i class="u" style="background:var(--f-rate-ink)"></i>dragging</span>
+      <span><i class="u" style="background:var(--ink-3)"></i>monotone (dotted); suggestions dashed</span>
+    </div>`);
+  const order = [...pred.marks].sort((a, b) => a.startAt - b.startAt || (a.suggestion ? 1 : 0) - (b.suggestion ? 1 : 0));
+  for (const m of order) {
+    const el = document.createElement("div");
+    el.className = `mark pred${m.suggestion ? " sug" : ""}`;
+    const label = m.suggestion ? (m.rule === RULE_FAST ? "↳ slow down here" : "↳ speed up here")
+      : m.rule === RULE_MONO ? `Monotone · ${Math.round(m.endAt - m.startAt)} s` : m.rule === RULE_FAST ? "Point rushed" : "Dragging";
+    const hit = m.rule === RULE_MONO ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
+    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
+      <span><span class="part-tag">${m.part}</span> ${hit}</span>
+      <div class="quote"></div>`;
+    el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
+    el.onclick = () => playRange(m.startAt, m.endAt);
+    el.onmouseenter = () => focusMark(m, true);
+    el.onmouseleave = () => focusMark(m, false);
+    list.append(el);
+  }
 }
 
 function focusMark(m, on) {
@@ -446,7 +533,9 @@ function renderTrack() {
   const d = audio.duration || words.at(-1)?.t1 || 1;
   $("segs").innerHTML = marks.map(m =>
     `<div class="seg ${m.foundationType === foundation ? "on" : ""}" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:var(--f-${m.foundationType}${m.foundationType === foundation ? "" : "-ink"})"></div>`
-  ).join("");
+  ).filter(() => !showingPred()).join("") + (showingPred() ? pred.marks.map(m =>
+    `<div class="pseg" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:${predColor(m)}"></div>`
+  ).join("") + `<div class="split-line" style="left:${pred.split / d * 100}%" title="Train | test split"></div>` : "");
 }
 
 function currentJson() {
@@ -630,6 +719,8 @@ document.addEventListener("keydown", e => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); audio.currentTime -= 5; }
   else if (e.key === "ArrowRight") { e.preventDefault(); audio.currentTime += 5; }
 });
+
+$("showPred").onchange = () => renderAll();
 
 // ---------- JSON panel ----------
 $("scopeOne").onclick = () => { scope = "one"; $("scopeOne").setAttribute("aria-pressed", true); $("scopeAll").setAttribute("aria-pressed", false); renderJson(); };

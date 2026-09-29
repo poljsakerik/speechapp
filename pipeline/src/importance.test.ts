@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { markImportance, splitChunks, type JsonCompletion, type Word } from "./importance.ts"
+import { MESSAGE_MARKING_PROMPT, markImportance, markMessage, splitChunks, type JsonCompletion, type Word } from "./importance.ts"
 
 const words = (text: string): Word[] => text.split(" ").map((t) => ({ text: t }))
 
@@ -72,4 +72,19 @@ test("parseLeadingJson ignores text after the object", async () => {
   const { parseLeadingJson } = await import("./openai.ts")
   assert.deepEqual(parseLeadingJson('{"a":"}\\" {","b":[{}]} )))? Wait {x}'), { a: '}" {', b: [{}] })
   assert.throws(() => parseLeadingJson('{"a":'), SyntaxError)
+})
+
+test("message-first marking finds the message, then marks with it as the preface", async () => {
+  const requests: { system: string; user: string }[] = []
+  const complete: JsonCompletion = async ({ system, user, schemaName }) => {
+    requests.push({ system, user })
+    return schemaName === "message"
+      ? { message: "Sales fell.", points: ["By half."] }
+      : { phrases: [{ first: 0, last: 1, importance: "unimportant" }, { first: 2, last: 3, importance: "important" }] }
+  }
+  const result = await markMessage(words("So anyway sales halved."), { complete })
+  assert.deepEqual(result.message, { message: "Sales fell.", points: ["By half."] })
+  assert.deepEqual(result.words.map((w) => w.importance), ["unimportant", "unimportant", "important", "important"])
+  assert.equal(requests[1].system, MESSAGE_MARKING_PROMPT)
+  assert.match(requests[1].user, /^The speaker's message: Sales fell\.\nIts points:\n- By half\.\n\nWords 0 to 3:/)
 })

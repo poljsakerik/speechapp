@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node --test",
     "importance": "node --env-file=../.env scripts/importance.ts",
-    "eval:importance": "node --env-file=../.env scripts/eval-importance.ts"
+    "eval:importance": "node --env-file=../.env scripts/eval-importance.ts",
+    "rate": "node --env-file=../.env scripts/rate.ts",
+    "eval:rate": "node --env-file=../.env scripts/eval-rate.ts"
   }
 }
