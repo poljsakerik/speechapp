@@ -12,6 +12,16 @@ cd web && npm install && npm run dev       # http://localhost:5173, /components 
 
 The dev server proxies `/api` to port 8000. The page's sample take was voiced with macOS `say`; its review is written by hand in `web/src/lib/sample.ts` and labeled as a sample on the page.
 
+## Processing pipeline
+
+`pipeline/` (Node 22.18+, no dependencies) processes transcript words. Its first stage, `src/importance.ts`, has an OpenAI model (`gpt-6-sol` at low reasoning effort by default) split the transcript into phrases and label each word important, unimportant or filler. The rate-of-speech checks will compare pace against these labels.
+
+```sh
+cd pipeline && npm test
+npm run importance -- ../recordings/recording-03-pauses/recording-03-pauses.json   # needs OPENAI_API_KEY in .env
+npm run eval:importance -- gpt-6-luna:low gpt-6-sol:low gpt-6-sol:medium         # score models against the golden set
+```
+
 ## Research and evaluation
 
 - [MVP research](docs/mvp-research.md)
