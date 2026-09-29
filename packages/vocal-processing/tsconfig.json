@@ -1,0 +1,10 @@
+{
+  "extends": "@micmane/typescript-config/node.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "src",
+    "scripts"
+  ]
+}

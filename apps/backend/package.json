@@ -1,0 +1,27 @@
+{
+  "name": "@micmane/backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../../.env --import tsx src/server.ts",
+    "start": "node --env-file-if-exists=../../.env dist/server.js",
+    "build": "tsup src/server.ts --format esm --out-dir dist --no-splitting",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@micmane/vocal-processing": "workspace:*",
+    "@fastify/multipart": "^10.1.2",
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@micmane/eslint-config": "workspace:*",
+    "@micmane/typescript-config": "workspace:*",
+    "@types/node": "^26.6.3",
+    "typescript": "^6.0.3",
+    "tsx": "^4.20.6",
+    "tsup": "^8.5.0"
+  }
+}

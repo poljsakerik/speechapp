@@ -5,7 +5,10 @@ __pycache__/
 .pytest_cache/
 *.pyc
 node_modules/
-web/dist/
+apps/*/dist/
+.turbo/
+.vite/
+*.tsbuildinfo
 .impeccable/config.local.json
 .impeccable/questions/
 .impeccable/review/

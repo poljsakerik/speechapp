@@ -1,0 +1,6 @@
+{
+  "extends": "@micmane/typescript-config/node.json",
+  "include": [
+    "src"
+  ]
+}

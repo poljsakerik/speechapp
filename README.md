@@ -1,41 +1,44 @@
 # MicMane
 
-Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses.
+Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
 
-## MicMane web app
+## Workspace
 
-The public page and component showcase live in `web/` (React, Vite, restyled shadcn/ui). The free review on the page posts to `/api`, which has no backend yet.
+This is a pnpm and Turborepo workspace modeled on the layout of `../leksoro`:
 
-```sh
-cd web && npm install && npm run dev       # http://localhost:5173, /components for the showcase
-```
+- `apps/webapp` — React, Vite, and the sample take/editor.
+- `apps/backend` — Fastify `/api/review` and `/api/health`.
+- `apps/markup-tools` — local golden-set annotator.
+- `packages/ui` — reusable components, `cn`, and the single shared Tailwind stylesheet used by the web app.
+- `packages/vocal-processing` — transcription, message labeling, rate detection, evaluation scripts, and tests.
+- `packages/config-typescript` and `packages/config-eslint` — shared compiler and ESLint flat configs.
 
-The dev server proxies `/api` to port 8000. The page's sample take was voiced with macOS `say`; its review is written by hand in `web/src/lib/sample.ts` and labeled as a sample on the page.
-
-## Processing pipeline
-
-`pipeline/` (Node 22.18+, no dependencies) processes transcript words. Its first stage, `src/importance.ts`, has an OpenAI model (`gpt-6-sol` at low reasoning effort by default) split the transcript into phrases and label each word important, unimportant or filler. The rate-of-speech checks will compare pace against these labels.
-
-```sh
-cd pipeline && npm test
-npm run importance -- ../recordings/recording-03-pauses/recording-03-pauses.json   # needs OPENAI_API_KEY in .env
-npm run eval:importance -- gpt-6-luna:low gpt-6-sol:low gpt-6-sol:medium         # score models against the golden set
-```
-
-`src/importance.ts` also has a message-first mode, `markMessage`. The model first says what the speaker is trying to get across, then labels the few words that carry that message `message`, other words worth stressing (punchlines, key facts) `important`, and the rest `unimportant` or `filler`.
-
-The second stage, `src/rate.ts`, looks at whether pace varies and marks only the few places that get in the way, leaving out filler words and the time they take:
-
-- `RATE_MONOTONE`: a stretch where pace barely changes, with a message phrase to slow down on and an unimportant one to speed up through.
-- `RATE_IMPORTANCE_FAST`: a message phrase said at normal pace or faster, with no pause around it and no slowing relative to its surroundings.
-- `RATE_IMPORTANCE_SLOW`: an unimportant phrase dragged far past normal pace.
-
-Marks are ranked by impact, the seconds a fix would add or save; small ones are dropped, and at most about one mark per minute is kept. Every threshold is in `RateConfig` (`DEFAULT_RATE_CONFIG`). The defaults are calibrated on the one good delivery, the recording-03 re-record, which gets no marks. The other recordings are practice takes and don't define normal.
+Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY` and `OPENAI_API_KEY` for live reviews. The API keys stay on the backend.
 
 ```sh
-npm run rate -- ../recordings/recording-03/recording-03.m4a   # audio → Deepgram → importance → rate marks; needs DEEPGRAM_API_KEY too
-npm run eval:rate -- recording-03 [--strategy importance]    # compare with the golden marks and the good retake
+pnpm install
+pnpm dev             # web: http://localhost:5173, API: http://localhost:8000
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm test
 ```
+
+The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, labeled with OpenAI, and analyzed by the rate package. The backend returns the original audio, timed segments, and rate findings to the editor. Other foundations are marked uncertain.
+
+Run the annotator separately with `pnpm markup-tools` at `http://localhost:8765`. It reads and writes local files in `recordings/`.
+
+## Vocal processing
+
+The first stage, `importance.ts`, splits transcript words into phrases and labels their importance. Its message-first mode identifies the speaker's point before assigning labels. The rate stage flags only substantial issues: monotonous stretches, rushed message phrases, and dragged unimportant phrases. Thresholds live in `RateConfig` and are calibrated on the recording-03 re-record.
+
+```sh
+pnpm --dir packages/vocal-processing importance ../../recordings/recording-03-pauses/recording-03-pauses.json
+pnpm --dir packages/vocal-processing rate ../../recordings/recording-03/recording-03.m4a
+pnpm --dir packages/vocal-processing eval:rate recording-03
+```
+
+Paths for the scripts above are relative to `packages/vocal-processing`. Live processing needs both API keys in `.env`. Tests need neither.
 
 ## Research and evaluation
 

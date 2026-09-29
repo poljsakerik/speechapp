@@ -1,0 +1,13 @@
+{
+  "extends": "@micmane/typescript-config/react-app.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}
