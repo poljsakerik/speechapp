@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-React for the web front end, built on shadcn/ui components restyled to the MicMane brand. A component showcase page presenting every restyled shadcn component the product needs is a required deliverable alongside the pages. The existing Python pipeline (`speechapp/`) and Streamlit prototype (`app.py`) remain the review engine and are not the brand surface. Framework wrapper, routing, and deploy target are undecided.
+React for the web front end, built on shadcn/ui components restyled to the MicMane brand. A component showcase page presenting every restyled shadcn component the product needs is a required deliverable alongside the pages. Framework wrapper, routing, and deploy target are undecided.
 
 ## Users
 
@@ -24,18 +24,16 @@ Feedback is grounded in one specific, taught method rather than generic delivery
 
 ## Operating Context
 
-- Short single-speaker English recordings; the current pipeline reviews a centered one-minute excerpt of longer clips.
-- Review combines Deepgram word-timed transcription, local acoustic measurements, and Mistral Voxtral listening (`speechapp/`).
+- Short single-speaker English recordings. The review engine is not built; the Python prototype was removed on 2026-09-29.
 - Learning loop: lesson, record, review, retake.
 - Visual (body-language) review is researched (`docs/visual-review.md`) but its lessons are not yet in the repository.
 
 ## Capabilities and Constraints
 
-- The five **foundations**, always named "foundations": Rate of speech, Volume, Pitch & melody, Tonality, Pauses (`speechapp/rubric.py`). Lesson sources live in `videos/`.
+- The five **foundations**, always named "foundations": Rate of speech, Volume, Pitch & melody, Tonality, Pauses. Lesson sources live in `videos/`.
 - Each foundation receives a verdict: effective, mixed, needs work, or uncertain. Findings are strengths or improvements, marked clear or tentative.
 - Tonality describes perceived expression, never the speaker's actual emotion, personality, or confidence. Recorded level is not room loudness. No universal WPM, pause, or pitch thresholds.
-- Model feedback is not yet validated; the blinded pilot in `docs/evaluation/pilot.md` has not been run.
-- Recordings are not stored by the current prototype.
+- Feedback accuracy is not yet validated.
 - Undecided: the relationship with Vinh Giang and his course (licensed, partnered, or independent), pricing, accounts, and persistence of practice history.
 
 ## Brand Commitments
@@ -48,7 +46,7 @@ Feedback is grounded in one specific, taught method rather than generic delivery
 
 ## Evidence on Hand
 
-- Five voice lesson videos in `videos/` and principle timestamps in `speechapp/rubric.py`.
+- Five voice lesson videos in `videos/`.
 - Market research in `docs/` with sourced third-party figures (for example, Stage Academy reports 100,000+ graduates).
 - No testimonials, user counts, accuracy results, pilot ratings, or competitor comparisons exist for MicMane. Do not fabricate them.
 - Until the Vinh relationship is decided: no use of his likeness, no implied endorsement, and no "official" course claims.

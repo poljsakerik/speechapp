@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "archivo",
+        "createdAt": "2026-09-29T09:59:50.607Z",
+        "reason": "Claude: Google Fonts name for DESIGN.md's Archivo Variable (standalone tool can't use fontsource)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "martian mono",
+        "createdAt": "2026-09-29T09:59:50.636Z",
+        "reason": "Claude: Google Fonts name for DESIGN.md's Martian Mono Variable (standalone tool can't use fontsource)"
+      }
+    ]
+  }
+}
