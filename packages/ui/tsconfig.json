@@ -1,0 +1,6 @@
+{
+  "extends": "@micmane/typescript-config/react-library.json",
+  "include": [
+    "src"
+  ]
+}

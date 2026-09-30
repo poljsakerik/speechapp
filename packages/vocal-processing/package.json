@@ -1,0 +1,27 @@
+{
+  "name": "@micmane/vocal-processing",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./deepgram": "./src/deepgram.ts",
+    "./importance": "./src/importance.ts",
+    "./openai": "./src/openai.ts",
+    "./rate": "./src/rate.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src scripts",
+    "test": "node --test --experimental-strip-types src/*.test.ts",
+    "importance": "node --env-file-if-exists=../../.env scripts/importance.ts",
+    "eval:importance": "node --env-file-if-exists=../../.env scripts/eval-importance.ts",
+    "rate": "node --env-file-if-exists=../../.env scripts/rate.ts",
+    "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts"
+  },
+  "devDependencies": {
+    "@micmane/eslint-config": "workspace:*",
+    "@micmane/typescript-config": "workspace:*",
+    "@types/node": "^26.6.3",
+    "typescript": "^6.0.3"
+  }
+}

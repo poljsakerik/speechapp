@@ -1,1 +1,18 @@
 videos/
+.venv/
+.env
+__pycache__/
+.pytest_cache/
+*.pyc
+node_modules/
+apps/*/dist/
+.turbo/
+.vite/
+*.tsbuildinfo
+.impeccable/config.local.json
+.impeccable/questions/
+.impeccable/review/
+
+# Voice recordings (local only)
+*.zip
+recordings/

@@ -103,17 +103,9 @@ Rate values include pauses. Level values are the median of 40 ms RMS windows at 
 
 The courses are edited and demonstrations are not controlled experiments. In particular, the second pitch and pause clips contain another speaker, and the student rate examples have different content. The probe establishes that useful features can be extracted from these files. It does **not** establish reliable automated judgments of good delivery, correct emotional interpretation, causal benefits, or production latency.
 
-## 7. Reproduce and inspect
+## 7. Probe artifacts
 
-From the repository root:
-
-```sh
-python3 -m venv /tmp/speechapp-research-venv
-/tmp/speechapp-research-venv/bin/pip install -r requirements-research.txt
-/tmp/speechapp-research-venv/bin/python scripts/research_probe.py
-```
-
-The script reuses existing transcript JSON, or downloads and runs `small.en` locally when needed. It writes transcripts and the probe results under `videos/.research/`, which is ignored by the existing `videos/` rule. The versions used are pinned in `requirements-research.txt`; this is a research environment, not a production dependency lock.
+The probe script used for these results has been removed from the repository; the numbers above are a record of that run.
 
 Local artifacts generated during this review:
 
@@ -121,6 +113,6 @@ Local artifacts generated during this review:
 - `videos/.research/*-contact.jpg`: nine sampled visual frames per lesson.
 - `videos/.research/probe-results.json`: the numerical probe output and limitations.
 
-The reproducible script regenerates transcripts and metrics. The contact sheets were produced separately by extracting nine evenly spaced frames with FFmpeg and arranging them with Pillow. Full transcripts and course media are kept out of tracked documentation; the tracked notes contain lesson summaries and navigation references.
+The contact sheets were produced by extracting nine evenly spaced frames with FFmpeg and arranging them with Pillow. Full transcripts and course media are kept out of tracked documentation; the tracked notes contain lesson summaries and navigation references.
 
 Return to [MVP research and implementation plan](mvp-research.md).

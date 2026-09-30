@@ -1,0 +1,24 @@
+{
+  "name": "micmane",
+  "private": true,
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@micmane/webapp --filter=@micmane/backend --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "markup-tools": "pnpm --dir apps/markup-tools dev",
+    "rate": "pnpm --dir packages/vocal-processing rate",
+    "eval:rate": "pnpm --dir packages/vocal-processing eval:rate"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.5",
+    "typescript": "^6.0.3",
+    "eslint": "^10.11.0",
+    "prettier": "^3.6.2"
+  }
+}

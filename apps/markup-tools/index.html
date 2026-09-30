@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MicMane Golden Set</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Martian+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: oklch(0.985 0.003 80);
+    --surface: oklch(1 0 0);
+    --sunken: oklch(0.965 0.004 80);
+    --line: oklch(0.905 0.005 75);
+    --line-strong: oklch(0.8 0.006 70);
+    --ink: oklch(0.19 0.008 55);
+    --ink-2: oklch(0.4 0.01 60);
+    --ink-3: oklch(0.52 0.01 65);
+    --graphite: oklch(0.22 0.004 60);
+    --graphite-deep: oklch(0.17 0.003 60);
+    --graphite-line: oklch(0.33 0.004 60);
+    --on-graphite: oklch(0.97 0.002 80);
+    --on-graphite-muted: oklch(0.85 0.004 70);
+    --glass: oklch(0.7 0.175 48);
+    --glass-ink: oklch(0.5 0.15 42);
+    --destructive: oklch(0.55 0.19 32);
+    --f-rate: oklch(0.86 0.075 220);          --f-rate-ink: oklch(0.47 0.1 228);
+    --f-volume: oklch(0.83 0.085 295);        --f-volume-ink: oklch(0.47 0.14 295);
+    --f-pitch_melody: oklch(0.85 0.075 355);  --f-pitch_melody-ink: oklch(0.5 0.15 360);
+    --f-tonality: oklch(0.9 0.085 88);        --f-tonality-ink: oklch(0.5 0.1 72);
+    --f-pauses: oklch(0.88 0.075 160);        --f-pauses-ink: oklch(0.47 0.09 162);
+    --rule-fast-ink: oklch(0.55 0.15 50);
+    --sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, sans-serif;
+    --mono: "Martian Mono Variable", "Martian Mono", ui-monospace, monospace;
+    --cur: var(--f-rate);
+    --cur-ink: var(--f-rate-ink);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 400 0.9375rem/1.625 var(--sans);
+    display: grid; grid-template-rows: auto auto 1fr; overflow: hidden;
+  }
+  button, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .mono { font-family: var(--mono); font-feature-settings: "tnum"; font-size: 0.75rem; }
+  .label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+
+  /* Top bar */
+  header {
+    background: var(--graphite-deep); color: var(--on-graphite);
+    display: flex; align-items: center; gap: 20px; padding: 10px 20px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--graphite-line);
+  }
+  .brand { font-weight: 800; font-stretch: 125%; letter-spacing: -0.02em; font-size: 1.125rem; white-space: nowrap; }
+  .brand span { color: var(--glass); }
+  header select {
+    background: var(--graphite); border: 1px solid var(--graphite-line); color: var(--on-graphite);
+    border-radius: 6px; padding: 5px 8px; font-size: 0.8125rem;
+  }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--graphite-line); background: transparent; color: var(--on-graphite-muted);
+    border-radius: 999px; padding: 4px 12px 4px 8px; font-size: 0.8125rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .tab .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .tab .count { font-family: var(--mono); font-size: 0.6875rem; opacity: 0.7; }
+  .tab[aria-pressed="true"] { background: var(--on-graphite); color: var(--ink); border-color: var(--on-graphite); }
+  .save-state { margin-left: auto; font-size: 0.75rem; color: var(--on-graphite-muted); }
+
+  /* Transport */
+  .transport {
+    background: var(--graphite); color: var(--on-graphite);
+    display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 14px;
+    padding: 10px 20px;
+  }
+  .play {
+    width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--glass); color: var(--graphite-deep);
+    display: grid; place-items: center;
+  }
+  .play svg { width: 14px; height: 14px; }
+  .time { color: var(--on-graphite-muted); min-width: 132px; }
+  .track { position: relative; height: 28px; cursor: pointer; }
+  .track .rail { position: absolute; left: 0; right: 0; top: 12px; height: 4px; background: var(--graphite-line); border-radius: 2px; }
+  .track .fill { position: absolute; left: 0; top: 12px; height: 4px; background: var(--on-graphite-muted); border-radius: 2px; }
+  .track .seg { position: absolute; top: 4px; height: 20px; border-radius: 2px; opacity: 0.35; min-width: 2px; }
+  .track .seg.on { opacity: 0.95; }
+  .track .pseg { position: absolute; top: 25px; height: 3px; border-radius: 1px; min-width: 2px; }
+  .track .split-line { position: absolute; top: 0; width: 0; height: 28px; border-left: 1px dashed var(--on-graphite-muted); }
+  .track .head { position: absolute; top: 3px; width: 2px; height: 22px; background: var(--glass); }
+  .rates { display: flex; gap: 2px; }
+  .rates button { border: 0; background: transparent; color: var(--on-graphite-muted); padding: 3px 6px; border-radius: 4px; }
+  .rates button[aria-pressed="true"] { background: var(--graphite-line); color: var(--on-graphite); }
+  .toggles { display: flex; gap: 14px; }
+  .toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 0.75rem; color: var(--on-graphite-muted); cursor: pointer; }
+
+  /* Main */
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; min-height: 0; }
+  .transcript-wrap { overflow-y: auto; padding: 32px 40px 120px; }
+  .transcript {
+    max-width: 760px; margin: 0 auto; white-space: pre-wrap;
+    font-size: 1.1875rem; line-height: 1.9; color: var(--ink);
+  }
+  .transcript .w { border-radius: 3px; cursor: text; }
+  .transcript .w.other { text-decoration: underline 2px dotted; text-underline-offset: 5px; }
+  .transcript .w.cur { background: var(--cur); box-shadow: 0 0 0 2px var(--cur); }
+  .transcript .w.cur.first { border-radius: 3px 0 0 3px; }
+  .transcript .w.focus { background: var(--cur-ink); color: var(--surface); box-shadow: 0 0 0 2px var(--cur-ink); }
+  .transcript .w.now { box-shadow: inset 0 -3px 0 var(--glass); }
+  .transcript .w.cur.now { box-shadow: 0 0 0 2px var(--cur), inset 0 -3px 0 var(--glass); }
+  .transcript .w.pred { text-decoration: underline 3px solid var(--f-rate-ink); text-underline-offset: 7px; }
+  .transcript .w.pred.pfast { text-decoration-color: var(--rule-fast-ink); }
+  .transcript .w.pred.pmono { text-decoration: underline 2px dotted var(--ink-3); }
+  .transcript .w.pred.psug { text-decoration-style: dashed; text-decoration-thickness: 3px; }
+  .transcript .part { display: none; font: 600 0.6875rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .transcript.show-pred .part { display: block; padding: 6px 0; }
+  .transcript.show-pred .part.test { margin-top: 18px; border-top: 1px dashed var(--line-strong); padding-top: 14px; }
+  .transcript ::selection { background: var(--cur-ink); color: var(--surface); }
+  .loading { color: var(--ink-3); }
+
+  aside {
+    border-left: 1px solid var(--line); background: var(--surface);
+    display: grid; grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); min-height: 0;
+  }
+  aside section { padding: 16px 20px; border-bottom: 1px solid var(--line); min-height: 0; display: flex; flex-direction: column; }
+  aside h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 700; font-stretch: 125%; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  aside h2 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cur); box-shadow: 0 0 0 1px var(--cur-ink) inset; }
+  .rules { display: grid; }
+  .rule { padding: 8px 0; border-top: 1px solid var(--line); }
+  .rule:first-child { border-top: 0; padding-top: 0; }
+  .rule b { font-family: var(--mono); font-size: 0.6875rem; font-weight: 600; color: var(--cur-ink); }
+  .rule p { margin: 1px 0 0; font-size: 0.8125rem; line-height: 1.5; color: var(--ink-2); }
+  .hint { font-size: 0.75rem; color: var(--ink-3); margin: 10px 0 0; }
+
+  .marks { overflow-y: auto; margin: 0 -20px; padding: 0 20px; }
+  .mark {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; margin-bottom: 6px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper); cursor: pointer;
+  }
+  .mark:hover, .mark.hover { border-color: var(--cur-ink); }
+  .mark .meta { display: flex; gap: 8px; align-items: baseline; }
+  .mark .meta b { font-family: var(--mono); font-size: 0.6875rem; font-weight: 600; color: var(--cur-ink); }
+  .mark .quote { grid-column: 1 / -1; font-size: 0.8125rem; line-height: 1.45; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mark .del { border: 0; background: transparent; color: var(--ink-3); font-size: 1rem; line-height: 1; padding: 0 2px; }
+  .mark .del:hover { color: var(--destructive); }
+  .empty { font-size: 0.8125rem; color: var(--ink-3); }
+  .others { font-size: 0.75rem; color: var(--ink-3); margin-top: 4px; }
+  .marks h3 { margin: 16px 0 4px; font-size: 0.875rem; font-weight: 700; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.75rem; color: var(--ink-2); margin-bottom: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+  .legend i.u { height: 3px; vertical-align: 2px; }
+  .score { font-size: 0.6875rem; color: var(--ink-2); margin: 0 0 8px; line-height: 1.6; }
+  .mark.pred { background: var(--surface); }
+  .mark.pred.sug { margin-left: 16px; }
+  .pred-summary { font-size: 0.75rem; line-height: 1.5; color: var(--ink-2); margin: 0 0 8px; }
+  .mark .part-tag { font-family: var(--mono); font-size: 0.625rem; text-transform: uppercase; color: var(--ink-3); }
+  .mark .hit { font-size: 0.75rem; font-weight: 600; }
+  .mark .hit.yes { color: var(--f-pauses-ink); }
+  .mark .hit.no { color: var(--destructive); }
+
+  .json-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .json-head h2 { margin: 0; }
+  .seg-ctl { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-left: auto; }
+  .seg-ctl button { border: 0; background: transparent; padding: 3px 8px; font-size: 0.75rem; color: var(--ink-2); }
+  .seg-ctl button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .copy { border: 1px solid var(--ink); background: var(--ink); color: var(--surface); border-radius: 6px; padding: 3px 10px; font-size: 0.75rem; font-weight: 600; }
+  pre.json {
+    flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 10px 12px;
+    background: var(--sunken); border: 1px solid var(--line); border-radius: 8px;
+    font: 400 0.6875rem/1.55 var(--mono); color: var(--ink-2); white-space: pre;
+  }
+
+  /* Popover */
+  .pop {
+    position: fixed; z-index: 10; width: 340px; background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: 10px; box-shadow: 0 12px 32px -8px oklch(0.2 0.01 60 / 0.25); padding: 12px;
+  }
+  .pop[hidden] { display: none; }
+  .pop .sel { font-size: 0.8125rem; color: var(--ink-2); margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pop .range { color: var(--ink-3); margin-bottom: 10px; }
+  .pop .opts { display: grid; gap: 6px; }
+  .pop .opt {
+    display: grid; grid-template-columns: auto 1fr; gap: 0 10px; text-align: left; align-items: start;
+    border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 7px 10px;
+  }
+  .pop .opt:hover, .pop .opt:focus-visible { border-color: var(--cur-ink); background: color-mix(in oklch, var(--cur) 30%, var(--surface)); outline: none; }
+  .pop .opt kbd { grid-row: span 2; font-family: var(--mono); font-size: 0.6875rem; border: 1px solid var(--line-strong); border-radius: 4px; padding: 1px 6px; background: var(--surface); }
+  .pop .opt b { font-family: var(--mono); font-size: 0.6875rem; font-weight: 600; color: var(--cur-ink); }
+  .pop .opt span { font-size: 0.75rem; line-height: 1.4; color: var(--ink-2); }
+  .pop .opt.cut b { color: var(--destructive); }
+  .pop .opt.cut:hover, .pop .opt.cut:focus-visible { border-color: var(--destructive); background: color-mix(in oklch, var(--destructive) 8%, var(--surface)); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; grid-template-rows: auto auto auto; }
+    main { grid-template-columns: 1fr; }
+    .transcript-wrap { padding: 20px 16px 60px; overflow: visible; }
+    aside { border-left: 0; border-top: 1px solid var(--line); }
+    .transport { grid-template-columns: auto 1fr; padding: 10px 16px; }
+    .transport .track { grid-column: 1 / -1; grid-row: 2; }
+    header { padding: 10px 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">MicMane <span>/</span> golden set</div>
+  <select id="recording" aria-label="Recording"></select>
+  <div class="tabs" id="tabs" role="group" aria-label="Foundation"></div>
+  <div class="save-state" id="saveState"></div>
+</header>
+
+<div class="transport">
+  <button class="play" id="play" aria-label="Play"></button>
+  <div class="time mono" id="time">0:00.0 / 0:00</div>
+  <div class="track" id="track"><div class="rail"></div><div class="fill" id="fill"></div><div id="segs"></div><div class="head" id="head"></div></div>
+  <div class="rates" id="rates"></div>
+  <div class="toggles">
+    <label class="toggle" id="predToggle" hidden><input type="checkbox" id="showPred" checked> Pipeline</label>
+    <label class="toggle"><input type="checkbox" id="follow" checked> Follow</label>
+  </div>
+</div>
+
+<main>
+  <div class="transcript-wrap" id="wrap"><div class="transcript" id="transcript"><span class="loading">Loading…</span></div></div>
+  <aside>
+    <section>
+      <h2><span class="dot"></span><span id="fLabel"></span></h2>
+      <div class="rules" id="rules"></div>
+      <p class="hint">Select words in the transcript to mark a mistake, or select marked words to unmark them (<span class="mono">⌫</span>). Click a word to seek. <span class="mono">Space</span> play/pause · <span class="mono">←/→</span> 5 s.</p>
+    </section>
+    <section>
+      <h2>Marks <span class="mono" id="markCount" style="color:var(--ink-3);font-weight:400"></span></h2>
+      <div class="marks" id="marks"></div>
+    </section>
+    <section>
+      <div class="json-head">
+        <h2>JSON</h2>
+        <div class="seg-ctl"><button id="scopeOne" aria-pressed="true">Recording</button><button id="scopeAll" aria-pressed="false">All</button></div>
+        <button class="copy" id="copy">Copy</button>
+      </div>
+      <pre class="json" id="json"></pre>
+    </section>
+  </aside>
+</main>
+
+<div class="pop" id="pop" hidden>
+  <div class="sel" id="popSel"></div>
+  <div class="range mono" id="popRange"></div>
+  <div class="opts" id="popOpts"></div>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script>
+// Foundations and rules, from docs/video-review.md.
+const FOUNDATIONS = [
+  { key: "rate", label: "Rate of speech", rules: [
+    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down on this important phrase, or give it a pause or another emphasis cue." },
+    { id: "RATE_IMPORTANCE_SLOW", hint: "Speed up through this less important material." },
+    { id: "RATE_MONOTONE", hint: "Vary the pace across this passage: slower on key points, quicker through the rest." },
+  ]},
+  { key: "volume", label: "Volume", rules: [
+    { id: "VOLUME_LOW", hint: "Project more so this passage is as clear as the speech around it." },
+    { id: "VOLUME_FADE", hint: "Hold the volume through the end of the sentence; take a breath before it if needed." },
+  ]},
+  { key: "pitch_melody", label: "Pitch & melody", rules: [
+    { id: "PITCH_LOW", hint: "Raise your pitch on this phrase or key word so it lifts out of the speech around it." },
+    { id: "PITCH_HIGH", hint: "Bring your pitch down here; end statements on a falling note instead of rising." },
+  ]},
+  { key: "tonality", label: "Tonality", rules: [
+    { id: "TONE_FLAT", hint: "Bring expression that fits what the passage means, e.g. a warmer delivery." },
+  ]},
+  { key: "pauses", label: "Pauses", rules: [
+    { id: "PAUSE_NECESSARY", hint: "Add a short pause after this key point or complex idea before the next thought." },
+    { id: "PAUSE_UNNECESSARY", hint: "Drop this pause and keep the thought flowing." },
+    { id: "PAUSE_FILLERS", hint: "Replace the filler words with a short silent pause." },
+  ]},
+];
+const byKey = Object.fromEntries(FOUNDATIONS.map(f => [f.key, f]));
+
+const $ = id => document.getElementById(id);
+const audio = $("audio");
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+let recordingId = null;
+let foundation = byKey[store.get("golden.foundation")] ? store.get("golden.foundation") : "rate";
+let text = "";
+let words = [];      // { s, e, t0, t1, el }
+let marks = [];
+let allGolden = {};
+let scope = "one";
+let pending = null;  // selection awaiting a rule
+let stopAt = null;
+let nowIdx = -1;
+let pred = null;     // pipeline rate marks and train/test split, from <id>.rate.pred.json
+const RULE_FAST = "RATE_IMPORTANCE_FAST", RULE_MONO = "RATE_MONOTONE";
+const predColor = m => m.rule === RULE_FAST ? "var(--rule-fast-ink)" : m.rule === RULE_MONO ? "var(--ink-3)" : "var(--f-rate-ink)";
+const predClasses = m => ["pred", ...(m.rule === RULE_FAST ? ["pfast"] : []), ...(m.rule === RULE_MONO ? ["pmono"] : []), ...(m.suggestion ? ["psug"] : [])];
+const showingPred = () => !!pred && foundation === "rate" && $("showPred").checked;
+
+const fmt = (t, d = 1) => {
+  t = Math.max(0, t || 0);
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return `${m}:${s.toFixed(d).padStart(d ? 3 + d : 2, "0")}`;
+};
+const round = t => Math.round(t * 100) / 100;
+
+// ---------- Setup ----------
+const PLAY = '<svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg>';
+const PAUSE = '<svg viewBox="0 0 14 14"><path d="M3 1.5h3v11H3zM8 1.5h3v11H8z" fill="currentColor"/></svg>';
+$("play").innerHTML = PLAY;
+
+function renderTabs() {
+  $("tabs").innerHTML = "";
+  for (const f of FOUNDATIONS) {
+    const b = document.createElement("button");
+    b.className = "tab";
+    b.setAttribute("aria-pressed", f.key === foundation);
+    const n = marks.filter(m => m.foundationType === f.key).length;
+    b.innerHTML = `<span class="dot" style="background:var(--f-${f.key})"></span>${f.label}<span class="count">${n || ""}</span>`;
+    b.onclick = () => setFoundation(f.key);
+    $("tabs").append(b);
+  }
+}
+
+function setFoundation(key) {
+  foundation = key;
+  store.set("golden.foundation", key);
+  document.documentElement.style.setProperty("--cur", `var(--f-${key})`);
+  document.documentElement.style.setProperty("--cur-ink", `var(--f-${key}-ink)`);
+  $("fLabel").textContent = byKey[key].label;
+  $("rules").innerHTML = byKey[key].rules.map(r => `<div class="rule"><b>${r.id}</b><p>${r.hint}</p></div>`).join("");
+  closePop();
+  renderAll();
+}
+
+const RATES = [0.75, 1, 1.25, 1.5, 2];
+for (const r of RATES) {
+  const b = document.createElement("button");
+  b.className = "mono"; b.textContent = `${r}×`;
+  b.setAttribute("aria-pressed", r === 1);
+  b.onclick = () => {
+    audio.playbackRate = r;
+    for (const x of $("rates").children) x.setAttribute("aria-pressed", x === b);
+  };
+  $("rates").append(b);
+}
+
+// ---------- Loading ----------
+async function init() {
+  const ids = await (await fetch("/api/recordings")).json();
+  allGolden = await (await fetch("/api/golden")).json();
+  $("recording").innerHTML = ids.map(id => `<option value="${id}">${id}</option>`).join("");
+  const saved = store.get("golden.recording");
+  $("recording").value = ids.includes(saved) ? saved : ids[0];
+  $("recording").onchange = () => load($("recording").value);
+  setFoundation(foundation);
+  await load($("recording").value);
+}
+
+async function load(id) {
+  recordingId = id;
+  store.set("golden.recording", id);
+  closePop();
+  audio.pause(); stopAt = null;
+  $("transcript").innerHTML = '<span class="loading">Loading…</span>';
+  const base = `/recordings/${id}/${id}`;
+  const [txt, dg, pr] = await Promise.all([
+    fetch(`${base}.txt`).then(r => r.text()),
+    fetch(`${base}.json`).then(r => r.json()),
+    fetch(`${base}.rate.pred.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  if (recordingId !== id) return;
+  text = txt;
+  pred = pr;
+  $("predToggle").hidden = !pred;
+  audio.src = `${base}.m4a`;
+  marks = (allGolden[id] || []).slice();
+
+  // Locate each Deepgram word in the raw transcript to get its character span.
+  words = [];
+  let cursor = 0;
+  for (const w of dg.results.channels[0].alternatives[0].words) {
+    const token = w.punctuated_word || w.word;
+    const at = text.indexOf(token, cursor);
+    if (at < 0 || at - cursor > 40) continue;
+    words.push({ s: at, e: at + token.length, t0: w.start, t1: w.end });
+    cursor = at + token.length;
+  }
+
+  const frag = document.createDocumentFragment();
+  const part = (cls, label) => {
+    const el = document.createElement("span");
+    el.className = `part ${cls}`; el.textContent = label;
+    return el;
+  };
+  if (pred) frag.append(part("train", `Train · before ${fmt(pred.split, 0)}`));
+  let pos = 0, splitShown = !pred;
+  words.forEach((w, i) => {
+    if (!splitShown && w.t0 >= pred.split) {
+      frag.append(text.slice(pos, w.s).replace(/^\s+/, ""), part("test", `Test · from ${fmt(pred.split, 0)}`));
+      pos = w.s; splitShown = true;
+    }
+    if (w.s > pos) frag.append(text.slice(pos, w.s));
+    const span = document.createElement("span");
+    span.className = "w"; span.dataset.i = i;
+    span.textContent = text.slice(w.s, w.e);
+    w.el = span; frag.append(span);
+    pos = w.e;
+  });
+  if (pos < text.length) frag.append(text.slice(pos));
+  $("transcript").replaceChildren(frag);
+  $("wrap").scrollTop = 0;
+  nowIdx = -1;
+  $("saveState").textContent = marks.length ? `${marks.length} marks loaded` : "";
+  renderAll();
+}
+
+// ---------- Rendering ----------
+function renderAll() {
+  renderTabs();
+  renderText();
+  renderMarks();
+  renderTrack();
+  renderJson();
+}
+
+function renderText() {
+  for (const w of words) { w.el.className = "w"; w.el.style.textDecorationColor = ""; }
+  $("transcript").classList.toggle("show-pred", showingPred());
+  for (const m of marks) {
+    const cur = m.foundationType === foundation;
+    if (showingPred()) break; // only the pipeline's marks are shown
+    let first = true;
+    for (const w of words) {
+      if (w.s >= m.startIndex && w.e <= m.endIndex) {
+        w.el.classList.add(cur ? "cur" : "other");
+        if (!cur) w.el.style.textDecorationColor = `var(--f-${m.foundationType}-ink)`;
+        if (cur && first) w.el.classList.add("first");
+        first = false;
+      }
+    }
+  }
+  if (showingPred()) {
+    // Monotone stretches first, so the suggestions inside them draw over their underline.
+    for (const m of [...pred.marks].sort((a, b) => (b.rule === RULE_MONO) - (a.rule === RULE_MONO))) {
+      for (const w of words) {
+        if (w.s < m.startIndex || w.e > m.endIndex) continue;
+        if (m.rule !== RULE_MONO) w.el.classList.remove("pmono");
+        w.el.classList.add(...predClasses(m));
+      }
+    }
+  }
+  if (nowIdx >= 0 && words[nowIdx]) words[nowIdx].el.classList.add("now");
+}
+
+function sortedMarks(list = marks) {
+  return list.slice().sort((a, b) => a.startAt - b.startAt || a.startIndex - b.startIndex);
+}
+// The exported shape of one mark, in a fixed key order.
+const clean = list => sortedMarks(list).map(({ startAt, endAt, startIndex, endIndex, foundationType, rule }) =>
+  ({ startAt, endAt, startIndex, endIndex, foundationType, rule }));
+
+function renderMarks() {
+  const mine = showingPred() ? [] : sortedMarks().filter(m => m.foundationType === foundation);
+  $("markCount").textContent = mine.length || "";
+  const list = $("marks");
+  list.innerHTML = "";
+  if (!mine.length && !showingPred()) list.innerHTML = `<p class="empty">No ${byKey[foundation].label.toLowerCase()} marks in this recording yet.</p>`;
+  for (const m of mine) {
+    const el = document.createElement("div");
+    el.className = "mark";
+    el.innerHTML = `<div class="meta"><b>${m.rule}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
+      <button class="del" title="Delete mark" aria-label="Delete mark">×</button>
+      <div class="quote"></div>`;
+    el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
+    el.querySelector(".del").onclick = e => { e.stopPropagation(); marks.splice(marks.indexOf(m), 1); changed(); };
+    el.onclick = () => playRange(m.startAt, m.endAt);
+    el.onmouseenter = () => focusMark(m, true);
+    el.onmouseleave = () => focusMark(m, false);
+    list.append(el);
+  }
+  const other = marks.length - mine.length;
+  if (other && !showingPred()) list.insertAdjacentHTML("beforeend", `<p class="others">${other} mark${other > 1 ? "s" : ""} in other foundations (dotted underline).</p>`);
+  if (showingPred()) renderPred(list);
+}
+
+// Pipeline marks, colored by rule: rushed point, dragging, monotone stretch (dotted) and its suggestions (dashed).
+function renderPred(list) {
+  const c = pred.config, esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+  const pace = pred.speakerPace ? `pace ×${(pred.speakerPace / c.referencePace).toFixed(2)} of the ${c.referencePace} s/syllable reference` : "";
+  const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)} (monotone below ${c.monotoneBelow})` : "";
+  list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
+    ${pred.message ? `<p class="pred-summary"><b>Message:</b> ${esc(pred.message.message)}</p>` : ""}
+    <p class="pred-summary">${[pace, variation].filter(Boolean).join(" · ")}</p>
+    <div class="legend">
+      <span><i class="u" style="background:var(--rule-fast-ink)"></i>point rushed</span><span><i class="u" style="background:var(--f-rate-ink)"></i>dragging</span>
+      <span><i class="u" style="background:var(--ink-3)"></i>monotone (dotted); suggestions dashed</span>
+    </div>`);
+  const order = [...pred.marks].sort((a, b) => a.startAt - b.startAt || (a.suggestion ? 1 : 0) - (b.suggestion ? 1 : 0));
+  for (const m of order) {
+    const el = document.createElement("div");
+    el.className = `mark pred${m.suggestion ? " sug" : ""}`;
+    const label = m.suggestion ? (m.rule === RULE_FAST ? "↳ slow down here" : "↳ speed up here")
+      : m.rule === RULE_MONO ? `Monotone · ${Math.round(m.endAt - m.startAt)} s` : m.rule === RULE_FAST ? "Point rushed" : "Dragging";
+    const hit = m.rule === RULE_MONO ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
+    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
+      <span><span class="part-tag">${m.part}</span> ${hit}</span>
+      <div class="quote"></div>`;
+    el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
+    el.onclick = () => playRange(m.startAt, m.endAt);
+    el.onmouseenter = () => focusMark(m, true);
+    el.onmouseleave = () => focusMark(m, false);
+    list.append(el);
+  }
+}
+
+function focusMark(m, on) {
+  for (const w of words) if (w.s >= m.startIndex && w.e <= m.endIndex) w.el.classList.toggle("focus", on);
+  if (on) {
+    const w = words.find(w => w.s >= m.startIndex);
+    if (w) w.el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+}
+
+function renderTrack() {
+  const d = audio.duration || words.at(-1)?.t1 || 1;
+  $("segs").innerHTML = marks.map(m =>
+    `<div class="seg ${m.foundationType === foundation ? "on" : ""}" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:var(--f-${m.foundationType}${m.foundationType === foundation ? "" : "-ink"})"></div>`
+  ).filter(() => !showingPred()).join("") + (showingPred() ? pred.marks.map(m =>
+    `<div class="pseg" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:${predColor(m)}"></div>`
+  ).join("") + `<div class="split-line" style="left:${pred.split / d * 100}%" title="Train | test split"></div>` : "");
+}
+
+function currentJson() {
+  if (scope === "one") return JSON.stringify(clean(marks), null, 2);
+  const all = { ...allGolden, [recordingId]: marks };
+  const out = {};
+  for (const id of Object.keys(all).sort()) if (all[id].length) out[id] = clean(all[id]);
+  return JSON.stringify(out, null, 2);
+}
+
+function renderJson() { $("json").textContent = currentJson(); }
+
+// ---------- Saving ----------
+let saveTimer;
+function changed() {
+  allGolden[recordingId] = marks;
+  renderAll();
+  $("saveState").textContent = "Saving…";
+  clearTimeout(saveTimer);
+  const id = recordingId, body = JSON.stringify(clean(marks));
+  saveTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`/api/golden/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body });
+      if (!r.ok) throw new Error(r.status);
+      $("saveState").textContent = `Saved to recordings/${id}/${id}.golden.json`;
+    } catch (e) {
+      $("saveState").textContent = `Save failed (${e.message}) — copy the JSON`;
+    }
+  }, 300);
+}
+
+// ---------- Selection → mark ----------
+$("transcript").addEventListener("mouseup", () => setTimeout(onSelect, 0));
+$("transcript").addEventListener("keyup", e => { if (e.shiftKey) onSelect(); });
+
+function onSelect() {
+  const sel = getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  if (!$("transcript").contains(range.commonAncestorContainer)) return;
+  if (sel.isCollapsed) return;
+  const hit = words.filter(w => range.intersectsNode(w.el) && !(w.el === range.endContainer.parentElement && range.endOffset === 0 && w.el !== range.startContainer.parentElement));
+  if (!hit.length) return;
+  const a = hit[0], b = hit.at(-1);
+  pending = { startIndex: a.s, endIndex: b.e, startAt: round(a.t0), endAt: round(b.t1) };
+  openPop(range.getBoundingClientRect());
+}
+
+// Plain click on a word seeks to it.
+$("transcript").addEventListener("click", e => {
+  if (!getSelection().isCollapsed) return;
+  const i = e.target.dataset?.i;
+  if (i == null) return;
+  stopAt = null;
+  audio.currentTime = words[+i].t0;
+});
+
+function openPop(rect) {
+  const f = byKey[foundation];
+  $("popSel").textContent = `“${text.slice(pending.startIndex, pending.endIndex)}”`;
+  $("popRange").textContent = `${fmt(pending.startAt, 2)} → ${fmt(pending.endAt, 2)} · chars ${pending.startIndex}–${pending.endIndex}`;
+  $("popOpts").innerHTML = "";
+  const hit = overlapping();
+  if (hit.length) {
+    const b = document.createElement("button");
+    b.className = "opt cut";
+    const rules = [...new Set(hit.map(m => m.rule))].join(", ");
+    b.innerHTML = `<kbd>⌫</kbd><b>Remove from ${hit.length} mark${hit.length > 1 ? "s" : ""}</b><span>Unmark these words in ${rules}; the rest of each mark stays.</span>`;
+    b.onclick = cutMarks;
+    $("popOpts").append(b);
+  }
+  f.rules.forEach((r, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = `<kbd>${i + 1}</kbd><b>${r.id}</b><span>${r.hint}</span>`;
+    b.onclick = () => addMark(r.id);
+    $("popOpts").append(b);
+  });
+  const pop = $("pop");
+  pop.hidden = false;
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let x = Math.min(Math.max(8, rect.left), innerWidth - w - 8);
+  let y = rect.bottom + 8;
+  if (y + h > innerHeight - 8) y = Math.max(8, rect.top - h - 8);
+  pop.style.left = `${x}px`; pop.style.top = `${y}px`;
+}
+
+function closePop() { $("pop").hidden = true; pending = null; }
+
+function addMark(rule) {
+  if (!pending) return;
+  marks.push({ ...pending, foundationType: foundation, rule });
+  closePop();
+  getSelection().removeAllRanges();
+  changed();
+}
+
+// Marks in the current foundation that share words with the pending selection.
+function overlapping() {
+  return marks.filter(m => m.foundationType === foundation && m.startIndex < pending.endIndex && pending.startIndex < m.endIndex);
+}
+
+// Cut the selected words out of overlapping marks: trim an edge, split the middle, or drop the mark if nothing is left.
+function cutMarks() {
+  if (!pending) return;
+  for (const m of overlapping()) {
+    const inside = words.filter(w => w.s >= m.startIndex && w.e <= m.endIndex);
+    const left = inside.filter(w => w.e <= pending.startIndex), right = inside.filter(w => w.s >= pending.endIndex);
+    const pieces = [];
+    if (left.length) pieces.push({ ...m, endIndex: left.at(-1).e, endAt: round(left.at(-1).t1) });
+    if (right.length) pieces.push({ ...m, startIndex: right[0].s, startAt: round(right[0].t0) });
+    marks.splice(marks.indexOf(m), 1, ...pieces);
+  }
+  closePop();
+  getSelection().removeAllRanges();
+  changed();
+}
+
+document.addEventListener("mousedown", e => { if (!$("pop").contains(e.target)) closePop(); });
+
+// ---------- Playback ----------
+function playRange(t0, t1) {
+  audio.currentTime = Math.max(0, t0 - 0.3);
+  stopAt = t1 + 0.3;
+  audio.play();
+}
+
+$("play").onclick = () => audio.paused ? (stopAt = null, audio.play()) : audio.pause();
+audio.onplay = () => { $("play").innerHTML = PAUSE; $("play").setAttribute("aria-label", "Pause"); tick(); };
+audio.onpause = () => { $("play").innerHTML = PLAY; $("play").setAttribute("aria-label", "Play"); };
+audio.onloadedmetadata = () => { renderTrack(); updateClock(); };
+audio.onseeked = updateClock;
+
+function tick() {
+  updateClock();
+  if (stopAt != null && audio.currentTime >= stopAt) { audio.pause(); stopAt = null; }
+  if (!audio.paused) requestAnimationFrame(tick);
+}
+
+function updateClock() {
+  const t = audio.currentTime, d = audio.duration || 0;
+  $("time").textContent = `${fmt(t)} / ${fmt(d, 0)}`;
+  const p = d ? t / d * 100 : 0;
+  $("fill").style.width = `${p}%`;
+  $("head").style.left = `${p}%`;
+  // Binary search the word being spoken.
+  let lo = 0, hi = words.length - 1, idx = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (words[mid].t0 <= t) { idx = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  if (idx >= 0 && t > words[idx].t1 + 0.6) idx = -1;
+  if (idx !== nowIdx) {
+    if (nowIdx >= 0 && words[nowIdx]) words[nowIdx].el.classList.remove("now");
+    nowIdx = idx;
+    if (idx >= 0) {
+      words[idx].el.classList.add("now");
+      if ($("follow").checked && !audio.paused) {
+        const r = words[idx].el.getBoundingClientRect(), box = $("wrap").getBoundingClientRect();
+        if (r.top < box.top + 40 || r.bottom > box.bottom - 80) words[idx].el.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    }
+  }
+}
+
+$("track").addEventListener("click", e => {
+  const r = $("track").getBoundingClientRect();
+  stopAt = null;
+  audio.currentTime = (e.clientX - r.left) / r.width * (audio.duration || 0);
+});
+
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input, select, textarea")) return;
+  if (!$("pop").hidden) {
+    const rule = byKey[foundation].rules[+e.key - 1];
+    if (rule) { e.preventDefault(); return addMark(rule.id); }
+    if (e.key === "Escape") return closePop();
+    if ((e.key === "Backspace" || e.key === "Delete") && overlapping().length) { e.preventDefault(); return cutMarks(); }
+  }
+  if (e.key === " ") { e.preventDefault(); $("play").click(); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); audio.currentTime -= 5; }
+  else if (e.key === "ArrowRight") { e.preventDefault(); audio.currentTime += 5; }
+});
+
+$("showPred").onchange = () => renderAll();
+
+// ---------- JSON panel ----------
+$("scopeOne").onclick = () => { scope = "one"; $("scopeOne").setAttribute("aria-pressed", true); $("scopeAll").setAttribute("aria-pressed", false); renderJson(); };
+$("scopeAll").onclick = () => { scope = "all"; $("scopeAll").setAttribute("aria-pressed", true); $("scopeOne").setAttribute("aria-pressed", false); renderJson(); };
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(currentJson()); $("copy").textContent = "Copied"; }
+  catch { getSelection().selectAllChildren($("json")); $("copy").textContent = "Press ⌘C"; }
+  setTimeout(() => $("copy").textContent = "Copy", 1400);
+};
+
+init();
+</script>
+</body>
+</html>
