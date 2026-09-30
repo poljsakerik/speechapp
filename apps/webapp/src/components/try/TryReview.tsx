@@ -130,7 +130,7 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
       const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("mpeg") ? "mp3" : blob.type.includes("wav") ? "wav" : "webm"
       const result = await requestReview(blob, label.includes(".") ? label : `take.${ext}`)
       setState({ name: "done", result })
-      toast.success("Your review is ready", { description: `${result.review.findings.length} rate notes.` })
+      toast.success("Your review is ready", { description: `${result.review.findings.length} coaching notes.` })
     } catch (error) {
       const message = error instanceof ReviewError ? error.message : "The review couldn't be completed. Send the take again."
       setState({ name: "error", message, blob, label })
@@ -323,7 +323,7 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
                 The coach transcribes your take and checks how your pace supports the message. This can take a minute.
               </p>
               <ul className="mt-6 grid max-w-md gap-2.5 lg:hidden">
-                {FOUNDATIONS.filter((f) => f.key === "rate").map((f, i) => {
+                {FOUNDATIONS.filter((f) => f.key === "rate" || f.key === "pauses").map((f, i) => {
                   const lit = reviewingFor > 1.2 + i * 2.4
                   return (
                     <li key={f.key} className="flex items-center gap-3 text-sm">
@@ -362,11 +362,11 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
 
         </div>
 
-        {/* The live review currently evaluates rate of speech. */}
+        {/* The live review evaluates rate of speech and pauses. */}
         <div className="hidden self-stretch rounded-lg bg-graphite-deep p-6 lg:block">
           <p className="text-[0.75rem] font-semibold text-[oklch(0.8_0.004_70)]">Listening for</p>
           <ul className="mt-4 grid gap-1">
-            {FOUNDATIONS.filter((f) => f.key === "rate").map((f, i) => {
+            {FOUNDATIONS.filter((f) => f.key === "rate" || f.key === "pauses").map((f, i) => {
               const lit = state.name === "reviewing" && reviewingFor > 1.2 + i * 2.4
               return (
                 <li key={f.key} className="flex items-center gap-3 py-2 text-sm">

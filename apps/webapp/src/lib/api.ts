@@ -41,15 +41,15 @@ export async function requestReview(file: Blob, name: string): Promise<ReviewRes
       : "failed"
     throw new ReviewError(MESSAGES[kind], kind)
   }
-  const data = (await response.json()) as { audio: string; audioType: string; segments: Segment[]; review: unknown }
+  const data = (await response.json()) as { audio: string; audioType: string; segments: Segment[]; pauses?: Take["pauses"]; review: unknown }
   const bytes = Uint8Array.from(atob(data.audio), (c) => c.charCodeAt(0))
   const audio = new Blob([bytes], { type: data.audioType })
-  const take = await measureTake(audio, data.segments)
+  const take = await measureTake(audio, data.segments, 480, data.pauses)
   return { take, review: normalizeReview(data.review, take.segments), audioUrl: URL.createObjectURL(audio) }
 }
 
 /** Draw the reviewed excerpt: waveform and recorded level from the audio, pauses from word timings. */
-export async function measureTake(audio: Blob, segments: Segment[], bins = 480): Promise<Take> {
+export async function measureTake(audio: Blob, segments: Segment[], bins = 480, measuredPauses?: Take["pauses"]): Promise<Take> {
   const context = new AudioContext()
   try {
     const buffer = await context.decodeAudioData(await audio.arrayBuffer())
@@ -79,7 +79,8 @@ export async function measureTake(audio: Blob, segments: Segment[], bins = 480):
       duration: buffer.duration,
       peaks: peaks.map((p) => p / maxPeak),
       volume: volume.map((v) => v / maxVol),
-      pauses,
+      pauses: measuredPauses?.filter((p) => Number.isFinite(p.start) && Number.isFinite(p.end)
+        && p.start >= 0 && p.end > p.start && p.end <= buffer.duration) ?? pauses,
       segments,
     }
   } finally {

@@ -1,6 +1,7 @@
 {
   "extends": "@micmane/typescript-config/node.json",
   "include": [
-    "vite.config.ts"
+    "vite.config.ts",
+    "tests"
   ]
 }

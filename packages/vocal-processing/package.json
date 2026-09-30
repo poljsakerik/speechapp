@@ -7,7 +7,10 @@
     "./deepgram": "./src/deepgram.ts",
     "./importance": "./src/importance.ts",
     "./openai": "./src/openai.ts",
-    "./rate": "./src/rate.ts"
+    "./rate": "./src/rate.ts",
+    "./pauses": "./src/pauses.ts",
+    "./timing": "./src/timing.ts",
+    "./analysis": "./src/analysis.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -16,7 +19,9 @@
     "importance": "node --env-file-if-exists=../../.env scripts/importance.ts",
     "eval:importance": "node --env-file-if-exists=../../.env scripts/eval-importance.ts",
     "rate": "node --env-file-if-exists=../../.env scripts/rate.ts",
-    "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts"
+    "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts",
+    "eval:pauses": "node --env-file-if-exists=../../.env scripts/eval-pauses.ts",
+    "analyze": "node --env-file-if-exists=../../.env scripts/analyze.ts"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",
