@@ -1,10 +1,9 @@
+import { Link } from "@tanstack/react-router"
 import { useMemo } from "react"
 import { ArrowDownIcon } from "lucide-react"
 
 import { Editor, LANE_H, LaneSignal, Pin } from "@/components/editor/Editor"
 import { SiteFooter } from "@/components/site/SiteFooter"
-import { SiteNav } from "@/components/site/SiteNav"
-import { TryReview } from "@/components/try/TryReview"
 import { Badge } from "@micmane/ui/components/badge"
 import { Button } from "@micmane/ui/components/button"
 import sampleTake from "@/data/sample-take.json"
@@ -18,7 +17,6 @@ const pct = (t: number) => `${(t / TAKE.duration) * 100}%`
 export function Landing() {
   return (
     <>
-      <SiteNav />
       <main>
         <Hero />
         <Foundations />
@@ -44,7 +42,7 @@ function Hero() {
             notes to the moments where a pace change may help your point land.
           </p>
           <Button asChild size="lg" className="mt-6 sm:hidden">
-            <a href="#try">Try a free review</a>
+            <Link to="/upload">Try a free review</Link>
           </Button>
         </div>
       </div>
@@ -58,7 +56,7 @@ function Hero() {
           badge={<Badge variant="sample">Sample · synthetic voice</Badge>}
           action={
             <Button asChild size="sm">
-              <a href="#try">Try a free review</a>
+              <Link to="/upload">Try a free review</Link>
             </Button>
           }
         />
@@ -274,7 +272,9 @@ function Try() {
           </p>
         </SectionHeading>
         <div className="mt-12">
-          <TryReview />
+          <Button asChild size="lg">
+            <Link to="/upload">Upload your recording</Link>
+          </Button>
         </div>
       </div>
     </section>

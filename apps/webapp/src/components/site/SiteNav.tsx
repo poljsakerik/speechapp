@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link } from "@tanstack/react-router"
 import { MenuIcon } from "lucide-react"
 
 import { Wordmark } from "@/components/brand/Mark"
 import { Button } from "@micmane/ui/components/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@micmane/ui/components/sheet"
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@micmane/ui/components/sheet"
 import { cn } from "@micmane/ui/lib/utils"
 
 const LINKS = [
-  { href: "/#foundations", label: "Foundations" },
-  { href: "/#retake", label: "The retake" },
-  { href: "/#promises", label: "Promises" },
+  { hash: "foundations", label: "Foundations" },
+  { hash: "retake", label: "The retake" },
+  { hash: "promises", label: "Promises" },
 ]
 
 export function SiteNav() {
@@ -37,16 +37,16 @@ export function SiteNav() {
         </Link>
         <ul className="hidden items-center gap-6 text-[0.8125rem] font-medium text-ink-2 md:flex">
           {LINKS.map((l) => (
-            <li key={l.href}>
-              <a href={l.href} className="transition-colors hover:text-ink">
+            <li key={l.hash}>
+              <Link to="/" hash={l.hash} className="transition-colors hover:text-ink">
                 {l.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
         <div className="ml-auto flex items-center gap-2">
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <a href="/#try">Try a free review</a>
+            <Link to="/upload">Try a free review</Link>
           </Button>
           <Sheet>
             <SheetTrigger asChild>
@@ -60,18 +60,27 @@ export function SiteNav() {
                 <SheetDescription>Hear yourself the way they hear you.</SheetDescription>
               </SheetHeader>
               <ul className="grid gap-1 px-4 text-base font-medium">
-                {[...LINKS, { href: "/components", label: "Components" }].map((l) => (
-                  <li key={l.href}>
-                    <a href={l.href} className="block py-3">
-                      {l.label}
-                    </a>
+                {LINKS.map((l) => (
+                  <li key={l.hash}>
+                    <SheetClose asChild>
+                      <Link to="/" hash={l.hash} className="block py-3">
+                        {l.label}
+                      </Link>
+                    </SheetClose>
                   </li>
                 ))}
+                <li>
+                  <SheetClose asChild>
+                    <Link to="/components" className="block py-3">Components</Link>
+                  </SheetClose>
+                </li>
               </ul>
               <div className="p-4">
-                <Button asChild className="w-full" size="lg">
-                  <a href="/#try">Try a free review</a>
-                </Button>
+                <SheetClose asChild>
+                  <Button asChild className="w-full" size="lg">
+                    <Link to="/upload">Try a free review</Link>
+                  </Button>
+                </SheetClose>
               </div>
             </SheetContent>
           </Sheet>

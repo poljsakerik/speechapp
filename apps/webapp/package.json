@@ -11,23 +11,24 @@
     "lint": "eslint src vite.config.ts"
   },
   "dependencies": {
+    "@micmane/ui": "workspace:*",
+    "@tanstack/react-router": "^1.170.40",
     "lucide-react": "^1.48.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.4",
-    "sonner": "^2.0.8",
-    "@micmane/ui": "workspace:*"
+    "sonner": "^2.0.8"
   },
   "devDependencies": {
+    "@micmane/eslint-config": "workspace:*",
+    "@micmane/typescript-config": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/router-plugin": "^1.168.41",
     "@types/node": "^24.19.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "vite": "^8.3.1",
-    "@micmane/eslint-config": "workspace:*",
-    "@micmane/typescript-config": "workspace:*",
-    "@tailwindcss/vite": "^4.3.3",
-    "tailwindcss": "^4.3.3"
+    "vite": "^8.3.1"
   }
 }

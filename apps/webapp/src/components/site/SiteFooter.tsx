@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link } from "@tanstack/react-router"
 
 import { Wordmark } from "@/components/brand/Mark"
 
@@ -11,8 +11,8 @@ export function SiteFooter() {
           <p className="mt-3 max-w-[44ch] text-sm text-ink-2">Vocal systems for people who want to be heard.</p>
         </div>
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-2">
-          <li><a className="hover:text-ink" href="/#foundations">Foundations</a></li>
-          <li><a className="hover:text-ink" href="/#try">Try a free review</a></li>
+          <li><Link className="hover:text-ink" to="/" hash="foundations">Foundations</Link></li>
+          <li><Link className="hover:text-ink" to="/upload">Try a free review</Link></li>
           <li><Link className="hover:text-ink" to="/components">Components</Link></li>
         </ul>
         <div className="pt-6 text-[0.75rem] leading-relaxed text-ink-3 md:col-span-2">
