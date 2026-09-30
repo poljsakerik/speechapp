@@ -6,7 +6,7 @@ Speech coaching for the five foundations taught in `videos/`: rate, volume, pitc
 
 This is a pnpm and Turborepo workspace modeled on the layout of `../leksoro`:
 
-- `apps/webapp` — React, Vite, and the sample take/editor.
+- `apps/webapp` — React, Vite, TanStack Router, and the sample take/editor.
 - `apps/backend` — Fastify `/api/review` and `/api/health`.
 - `apps/markup-tools` — local golden-set annotator.
 - `packages/ui` — reusable components, `cn`, and the single shared Tailwind stylesheet used by the web app.
@@ -25,6 +25,8 @@ pnpm test
 ```
 
 The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, labeled with OpenAI, and analyzed by the rate package. The backend returns the original audio, timed segments, and rate findings to the editor. Other foundations are marked uncertain.
+
+Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
 Run the annotator separately with `pnpm markup-tools` at `http://localhost:8765`. It reads and writes local files in `recordings/`.
 

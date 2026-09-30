@@ -1,2 +1,2 @@
 import config from "@micmane/eslint-config/react"
-export default config
+export default [...config, { ignores: ["src/routeTree.gen.ts"] }]

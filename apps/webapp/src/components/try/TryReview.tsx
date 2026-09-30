@@ -25,7 +25,7 @@ type State =
   | { name: "done"; result: ReviewResult }
   | { name: "error"; message: string; blob?: Blob; label?: string }
 
-export function TryReview() {
+export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
   const [state, setState] = useState<State>({ name: "idle" })
   const [now, setNow] = useState(() => performance.now())
   const [levels, setLevels] = useState<number[]>(() => Array(28).fill(0))
@@ -36,6 +36,14 @@ export function TryReview() {
   const [dragging, setDragging] = useState(false)
 
   const live = state.name === "recording" || state.name === "reviewing"
+  const promptUpload = uploadFirst && state.name === "idle"
+
+  const audioUrl = state.name === "ready" ? state.url : state.name === "done" ? state.result.audioUrl : undefined
+  useEffect(() => {
+    return () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+    }
+  }, [audioUrl])
 
   useEffect(() => {
     if (!live) return
@@ -142,8 +150,8 @@ export function TryReview() {
           badge={<Badge variant="outline">AI review</Badge>}
           action={
             <Button variant="outline" size="sm" onClick={reset}>
-              <MicIcon />
-              Record another take
+              {uploadFirst ? <UploadIcon /> : <MicIcon />}
+              {uploadFirst ? "Upload another take" : "Record another take"}
             </Button>
           }
         />
@@ -180,9 +188,9 @@ export function TryReview() {
         <div className="flex flex-col items-center gap-4">
           <button
             type="button"
-            onClick={() => (state.name === "recording" ? stop() : void record())}
+            onClick={() => (promptUpload ? fileInput.current?.click() : state.name === "recording" ? stop() : void record())}
             disabled={state.name === "asking" || state.name === "reviewing"}
-            aria-label={state.name === "recording" ? "Stop recording" : "Start recording"}
+            aria-label={promptUpload ? "Choose an audio recording" : state.name === "recording" ? "Stop recording" : "Start recording"}
             className={cn(
               "relative grid size-36 place-items-center rounded-full transition-[filter,transform] duration-300 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-glass-hot active:scale-[0.98] disabled:cursor-progress sm:size-44",
               live ? "glass-lit" : "glass-dim hover:brightness-110",
@@ -195,7 +203,9 @@ export function TryReview() {
                 live ? "border-[oklch(1_0_0/0.4)] opacity-100" : "border-[oklch(1_0_0/0.14)] opacity-100",
               )}
             />
-            {state.name === "recording" ? (
+            {promptUpload ? (
+              <UploadIcon className="size-9 text-[oklch(0.9_0.004_70)]" strokeWidth={1.75} />
+            ) : state.name === "recording" ? (
               <SquareIcon className="size-8 fill-current text-[oklch(0.19_0.008_55)]" />
             ) : (
               <MicIcon className={cn("size-9", live ? "text-[oklch(0.19_0.008_55)]" : "text-[oklch(0.9_0.004_70)]")} strokeWidth={1.75} />
@@ -220,23 +230,26 @@ export function TryReview() {
         <div className="min-w-0" aria-live="polite">
           {state.name === "idle" && (
             <>
-              <p className="font-wide text-2xl font-bold tracking-[-0.015em] text-[oklch(0.97_0.002_80)]">Press the glass and talk.</p>
+              <p className="font-wide text-2xl font-bold tracking-[-0.015em] text-[oklch(0.97_0.002_80)]">
+                {uploadFirst ? "Drop your recording here." : "Press the glass and talk."}
+              </p>
               <p className="mt-3 max-w-[52ch] text-[0.9375rem] leading-relaxed text-[oklch(0.85_0.004_70)]">
-                Tell a short story, pitch an idea, or introduce yourself. Up to a minute, in English, one speaker. You
-                can also drop a recording here.
+                {uploadFirst
+                  ? "Choose an audio file or drag it here. Up to a minute, in English, one speaker. WAV, MP3, M4A, MP4 or WebM, up to 25 MB."
+                  : "Tell a short story, pitch an idea, or introduce yourself. Up to a minute, in English, one speaker. You can also drop a recording here."}
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button variant="glass" size="lg" onClick={() => void record()}>
-                  <MicIcon />
-                  Start recording
+                <Button variant="glass" size="lg" onClick={() => (uploadFirst ? fileInput.current?.click() : void record())}>
+                  {uploadFirst ? <UploadIcon /> : <MicIcon />}
+                  {uploadFirst ? "Choose a recording" : "Start recording"}
                 </Button>
                 <Button
                   size="lg"
                   className="bg-[oklch(0.97_0.002_80)] text-graphite-deep hover:bg-white"
-                  onClick={() => fileInput.current?.click()}
+                  onClick={() => (uploadFirst ? void record() : fileInput.current?.click())}
                 >
-                  <UploadIcon />
-                  Upload a file
+                  {uploadFirst ? <MicIcon /> : <UploadIcon />}
+                  {uploadFirst ? "Record instead" : "Upload a file"}
                 </Button>
               </div>
             </>

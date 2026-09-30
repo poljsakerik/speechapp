@@ -5,7 +5,6 @@ import { toast } from "sonner"
 import { Mark, Wordmark } from "@/components/brand/Mark"
 import { Pin } from "@/components/editor/Editor"
 import { SiteFooter } from "@/components/site/SiteFooter"
-import { SiteNav } from "@/components/site/SiteNav"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@micmane/ui/components/accordion"
 import { Alert, AlertDescription, AlertTitle } from "@micmane/ui/components/alert"
 import { Badge } from "@micmane/ui/components/badge"
@@ -61,7 +60,6 @@ const SECTIONS = [
 export function Components() {
   return (
     <>
-      <SiteNav />
       <main className="mx-auto max-w-[1320px] px-4 pt-10 pb-24 sm:px-6 lg:px-10">
         <header className="pb-6">
           <h1 className="font-wide text-[clamp(2.25rem,4.6vw,4rem)] leading-[0.96] font-extrabold tracking-[-0.035em]">
