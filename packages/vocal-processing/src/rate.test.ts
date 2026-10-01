@@ -52,6 +52,39 @@ test("steady and periodically repeated pacing differ from irregular pace", () =>
   const mild = detectRate(speech(Array.from({ length: 60 }, (_, i) => [1 / 7.14, 1 / 5.26, 1 / 6.19, 1 / 5.33, 1 / 6.52, 1 / 5.46][Math.floor(i / 10)])))
   assert.ok(!mild.candidates.some(c => c.rule === "RATE_REPETITIVE"), "one large contrast cannot turn several mild fluctuations into a repeated pattern")
 })
+test("even-cadence windows and blocks can be tuned without changing measurements", () => {
+  const words = speech(Array(60).fill(.2))
+  const defaults = detectRate(words)
+  const tuned = detectRate(words, { maxEvenWords: 40, cadenceBlockWords: 10 })
+  const original = defaults.candidates.find(c => c.rule === "RATE_VARIATION")!
+  const shorter = tuned.candidates.find(c => c.rule === "RATE_VARIATION")!
+  assert.equal(original.last - original.first + 1, 45)
+  assert.equal(shorter.last - shorter.first + 1, 40)
+  assert.equal(original.cadenceRates!.length, 9)
+  assert.equal(shorter.cadenceRates!.length, 4)
+  assert.deepEqual(tuned.phrases, defaults.phrases)
+  assert.deepEqual(tuned.pace, defaults.pace)
+  for (const config of [{ minEvenWords: 61 }, { minEvenSeconds: 20 }]) {
+    assert.ok(!detectRate(words, config).candidates.some(c => c.rule === "RATE_VARIATION"))
+  }
+})
+test("sustained group windows and repetition lag control the evidence required", () => {
+  const fast = speech(Array(70).fill(.1))
+  assert.ok(detectRate(fast).candidates.some(c => c.rule === "RATE_IMPORTANCE_FAST"))
+  assert.ok(!detectRate(fast, { maxGroupPhrases: 2 }).candidates.some(c => c.rule === "RATE_IMPORTANCE_FAST"))
+  const repeated = speech(Array.from({ length: 80 }, (_, i) => Math.floor(i / 10) % 2 ? .35 : .2))
+  assert.ok(detectRate(repeated).candidates.some(c => c.rule === "RATE_REPETITIVE"))
+  assert.ok(!detectRate(repeated, { repetitionLagPhrases: 1 }).candidates.some(c => c.rule === "RATE_REPETITIVE"))
+})
+test("local speed and flow evidence thresholds can be tuned independently", () => {
+  const relative = speech([...Array(20).fill(.5), ...Array(20).fill(.3)])
+    .map(w => ({ ...w, text: w.text.replace("day", "people") }))
+  assert.ok(detectRate(relative).candidates.some(c => c.pattern === "relative-fast"))
+  assert.ok(!detectRate(relative, { minRelativeSyllables: 21 }).candidates.some(c => c.pattern === "relative-fast"))
+  const interrupted = speech(Array(20).fill(.2), .4)
+  assert.ok(detectRate(interrupted).candidates.some(c => c.rule === "RATE_FLOW"))
+  assert.ok(!detectRate(interrupted, { minFlowPauses: 10 }).candidates.some(c => c.rule === "RATE_FLOW"))
+})
 test("context review preserves exact highlights and rejects fabricated or escaped decisions", async () => {
   const words = speech(Array(200).fill(.1)), analysis = detectRate(words)
   analysis.candidates.forEach(c => { c.pattern = "relative-fast" })

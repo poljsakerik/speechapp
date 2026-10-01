@@ -29,10 +29,68 @@ export type RateAnalysis = {
   articulationRate?: number; variation?: number; reliable: boolean
 }
 export const RATE_VERSION = 16
+/** Detector tuning. Rates are syllables/second; durations are seconds unless noted. */
 export const DEFAULT_RATE_CONFIG = {
-  pauseSplit: 0.3, minSyllables: 6, minSeconds: 5,
-  fastSyllables: 8, slowSyllables: 2.8, flatVariation: 0.3,
-  repetitionTolerance: 0.12, repetitionContrast: 1.35, relativeChange: 1.4, flowSilenceFraction: 0.35, framingPause: 0.4, maxMarksPerMinute: 3,
+  // Timing and pronunciation reliability.
+  minWords: 3,
+  minSeconds: 5, // Minimum recording duration and sustained speed-change evidence.
+  minSpeechSeconds: 2, // Active speech, excluding silence.
+  speechSecondsFloor: 0.01, // Numerical floor for articulation-rate division.
+  minDictionaryCoverage: 0.7, // Fraction of words with known pronunciations.
+  maxReliableSyllables: 12, // Reject implausibly compressed phrase measurements.
+  minVariationPhrases: 3, // Evidence needed to report recording-wide variation.
+
+  // Phrase measurements: punctuation/pause splits, with a syllable cap.
+  pauseSplit: 0.3,
+  minSyllables: 6, // Minimum before an optional phrase split.
+  maxPhraseSyllables: 12, // Split after the word reaching this count.
+  minPhraseSyllables: 3, // Shorter phrases cannot provide reliable measurements.
+
+  // Local changes relative to the preceding clauses.
+  minClauseWords: 6,
+  minClauseSeconds: 2.5,
+  baselineLookbackClauses: 3,
+  minBaselineClauses: 2,
+  baselineMinSyllables: 2,
+  baselineMaxSyllables: 10,
+  minRelativeSyllables: 8, // Syllable count in the candidate clause.
+  relativeChange: 1.4, // Multiplicative change from the local median.
+  relativeFastSyllables: 6, // Also require this absolute articulation rate.
+  relativeSlowSyllables: 4,
+
+  // Interrupted flow, including merging adjacent interrupted clauses.
+  minFlowSeconds: 4,
+  minFlowPauses: 2,
+  flowSilenceFraction: 0.35, // Internal silence / elapsed clause duration.
+  flowMergeGapSeconds: 1.5,
+  maxFlowSeconds: 24, // Maximum merged highlight duration.
+
+  // Sustained absolute speed and repetitive phrase-rate patterns.
+  minGroupPhrases: 2,
+  maxGroupPhrases: 6,
+  maxGroupGapSeconds: 2,
+  minGroupSyllables: 12,
+  fastSyllables: 8,
+  fastSpeakingFraction: 0.72, // Speaking rate must also reach this fraction of fastSyllables.
+  slowSyllables: 2.8,
+  slowSpeakingSyllables: 2, // Silence-inclusive threshold for dragging delivery.
+  slowArticulationCeiling: 3.5, // Dragging must also have slow articulation.
+  minRepetitionPhrases: 6,
+  repetitionLagPhrases: 2, // Compare every other phrase for alternating cadence.
+  repetitionTolerance: 0.12, // Maximum RMS difference of lagged log2 phrase rates.
+  repetitionContrast: 1.35, // Minimum ratio between each pair of adjacent rates.
+
+  // Sustained even cadence: overlapping word windows and smaller cadence blocks.
+  minEvenWords: 30,
+  maxEvenWords: 45,
+  evenStepWords: 5,
+  cadenceBlockWords: 5, // Includes the gap before the following word.
+  minEvenSeconds: 7,
+  flatVariation: 0.3, // Maximum standard deviation of log2 rates at both scales.
+  framingPause: 0.4, // Sentence-boundary pauses exempt the window.
+
+  // Final feedback selection (used by rate-review.ts).
+  maxMarksPerMinute: 3,
 }
 export type RateConfig = typeof DEFAULT_RATE_CONFIG
 
@@ -78,7 +136,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   const valid = words.map((w, index) => ({ ...w, index })).filter((w): w is Word & { index: number; start: number; end: number } =>
     Number.isFinite(w.start) && Number.isFinite(w.end) && w.start! >= 0 && w.end! > w.start!)
   const ordered = valid.every((w, i) => !i || w.start >= valid[i - 1].start)
-  if (!ordered || valid.length < 3) return { phrases: [], candidates: [], reliable: false }
+  if (!ordered || valid.length < c.minWords) return { phrases: [], candidates: [], reliable: false }
   // Word gaps are used only where the audio has no measured silence. Fillers
   // remain speech: deleting them used to manufacture silent pauses.
   const silence = [...pauses, ...valid.slice(1).flatMap((w, i) => w.start - valid[i].end >= c.pauseSplit ? [{ start: valid[i].end, end: w.start }] : [])]
@@ -88,7 +146,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     const selected = valid.slice(from, to + 1), start = selected[0].start, end = selected.at(-1)!.end
     const counts = selected.map(w => pronunciation(w.text))
     const syllables = counts.reduce((s, p) => s + p.syllables, 0), pauseSeconds = silentSeconds(start, end, silence)
-    const speechSeconds = Math.max(0.01, end - start - pauseSeconds)
+    const speechSeconds = Math.max(c.speechSecondsFloor, end - start - pauseSeconds)
     const articulationRate = syllables / speechSeconds
     return { first: selected[0].index, last: selected.at(-1)!.index, start, end, text: selected.map(w => w.text).join(" "), syllables, speechSeconds, pauseSeconds,
       articulationRate, speakingRate: syllables / (end - start), wordsPerMinute: selected.length * 60 / (end - start),
@@ -100,9 +158,9 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     const gap = next ? silentSeconds(valid[i].start, next.start, silence) : 0
     // Use punctuation and acoustic phrase boundaries. Subdivide long phrases
     // into comparable syllable-sized measurements, never into isolated focal words.
-    if (!next || sentenceEnd(valid[i].text) || (count >= c.minSyllables && (gap >= c.pauseSplit || /[,;:]$/.test(valid[i].text) || count >= 12))) {
+    if (!next || sentenceEnd(valid[i].text) || (count >= c.minSyllables && (gap >= c.pauseSplit || /[,;:]$/.test(valid[i].text) || count >= c.maxPhraseSyllables))) {
       const p = phrase(first, i)
-      if (p.syllables >= 3 && p.articulationRate <= 12 && p.dictionaryCoverage >= 0.7) phrases.push(p)
+      if (p.syllables >= c.minPhraseSyllables && p.articulationRate <= c.maxReliableSyllables && p.dictionaryCoverage >= c.minDictionaryCoverage) phrases.push(p)
       first = i + 1; count = 0
     }
   }
@@ -120,26 +178,26 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   }
   for (const [index, clause] of pace.clauses.entries()) {
     const p = phrase(clause.first, clause.last), duration = clause.end - clause.start
-    if (clause.last - clause.first < 5 || duration < 2.5 || p.dictionaryCoverage < .7 || p.articulationRate > 12) continue
+    if (clause.last - clause.first + 1 < c.minClauseWords || duration < c.minClauseSeconds || p.dictionaryCoverage < c.minDictionaryCoverage || p.articulationRate > c.maxReliableSyllables) continue
     const internal = clause.internalPauses.reduce((s, q) => s + q.end - q.start, 0)
-    // Boundary silence alone never triggers fragmented delivery. Two interruptions
+    // Boundary silence alone never triggers fragmented delivery. Repeated interruptions
     // inside an unfinished clause nominate the thought for contextual review.
-    if (duration >= 4 && clause.internalPauses.length >= 2 && internal / duration >= c.flowSilenceFraction) {
+    if (duration >= c.minFlowSeconds && clause.internalPauses.length >= c.minFlowPauses && internal / duration >= c.flowSilenceFraction) {
       addClauseCandidate(clause.first, clause.last, "RATE_FLOW", "fragmented", 1 + internal / duration)
       continue // Interrupted flow takes precedence over a silence-inflated local speed ratio.
     }
     // Compare with the established pace leading into this clause. Future
     // acceleration must not relabel the preceding steady delivery as slowing.
-    const neighbors = clauseRates.slice(Math.max(0, index - 3), index).filter(r => r >= 2 && r <= 10)
-    if (neighbors.length < 2 || p.syllables < 8) continue
+    const neighbors = clauseRates.slice(Math.max(0, index - c.baselineLookbackClauses), index).filter(r => r >= c.baselineMinSyllables && r <= c.baselineMaxSyllables)
+    if (neighbors.length < c.minBaselineClauses || p.syllables < c.minRelativeSyllables) continue
     const baseline = median(neighbors), relative = p.articulationRate / baseline
     const next = pace.clauses[index + 1]
     const nextRate = clauseRates[index + 1]
-    const fast = relative >= c.relativeChange && p.articulationRate >= 6
-    const slow = relative <= 1 / c.relativeChange && p.articulationRate <= 4
+    const fast = relative >= c.relativeChange && p.articulationRate >= c.relativeFastSyllables
+    const slow = relative <= 1 / c.relativeChange && p.articulationRate <= c.relativeSlowSyllables
     // A single short emphasis is an ordinary change, not enough evidence of
     // a pacing problem. Confirm the new pace persists before nominating it.
-    const continues = next && (fast ? nextRate >= baseline * c.relativeChange && nextRate >= 6 : slow && nextRate <= baseline / c.relativeChange && nextRate <= 4)
+    const continues = next && (fast ? nextRate >= baseline * c.relativeChange && nextRate >= c.relativeFastSyllables : slow && nextRate <= baseline / c.relativeChange && nextRate <= c.relativeSlowSyllables)
     const last = duration >= c.minSeconds ? clause.last : continues ? next.last : clause.last
     if (valid[last].end - clause.start < c.minSeconds) continue
     if (fast) addClauseCandidate(clause.first, last, "RATE_IMPORTANCE_FAST", "relative-fast", relative, baseline)
@@ -150,7 +208,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   const flows = candidates.filter(c => c.rule === "RATE_FLOW")
   for (let i = 1; i < flows.length; i++) {
     const previous = flows[i - 1], next = flows[i]
-    if (next.first === previous.last + 1 && next.start - previous.end <= 1.5 && next.end - previous.start <= 24) {
+    if (next.first === previous.last + 1 && next.start - previous.end <= c.flowMergeGapSeconds && next.end - previous.start <= c.maxFlowSeconds) {
       Object.assign(next, phrase(previous.first, next.last), { impact: previous.impact + next.impact })
       next.phraseRates = [next.articulationRate]
       candidates.splice(candidates.indexOf(previous), 1)
@@ -158,17 +216,17 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   }
   for (let from = 0; from < phrases.length; from++) {
     const group: RatePhrase[] = []
-    for (let j = from; j < phrases.length && group.length < 6; j++) {
-      if (j > from && phrases[j].start - phrases[j - 1].end > 2) break
+    for (let j = from; j < phrases.length && group.length < c.maxGroupPhrases; j++) {
+      if (j > from && phrases[j].start - phrases[j - 1].end > c.maxGroupGapSeconds) break
       group.push(phrases[j])
       const duration = group.at(-1)!.end - group[0].start
-      if (duration < c.minSeconds || group.length < 2) continue
+      if (duration < c.minSeconds || group.length < c.minGroupPhrases) continue
       const syllableCount = group.reduce((s, p) => s + p.syllables, 0)
-      if (syllableCount < 12) continue
+      if (syllableCount < c.minGroupSyllables) continue
       const rate = syllableCount / group.reduce((s, p) => s + p.speechSeconds, 0)
       const rates = group.map(p => p.articulationRate), logs = rates.map(Math.log2), variation = sd(logs)
       const experienced = syllableCount / duration
-      const repetition = group.length >= 6 ? Math.sqrt(logs.slice(2).reduce((s, x, i) => s + (x - logs[i]) ** 2, 0) / (logs.length - 2)) : Infinity
+      const repetition = group.length >= c.minRepetitionPhrases ? Math.sqrt(logs.slice(c.repetitionLagPhrases).reduce((s, x, i) => s + (x - logs[i]) ** 2, 0) / (logs.length - c.repetitionLagPhrases)) : Infinity
       const rules: [RateRule, number][] = []
       let fastStart: number | undefined, longestFast = 0
       for (const p of group) {
@@ -177,9 +235,9 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
           longestFast = Math.max(longestFast, p.end - fastStart)
         } else fastStart = undefined
       }
-      if (rate >= c.fastSyllables && experienced >= c.fastSyllables * 0.72 && longestFast >= c.minSeconds) rules.push(["RATE_IMPORTANCE_FAST", rate / c.fastSyllables])
-      if (rate <= c.slowSyllables || (experienced < 2 && rate < 3.5)) rules.push(["RATE_IMPORTANCE_SLOW", Math.max(c.slowSyllables / rate, 2 / experienced)])
-      if (group.length >= 6 && repetition <= c.repetitionTolerance && rates.slice(1).every((r, i) => Math.max(r, rates[i]) / Math.min(r, rates[i]) >= c.repetitionContrast)) rules.push(["RATE_REPETITIVE", 1 + c.repetitionTolerance - repetition])
+      if (rate >= c.fastSyllables && experienced >= c.fastSyllables * c.fastSpeakingFraction && longestFast >= c.minSeconds) rules.push(["RATE_IMPORTANCE_FAST", rate / c.fastSyllables])
+      if (rate <= c.slowSyllables || (experienced < c.slowSpeakingSyllables && rate < c.slowArticulationCeiling)) rules.push(["RATE_IMPORTANCE_SLOW", Math.max(c.slowSyllables / rate, c.slowSpeakingSyllables / experienced)])
+      if (group.length >= c.minRepetitionPhrases && repetition <= c.repetitionTolerance && rates.slice(1).every((r, i) => Math.max(r, rates[i]) / Math.min(r, rates[i]) >= c.repetitionContrast)) rules.push(["RATE_REPETITIVE", 1 + c.repetitionTolerance - repetition])
       for (const [rule, strength] of rules) {
         const head = group[0], tail = group.at(-1)!
         candidates.push({ id: "", first: head.first, last: tail.last, start: head.start, end: tail.end,
@@ -192,16 +250,16 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   // Find sustained even runs at a shorter scale so a later acceleration does
   // not erase an earlier flat stretch. The complete clause profile is still
   // available to the reviewer; highlights remain inside the measured run.
-  for (let from = 0; from + 30 <= valid.length; from += 5) {
-    const to = Math.min(from + 45, valid.length) - 1
+  for (let from = 0; from + c.minEvenWords <= valid.length; from += c.evenStepWords) {
+    const to = Math.min(from + c.maxEvenWords, valid.length) - 1
     const p = phrase(from, to)
-    if (p.end - p.start < 7 || p.articulationRate >= c.fastSyllables) continue
+    if (p.end - p.start < c.minEvenSeconds || p.articulationRate >= c.fastSyllables) continue
     if (pace.pauses.some(q => q.boundary === "sentence" && q.end - q.start >= c.framingPause && q.start >= p.start && q.end <= p.end)) continue
     if (candidates.some(q => q.rule === "RATE_FLOW" && q.first <= p.last && p.first <= q.last)) continue
     const blocks: number[] = []
-    for (let i = from; i + 4 <= to; i += 5) {
-      const end = i + 5 <= to ? valid[i + 5].start : valid[i + 4].end
-      blocks.push(5 / (end - valid[i].start))
+    for (let i = from; i + c.cadenceBlockWords - 1 <= to; i += c.cadenceBlockWords) {
+      const end = i + c.cadenceBlockWords <= to ? valid[i + c.cadenceBlockWords].start : valid[i + c.cadenceBlockWords - 1].end
+      blocks.push(c.cadenceBlockWords / (end - valid[i].start))
     }
     const blockVariation = sd(blocks.map(Math.log2))
     const included = phrases.filter(q => q.first >= p.first && q.last <= p.last)
@@ -221,6 +279,6 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   }
   kept.sort((a, b) => a.start - b.start || a.rule.localeCompare(b.rule)).forEach((p, i) => { p.id = `pace-${i + 1}` })
   return { pace, phrases, candidates: kept, wordsPerMinute: total.wordsPerMinute, articulationRate: total.articulationRate,
-    variation: phrases.length >= 3 ? sd(phrases.map(p => Math.log2(p.articulationRate))) : undefined,
-    reliable: phrases.length > 0 && valid.length === words.length && total.end - total.start >= c.minSeconds && total.speechSeconds >= 2 && total.dictionaryCoverage >= 0.7 }
+    variation: phrases.length >= c.minVariationPhrases ? sd(phrases.map(p => Math.log2(p.articulationRate))) : undefined,
+    reliable: phrases.length > 0 && valid.length === words.length && total.end - total.start >= c.minSeconds && total.speechSeconds >= c.minSpeechSeconds && total.dictionaryCoverage >= c.minDictionaryCoverage }
 }
