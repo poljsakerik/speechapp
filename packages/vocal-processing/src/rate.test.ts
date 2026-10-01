@@ -18,6 +18,20 @@ const respond = (a: RateAnalysis, decision: "keep" | "dismiss" | "uncertain") =>
 test("counts pronunciation syllables and spoken numbers instead of digits", () => {
   assert.deepEqual(["300", "100", "times", "people", "performing", "0.03%"].map(syllables), [3, 3, 1, 2, 3, 8])
 })
+test("cadence stays even when longer words take proportionally longer to say", () => {
+  let time = 0
+  const words = Array.from({ length: 60 }, (_, i) => {
+    const text = Math.floor(i / 10) % 2 ? "people" : "day"
+    const start = time; time += syllables(text) / 5
+    return { text: i % 10 === 9 ? `${text}.` : text, start, end: time }
+  })
+  const analysis = detectRate(words)
+  assert.ok(Math.abs(analysis.speakingRate! - 5) < 1e-10)
+  const even = analysis.candidates.find(c => c.rule === "RATE_VARIATION")
+  assert.ok(even, "word lengths must not manufacture pace changes")
+  assert.ok(even.cadenceRates!.every(rate => Math.abs(rate - 5) < 1e-10))
+  assert.ok(!analysis.candidates.some(c => c.rule === "RATE_REPETITIVE"))
+})
 test("sustained rushing and dragging generate candidates without importance labels", () => {
   const fast = detectRate(speech(Array(70).fill(.1)))
   assert.ok(fast.candidates.some(c => c.rule === "RATE_IMPORTANCE_FAST"))
@@ -35,7 +49,7 @@ test("measured silence distinguishes articulation from experienced pace without 
   const words = speech(Array(35).fill(.2), .3)
   const pauses = words.slice(0, -1).map((w, i) => ({ start: w.end!, end: words[i + 1].start! }))
   const a = detectRate(words, {}, pauses)
-  assert.ok(a.articulationRate! > a.wordsPerMinute! / 60 * 2)
+  assert.ok(a.articulationRate! > a.speakingRate! * 2)
   const smeared = words.map((w, i) => ({ ...w, end: words[i + 1]?.start ?? w.end }))
   assert.ok(Math.abs(detectRate(smeared, {}, pauses).articulationRate! - a.articulationRate!) < .01)
   assert.equal(detectRate(words, {}, [...pauses, ...pauses]).articulationRate, a.articulationRate, "overlapping silence cannot be subtracted twice")

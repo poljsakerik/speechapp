@@ -22,7 +22,7 @@ export const FOUNDATIONS: Foundation[] = [
     ink: "var(--f-rate-ink)",
     listensFor:
       "Whether important points get enough time, and whether your pace changes when the meaning changes.",
-    measure: "Words per minute, passage by passage.",
+    measure: "Syllables per second, including silence.",
     wontClaim: "Uniform pace is not a fault on its own. There is no correct speed.",
   },
   {

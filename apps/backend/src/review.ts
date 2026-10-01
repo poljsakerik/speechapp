@@ -2,12 +2,12 @@ import { transcribe, wordsFromDeepgram } from "@micmane/vocal-processing/deepgra
 import { openaiCompletion } from "@micmane/vocal-processing/openai"
 import { alignWords, loadAligner, type Aligner } from "@micmane/vocal-processing/align"
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
-import { detectRate, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
+import { detectRate, syllables, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
 import { reviewRate } from "@micmane/vocal-processing/rate-review"
 import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
-type Segment = { id: string; start: number; end: number; text: string; words: Word[]; wpm: number }
+type Segment = { id: string; start: number; end: number; text: string; words: Word[]; speakingRate: number }
 
 export function segmentWords(words: Word[]): Segment[] {
   const segments: Segment[] = []
@@ -23,7 +23,7 @@ export function segmentWords(words: Word[]): Segment[] {
       end: last.end,
       text: current.map((word) => word.text).join(" "),
       words: current,
-      wpm: Math.round(current.length * 60 / seconds),
+      speakingRate: current.reduce((sum, word) => sum + syllables(word.text), 0) / seconds,
     })
     current = []
   }

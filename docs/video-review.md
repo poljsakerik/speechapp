@@ -16,7 +16,7 @@ Source: [02-Rate of Speech.mp4](../videos/02-Rate%20of%20Speech.mp4).
 |---|---|---|
 | 00:29–00:40 | Deliberately slow greeting | Detect slow passages, but do not automatically label slowness wrong |
 | 01:08–01:15 | Deliberately rapid introduction | Measure local rate and compare with surrounding delivery |
-| 01:30–02:48 | A constant rate can become monotonous even if initially engaging | Look for sustained lack of variation, rather than one “correct” WPM |
+| 01:30–02:48 | A constant rate can become monotonous even if initially engaging | Look for sustained lack of variation, rather than one “correct” speech rate |
 | 02:49–03:33 | Slow important points; move faster through less important material | Identify likely key points in text, then check relative pacing |
 | 03:52–04:27; 04:31–05:09 | Student examples before and after varying pace | Useful demonstrations, but the passages contain different words |
 
@@ -94,14 +94,14 @@ All transcription and acoustic processing ran locally on the available Apple Sil
 
 | Probe | Result | What it supports |
 |---|---|---|
-| Coach's slow rate demonstration, 00:29.63–00:39.65 | 12 recognized words in 10.02 s: **71.9 WPM** | Deliberate rate contrast is measurable |
-| Coach's fast rate demonstration, 01:07.99–01:14.85 | 50 recognized words in 6.86 s: **437.3 WPM** | The system can localize an extreme rate change; the exact value depends on ASR and boundaries |
+| Coach's slow rate demonstration, 00:29.63–00:39.65 | 12 recognized words in 10.02 s (historical transcription probe) | Deliberate rate contrast is measurable |
+| Coach's fast rate demonstration, 01:07.99–01:14.85 | 50 recognized words in 6.86 s (historical transcription probe) | The system can localize an extreme rate change; the exact value depends on ASR and boundaries |
 | Coach's stronger volume, 00:44.43–01:11.39 | Median voiced-window RMS **−27.65 dBFS** | Provides a within-recording reference |
 | Coach's quiet volume, 01:21.35–01:39.59 | Median voiced-window RMS **−34.37 dBFS** | Approximately **6.72 dB lower** recorded level in the quiet example |
 | Pitch exercise: first vs second student passage | Raw P10–P90 ranges **14.04 vs 26.10 semitones** | A measurable contrast, but coach interjections and possible tracking errors make this unsuitable as a clean student-only result |
 | Pause example: first vs second student passage | ASR reports **0 vs 4 word gaps over 0.5 s** | A directionally plausible signal; the first alignment makes every adjacent word touch, exposing why acoustic VAD/alignment verification is needed |
 
-Rate values include pauses. Level values are the median of 40 ms RMS windows at pitch-voiced frame centers; they are a simple signal proxy, not calibrated room loudness. Pitch analysis used a fixed 65–600 Hz range with a 10 ms step for this probe. These parameters are not validated defaults for every voice.
+The historical rate probes above report word counts and elapsed time, including pauses; the current pipeline measures syllables per second. Level values are the median of 40 ms RMS windows at pitch-voiced frame centers; they are a simple signal proxy, not calibrated room loudness. Pitch analysis used a fixed 65–600 Hz range with a 10 ms step for this probe. These parameters are not validated defaults for every voice.
 
 The courses are edited and demonstrations are not controlled experiments. In particular, the second pitch and pause clips contain another speaker, and the student rate examples have different content. The probe establishes that useful features can be extracted from these files. It does **not** establish reliable automated judgments of good delivery, correct emotional interpretation, causal benefits, or production latency.
 

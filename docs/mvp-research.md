@@ -79,14 +79,14 @@ Use Python with **Praat/Parselmouth** and NumPy for the local prototype. Parselm
 
 | Dimension | Evidence to compute | How to use it | Important limitation |
 |---|---|---|---|
-| Rate | Words/minute in phrases and 5–10-second windows; variation across adjacent windows | Find rushed takeaways or consistently unvaried pacing | Counts depend on ASR and language; short windows are unstable |
+| Rate | Syllables/second in phrases and 5–10-second windows; variation across adjacent windows | Find rushed takeaways or consistently unvaried pacing | Counts depend on ASR and language; short windows are unstable |
 | Pauses | Speech boundaries and silence intervals, checked against word timing | Find where an idea may need processing time or a transition needs separation | Breaths, stop consonants, hesitation, and deliberate silence are different |
 | Volume | Short-time RMS in dBFS, relative change across comparable speech regions, clipping | Find fading endings and intentional or missing dynamic contrast | Recording gain, distance, compression, and automatic gain control alter the signal |
 | Pitch/melody | Voiced F0 contour, robust pitch range, phrase-ending movement | Identify little melodic contrast or an unexpected contour on an important phrase | Pitch tracking can fail; a rise is not inherently wrong |
 | Emphasis | Relative word duration, pitch movement, and level, jointly | Check whether intended keywords stand out | Stress cannot be reduced to loudness alone |
 | Tonality | Audio-model descriptions of perceived warmth, energy, softness, or firmness | Offer a tentative interpretation tied to the passage's meaning | No single physical variable proves an emotional tone |
 
-Use `WPM = 60 × word_count / phrase_elapsed_seconds`, including internal pauses. Report an additional articulation-rate estimate using speech-active duration if useful; label it separately. VAD settings change that estimate, so keep them fixed across comparisons.
+Use `speaking_rate = syllable_count / phrase_elapsed_seconds`, including internal pauses. Report an additional articulation-rate estimate using speech-active duration if useful; label it separately. VAD settings change that estimate, so keep them fixed across comparisons.
 
 Use `12 × log2(F0 / speaker_baseline_F0)` for relative pitch in semitones. Summarize robust percentiles over voiced frames, not silence or raw maxima. Start with a sufficiently broad pitch range, inspect octave errors, and tune to the recording; Praat documents why pitch floor and ceiling matter. [Praat pitch settings](https://www.fon.hum.uva.nl/praat/manual/Intro_4_2__Configuring_the_pitch_contour.html)
 
@@ -103,7 +103,7 @@ Use two logical stages, which can be combined into one call initially:
 - An intent planner proposes rhetorical roles, important words, and acceptable delivery options from the text and surrounding passage. It records uncertainty and alternative readings; it does not assign an archetype.
 - A multimodal reviewer compares observed delivery with those options and the coach's rubric. It can return “no issue” or “insufficient evidence.” For video, it must distinguish visual observations from interpretation of expression or posture.
 
-Do not ask the model to invent precise WPM, decibels, or pitch values by listening. Supply computed measurements. Do not use model-generated timestamps as the canonical alignment. Treat all transcript content as data rather than instructions.
+Do not ask the model to invent precise syllables/second, decibels, or pitch values by listening. Supply computed measurements. Do not use model-generated timestamps as the canonical alignment. Treat all transcript content as data rather than instructions.
 
 ### E. Validate the feedback
 

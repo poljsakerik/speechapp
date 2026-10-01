@@ -519,15 +519,15 @@ function renderMarks() {
 // Each prediction identifies a measured passage and its coaching rule.
 function renderPred(list) {
   const esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
-  const wpm = pred.wordsPerMinute ? `${Math.round(pred.wordsPerMinute)} words/min` : "";
+  const rate = pred.speakingRate != null ? `${pred.speakingRate.toFixed(1)} syll/s including silence` : "";
   const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)}` : "";
   const pauses = pred.pauses ? `${pred.pauses.length} measured pause${pred.pauses.length === 1 ? "" : "s"}` : "";
   list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
-    <p class="pred-summary">${[wpm, variation, pauses].filter(Boolean).join(" · ")}</p>
+    <p class="pred-summary">${[rate, variation, pauses].filter(Boolean).join(" · ")}</p>
     <div class="legend">
       <span><i class="u" style="background:var(--rule-fast-ink)"></i>slow down</span><span><i class="u" style="background:var(--f-rate-ink)"></i>other pace adjustments</span>
     </div>`);
-  if (pred.pace?.curve?.length) renderPaceTrace(list, pred.pace);
+  if (pred.pace?.curve?.some(p => Number.isFinite(p.speakingRate))) renderPaceTrace(list, pred.pace);
   const order = [...pred.marks].sort((a, b) => a.startAt - b.startAt);
   for (const m of order) {
     const el = document.createElement("div");
@@ -550,7 +550,7 @@ function renderPaceTrace(list, pace) {
   const points = pace.curve, start = points[0].time, end = points.at(-1).time;
   if (end <= start) return;
   const width = 360, height = 160, left = 32, right = 350, top = 12, bottom = 132;
-  const max = Math.ceil(Math.max(120, ...points.map(p => p.articulationWpm ?? p.speakingWpm)) / 100) * 100;
+  const max = Math.ceil(Math.max(2, ...points.map(p => p.articulationRate ?? p.speakingRate)) / 2) * 2;
   const x = time => left + (time - start) / (end - start) * (right - left);
   const y = value => bottom - value / max * (bottom - top);
   const path = key => {
@@ -563,14 +563,14 @@ function renderPaceTrace(list, pace) {
   };
   const details = document.createElement("details");
   details.innerHTML = `<summary>Pace trace · click to seek</summary>
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Words per minute over time; blue excludes silence, gray includes silence, shaded bands are pauses" style="width:100%;cursor:crosshair">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Syllables per second over time; blue excludes silence, gray includes silence, shaded bands are pauses" style="width:100%;cursor:crosshair">
       ${pace.pauses.filter(p => p.end > start && p.start < end).map(p => `<rect x="${x(Math.max(start,p.start))}" y="${top}" width="${Math.max(1,x(Math.min(end,p.end))-x(Math.max(start,p.start)))}" height="${bottom-top}" fill="#ddd" opacity=".55"/>`).join("")}
       ${[0,max/2,max].map(v => `<line x1="${left}" x2="${right}" y1="${y(v)}" y2="${y(v)}" stroke="#ccc"/><text x="2" y="${y(v)+4}" font-size="10">${v}</text>`).join("")}
-      <path d="${path("speakingWpm")}" fill="none" stroke="#888" stroke-width="1.5"/>
-      <path d="${path("articulationWpm")}" fill="none" stroke="#247591" stroke-width="2"/>
+      <path d="${path("speakingRate")}" fill="none" stroke="#888" stroke-width="1.5"/>
+      <path d="${path("articulationRate")}" fill="none" stroke="#247591" stroke-width="2"/>
       <text x="${left}" y="153" font-size="10">${fmt(start)}</text><text x="${right}" y="153" text-anchor="end" font-size="10">${fmt(end)}</text>
     </svg>
-    <p class="pred-summary">WPM · blue: while speaking · gray: including silence · shaded: silence. Six-second smoothing. Silence is shown separately from slowing down.</p>`;
+    <p class="pred-summary">Syllables/s · blue: while speaking · gray: including silence · shaded: silence. Six-second smoothing. Silence is shown separately from slowing down.</p>`;
   details.querySelector("svg").onclick = event => {
     const rect = event.currentTarget.getBoundingClientRect();
     audio.currentTime = start + Math.max(0, Math.min(1, ((event.clientX-rect.left)/rect.width*width-left)/(right-left))) * (end-start);

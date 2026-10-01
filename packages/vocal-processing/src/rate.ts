@@ -1,16 +1,16 @@
 /** Rate coaching: measure pacing first, then check candidate passages in full context. */
 import { measurePace, type PaceProfile } from "./pace.ts"
-import { dictionary } from "cmu-pronouncing-dictionary"
-import { numberWords } from "./align.ts"
+import { pronunciation, syllables } from "./syllables.ts"
 import type { Word } from "./types.ts"
 import type { Pause } from "./pauses.ts"
+export { syllables } from "./syllables.ts"
 
 // Keep the existing speed-action IDs so saved highlights remain readable.
 export type RateRule = "RATE_IMPORTANCE_FAST" | "RATE_IMPORTANCE_SLOW" | "RATE_VARIATION" | "RATE_REPETITIVE" | "RATE_FLOW"
 export type PhraseRef = { first: number; last: number; start: number; end: number; text: string }
 export type RateMark = PhraseRef & { rule: RateRule; impact: number }
 export type RatePhrase = PhraseRef & {
-  syllables: number; articulationRate: number; speakingRate: number; wordsPerMinute: number
+  syllables: number; articulationRate: number; speakingRate: number
   speechSeconds: number; pauseSeconds: number; dictionaryCoverage: number
 }
 export type RateCandidate = RateMark & {
@@ -21,14 +21,13 @@ export type RateCandidate = RateMark & {
   pauseFraction?: number
   pattern?: "fragmented" | "relative-fast" | "relative-slow"
   relativeToBaseline?: number
-  articulationWpm?: number
 }
 export type RateAnalysis = {
   pace?: PaceProfile
-  phrases: RatePhrase[]; candidates: RateCandidate[]; wordsPerMinute?: number
+  phrases: RatePhrase[]; candidates: RateCandidate[]; speakingRate?: number
   articulationRate?: number; variation?: number; reliable: boolean
 }
-export const RATE_VERSION = 16
+export const RATE_VERSION = 17
 /** Detector tuning. Rates are syllables/second; durations are seconds unless noted. */
 export const DEFAULT_RATE_CONFIG = {
   // Timing and pronunciation reliability.
@@ -87,32 +86,13 @@ export const DEFAULT_RATE_CONFIG = {
   cadenceBlockWords: 5, // Includes the gap before the following word.
   minEvenSeconds: 7,
   flatVariation: 0.3, // Maximum standard deviation of log2 rates at both scales.
-  framingPause: 0.4, // Sentence-boundary pauses exempt the window.
+  framingPause: 0.4, // Sentence/clause-boundary pauses exempt the window.
 
   // Final feedback selection (used by rate-review.ts).
   maxMarksPerMinute: 3,
 }
 export type RateConfig = typeof DEFAULT_RATE_CONFIG
 
-/** Dictionary syllables, with explicit number expansion and a fallback for unknown words. English only. */
-export function syllables(text: string): number {
-  return pronunciation(text).syllables
-}
-function pronunciation(text: string): { syllables: number; known: boolean } {
-  const parts = text.toLowerCase().replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1").replace(/\d+(?:\.\d+)?/g, numberWords).replace(/%/g, " percent").replace(/[’‘]/g, "'").match(/[a-z]+(?:'[a-z]+)*/g) ?? []
-  let n = 0, known = true
-  for (const word of parts) {
-    const phones = dictionary[word]
-    if (phones) n += phones.match(/[012]/g)?.length ?? 1
-    else {
-      known = false
-      let count = word.match(/[aeiouy]+/g)?.length ?? 0
-      if (count > 1 && /[^aeiouyl]e$/.test(word)) count--
-      n += Math.max(1, count)
-    }
-  }
-  return { syllables: n, known: known && parts.length > 0 }
-}
 const sd = (xs: number[]) => {
   if (!xs.length) return 0
   const mean = xs.reduce((a, b) => a + b, 0) / xs.length
@@ -149,7 +129,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     const speechSeconds = Math.max(c.speechSecondsFloor, end - start - pauseSeconds)
     const articulationRate = syllables / speechSeconds
     return { first: selected[0].index, last: selected.at(-1)!.index, start, end, text: selected.map(w => w.text).join(" "), syllables, speechSeconds, pauseSeconds,
-      articulationRate, speakingRate: syllables / (end - start), wordsPerMinute: selected.length * 60 / (end - start),
+      articulationRate, speakingRate: syllables / (end - start),
       dictionaryCoverage: counts.filter(p => p.known).length / counts.length }
   }
   for (let i = 0; i < valid.length; i++) {
@@ -173,8 +153,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     const p = phrase(first, last)
     candidates.push({ ...p, id: "", rule, pattern, impact: strength * (p.end - p.start),
       variation: 0, phraseRates: [p.articulationRate], repetition: 0,
-      relativeToBaseline: baseline ? p.articulationRate / baseline : undefined,
-      articulationWpm: (last - first + 1) * 60 / p.speechSeconds })
+      relativeToBaseline: baseline ? p.articulationRate / baseline : undefined })
   }
   for (const [index, clause] of pace.clauses.entries()) {
     const p = phrase(clause.first, clause.last), duration = clause.end - clause.start
@@ -254,12 +233,13 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     const to = Math.min(from + c.maxEvenWords, valid.length) - 1
     const p = phrase(from, to)
     if (p.end - p.start < c.minEvenSeconds || p.articulationRate >= c.fastSyllables) continue
-    if (pace.pauses.some(q => q.boundary === "sentence" && q.end - q.start >= c.framingPause && q.start >= p.start && q.end <= p.end)) continue
+    if (pace.pauses.some(q => q.boundary !== "within" && q.end - q.start >= c.framingPause && q.start >= p.start && q.end <= p.end)) continue
     if (candidates.some(q => q.rule === "RATE_FLOW" && q.first <= p.last && p.first <= q.last)) continue
     const blocks: number[] = []
     for (let i = from; i + c.cadenceBlockWords - 1 <= to; i += c.cadenceBlockWords) {
       const end = i + c.cadenceBlockWords <= to ? valid[i + c.cadenceBlockWords].start : valid[i + c.cadenceBlockWords - 1].end
-      blocks.push(c.cadenceBlockWords / (end - valid[i].start))
+      const count = valid.slice(i, i + c.cadenceBlockWords).reduce((sum, word) => sum + syllables(word.text), 0)
+      blocks.push(count / (end - valid[i].start))
     }
     const blockVariation = sd(blocks.map(Math.log2))
     const included = phrases.filter(q => q.first >= p.first && q.last <= p.last)
@@ -278,7 +258,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     if (!kept.some(p => p.rule === candidate.rule && p.first <= candidate.last && candidate.first <= p.last)) kept.push(candidate)
   }
   kept.sort((a, b) => a.start - b.start || a.rule.localeCompare(b.rule)).forEach((p, i) => { p.id = `pace-${i + 1}` })
-  return { pace, phrases, candidates: kept, wordsPerMinute: total.wordsPerMinute, articulationRate: total.articulationRate,
+  return { pace, phrases, candidates: kept, speakingRate: total.speakingRate, articulationRate: total.articulationRate,
     variation: phrases.length >= c.minVariationPhrases ? sd(phrases.map(p => Math.log2(p.articulationRate))) : undefined,
     reliable: phrases.length > 0 && valid.length === words.length && total.end - total.start >= c.minSeconds && total.speechSeconds >= c.minSpeechSeconds && total.dictionaryCoverage >= c.minDictionaryCoverage }
 }

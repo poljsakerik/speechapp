@@ -32,7 +32,7 @@ Feedback is grounded in one specific, taught method rather than generic delivery
 
 - The five **foundations**, always named "foundations": Rate of speech, Volume, Pitch & melody, Tonality, Pauses. Lesson sources live in `videos/`.
 - Each foundation receives a verdict: effective, mixed, needs work, or uncertain. Findings are strengths or improvements, marked clear or tentative.
-- Tonality describes perceived expression, never the speaker's actual emotion, personality, or confidence. Recorded level is not room loudness. No universal WPM, pause, or pitch thresholds.
+- Tonality describes perceived expression, never the speaker's actual emotion, personality, or confidence. Recorded level is not room loudness. No universal speech-rate, pause, or pitch thresholds.
 - Feedback accuracy is not yet validated.
 - Undecided: the relationship with Vinh Giang and his course (licensed, partnered, or independent), pricing, accounts, and persistence of practice history.
 

@@ -1,7 +1,7 @@
 import { FOUNDATION_BY_KEY, type FoundationKey } from "./foundations.ts"
 
 export type Word = { text: string; start: number; end: number }
-export type Segment = { id: string; start: number; end: number; text: string; words: Word[]; wpm?: number }
+export type Segment = { id: string; start: number; end: number; text: string; words: Word[]; speakingRate?: number }
 
 /** A recording as the editor draws it. Measurement lanes are optional. */
 export type Take = {

@@ -1,16 +1,18 @@
 /** Descriptive pace measurements. Silence is an observation, never a pause-coaching verdict. */
 import type { Word } from "./types.ts"
 import type { Pause } from "./pauses.ts"
+import { syllables } from "./syllables.ts"
 
 type TimedWord = Word & { start: number; end: number }
-export type PacePoint = { time: number; speakingWpm: number; articulationWpm: number | null; paused: boolean }
+/** All pace rates, including the baseline, are syllables per second. */
+export type PacePoint = { time: number; speakingRate: number; articulationRate: number | null; paused: boolean }
 export type PacePause = Pause & { after: number; boundary: "sentence" | "clause" | "within" }
 export type PaceClause = {
   first: number; last: number; start: number; end: number; text: string
-  wordsPerMinute: number; articulationWpm: number; pauseSeconds: number
+  speakingRate: number; articulationRate: number; pauseSeconds: number
   internalPauses: PacePause[]; boundaryAfter: "sentence" | "clause" | "within"
 }
-export type PaceProfile = { curve: PacePoint[]; clauses: PaceClause[]; pauses: PacePause[]; baselineWpm: number }
+export type PaceProfile = { curve: PacePoint[]; clauses: PaceClause[]; pauses: PacePause[]; baselineRate: number }
 
 export function boundaryAfter(text: string): PacePause["boundary"] {
   // ASR ellipses often mark an abandoned thought, not a completed sentence.
@@ -36,11 +38,11 @@ const median = (xs: number[]) => {
   return sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0
 }
 
-/** Six-second rolling WPM plus punctuation-based clauses; does not split a clause at a hesitation. */
+/** Six-second rolling syllables/second plus punctuation-based clauses; does not split a clause at a hesitation. */
 export function measurePace(words: Word[], measured: Pause[] = []): PaceProfile {
-  const empty = { curve: [], clauses: [], pauses: [], baselineWpm: 0 }
+  const empty = { curve: [], clauses: [], pauses: [], baselineRate: 0 }
   if (!words.length || words.some((w, i) => !Number.isFinite(w.start) || !Number.isFinite(w.end) || w.start! < 0 || w.end! <= w.start! || (i && w.start! < words[i - 1].start!))) return empty
-  const ws = words as TimedWord[]
+  const ws = (words as TimedWord[]).map(w => ({ ...w, syllables: syllables(w.text) }))
   const silence = mergePauses([...measured, ...ws.slice(1).flatMap((w, i) => w.start - ws[i].end >= .3 ? [{ start: ws[i].end, end: w.start }] : [])])
   const pauses: PacePause[] = silence.map(p => {
     // Associate a silence with the preceding word, including ASR intervals smeared over silence.
@@ -54,8 +56,9 @@ export function measurePace(words: Word[], measured: Pause[] = []): PaceProfile 
   const add = (last: number) => {
     const selected = ws.slice(first, last + 1), start = selected[0].start, end = selected.at(-1)!.end
     const pauseSeconds = silenceBetween(start, end, silence), active = end - start - pauseSeconds
+    const count = selected.reduce((sum, word) => sum + word.syllables, 0)
     clauses.push({ first, last, start, end, text: selected.map(w => w.text).join(" "), pauseSeconds,
-      wordsPerMinute: selected.length * 60 / (end - start), articulationWpm: selected.length * 60 / Math.max(.01, active),
+      speakingRate: count / (end - start), articulationRate: count / Math.max(.01, active),
       internalPauses: pauses.filter(p => p.after >= first && p.after < last && p.boundary === "within" && p.end - p.start >= .35),
       boundaryAfter: boundaryAfter(ws[last].text) })
     first = last + 1
@@ -69,18 +72,20 @@ export function measurePace(words: Word[], measured: Pause[] = []): PaceProfile 
   for (let time = start; time <= end + .001; time += .5) {
     const left = Math.max(start, time - 3), right = Math.min(end, time + 3)
     const paused = silence.some(p => p.start <= time && p.end > time)
-    let mass = 0
+    let mass = 0, wordMass = 0
     for (const w of ws) {
       if (w.start >= right) break
       if (w.end <= left) continue
-      // Fractional words smooth edges without counting silence stretched into an ASR word.
+      // Spread each word’s syllables across its active duration, excluding measured silence.
       const activeWord = w.end - w.start - silenceBetween(w.start, w.end, silence)
       if (activeWord <= .01) continue
       const a = Math.max(w.start, left), b = Math.min(w.end, right)
-      mass += Math.max(0, b - a - silenceBetween(a, b, silence)) / activeWord
+      const fraction = Math.max(0, b - a - silenceBetween(a, b, silence)) / activeWord
+      mass += w.syllables * fraction
+      wordMass += fraction
     }
     const active = right - left - silenceBetween(left, right, silence)
-    curve.push({ time, speakingWpm: mass * 60 / (right - left), articulationWpm: paused || active < 1 || mass < 3 ? null : mass * 60 / active, paused })
+    curve.push({ time, speakingRate: mass / (right - left), articulationRate: paused || active < 1 || wordMass < 3 ? null : mass / active, paused })
   }
-  return { curve, clauses, pauses, baselineWpm: median(clauses.filter(c => c.last - c.first >= 4 && c.end - c.start >= 1).map(c => c.articulationWpm)) }
+  return { curve, clauses, pauses, baselineRate: median(clauses.filter(c => c.last - c.first >= 4 && c.end - c.start >= 1).map(c => c.articulationRate)) }
 }

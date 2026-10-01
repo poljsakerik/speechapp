@@ -22,6 +22,6 @@ if (!wav) analysis.reliable = false
 const result = await reviewRate(words, analysis, openaiCompletion())
 if (flags.includes("--json")) console.log(JSON.stringify(result, null, 2))
 else {
-  console.log(`${result.status}; ${Math.round(result.wordsPerMinute ?? 0)} words/min`)
+  console.log(`${result.status}; ${result.speakingRate?.toFixed(1) ?? "unavailable"} syllables/s including silence`)
   for (const mark of result.marks) console.log(`${mark.start.toFixed(1)}–${mark.end.toFixed(1)}s ${mark.rule}: ${mark.text}`)
 }

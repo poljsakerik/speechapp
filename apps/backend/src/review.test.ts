@@ -2,6 +2,14 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { rateReview, segmentWords } from "./review.ts"
 
+test("segments report syllables per second including internal silence", () => {
+  const [segment] = segmentWords([
+    { text: "people", start: 0, end: .6 },
+    { text: "day.", start: .9, end: 1.5 },
+  ])
+  assert.equal(segment.speakingRate, 2, "three syllables over 1.5 elapsed seconds")
+})
+
 test("rate review preserves both phrase actions within one sentence", () => {
   const words = "We need more time now.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
   const segments = segmentWords(words)
