@@ -25,7 +25,6 @@ const RULES: Record<string, { label: string; stretch?: boolean }> = {
   RATE_IMPORTANCE_SLOW: { label: "Dragged passage" },
   RATE_FLOW: { label: "Interrupted flow", stretch: true },
   RATE_VARIATION: { label: "Even pace", stretch: true },
-  RATE_REPETITIVE: { label: "Repeated pacing", stretch: true },
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]

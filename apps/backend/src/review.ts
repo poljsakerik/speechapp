@@ -49,7 +49,6 @@ const copy = {
   },
   RATE_FLOW: { observation: "This thought loses momentum in repeated fragments.", why_it_matters: "A connected delivery helps the listener follow one idea.", practice: "Rehearse this highlighted thought as one connected sentence at a comfortable pace." },
   RATE_VARIATION: { observation: "The pace stays similar across this passage.", why_it_matters: "A pace change can give the ideas more contrast.", practice: "Move through the setup, then slow down as the next idea lands." },
-  RATE_REPETITIVE: { observation: "The same pacing pattern repeats here.", why_it_matters: "A repeated rhythm can make different ideas sound alike.", practice: "Change pace with the next idea rather than repeating the same rhythm." },
 } as const
 
 export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {

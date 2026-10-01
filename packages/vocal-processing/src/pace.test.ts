@@ -71,24 +71,3 @@ test("the curve unions measured silence and word gaps, and rejects invalid timin
   assert.deepEqual(measurePace(smeared, [pause]).curve, measurePace(words, [pause]).curve)
   assert.deepEqual(measurePace([{ text: "word", start: 1, end: 0 }]).curve, [])
 })
-
-test("local accelerations and slowdowns can be nominated without extreme absolute rates", () => {
-  let time = 0
-  const words = Array.from({ length: 160 }, (_, i) => {
-    const clause = Math.floor(i / 20), duration = clause === 2 || clause === 3 ? .14 : clause === 5 || clause === 6 ? .3 : .2
-    const start = time; time += duration
-    return { text: i % 20 === 19 ? "day." : "day", start, end: time }
-  })
-  const a = detectRate(words)
-  assert.ok(a.candidates.some(c => c.pattern === "relative-fast" && c.articulationRate < 8))
-  assert.ok(a.candidates.some(c => c.pattern === "relative-slow" && c.articulationRate > 2.8))
-})
-
-test("a later acceleration does not manufacture a slowdown in the preceding steady delivery", () => {
-  let time = 0
-  const words = Array.from({ length: 140 }, (_, i) => {
-    const start = time; time += i < 80 ? .3 : .14
-    return { text: i % 20 === 19 ? "day." : "day", start, end: time }
-  })
-  assert.ok(!detectRate(words).candidates.some(c => c.pattern === "relative-slow" && c.first < 80))
-})

@@ -4,7 +4,7 @@ import { alignMarks, type GoldenMark } from "./golden.ts"
 import type { Word } from "./types.ts"
 import type { RateRule } from "./rate.ts"
 
-export const RATE_RULES: RateRule[] = ["RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW", "RATE_VARIATION", "RATE_REPETITIVE", "RATE_FLOW"]
+export const RATE_RULES: RateRule[] = ["RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW", "RATE_VARIATION", "RATE_FLOW"]
 export type Review = { status: "pending" | "reviewed" | "excluded"; notes: string }
 export type Annotation = { schemaVersion: 2; marks: GoldenMark[]; reviews: Record<string, Review> }
 export type Take = { id: string; foundation: string; take: number; base: string; audioExtension: string; duration: number; source: string; sourceStart: number; sourceEnd: number; assignment: string; evidence: string }

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent
 RECORDINGS = Path(os.environ.get("RECORDINGS_DIR", ROOT.parents[1] / "recordings-rate-development")).resolve()
 PORT = int(os.environ.get("PORT", "8765"))
 RULES = {
-    "rate": {"RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW", "RATE_VARIATION", "RATE_REPETITIVE", "RATE_FLOW"},
+    "rate": {"RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW", "RATE_VARIATION", "RATE_FLOW"},
     "volume": {"VOLUME_LOW", "VOLUME_FADE", "VOLUME_HIGH"},
     "pitch_melody": {"PITCH_LOW", "PITCH_HIGH", "PITCH_VARIETY"},
     "tonality": {"TONE_FLAT"},
