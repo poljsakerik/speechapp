@@ -28,6 +28,8 @@
   --graphite: oklch(0.22 0.004 60);
   --graphite-deep: oklch(0.17 0.003 60);
   --graphite-line: oklch(0.33 0.004 60);
+  --on-graphite: oklch(0.97 0.002 80);
+  --on-graphite-muted: oklch(0.85 0.004 70);
   --glass: oklch(0.7 0.175 48);
   --glass-hot: oklch(0.8 0.15 62);
   --glass-ink: oklch(0.5 0.15 42);
@@ -94,6 +96,8 @@
   --color-graphite: var(--graphite);
   --color-graphite-deep: var(--graphite-deep);
   --color-graphite-line: var(--graphite-line);
+  --color-on-graphite: var(--on-graphite);
+  --color-on-graphite-muted: var(--on-graphite-muted);
   --color-glass: var(--glass);
   --color-glass-hot: var(--glass-hot);
   --color-glass-ink: var(--glass-ink);

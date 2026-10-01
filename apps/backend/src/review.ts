@@ -55,7 +55,22 @@ export function rateReview(segments: Segment[], marks: RateMark[], message: stri
   const findings = marks.flatMap((mark) => {
     const segment = segments.find((part) => part.start <= mark.start && part.end >= mark.start)
       ?? segments.find((part) => part.start < mark.end && part.end > mark.start)
-    return segment ? [{ segment_id: segment.id, rule_id: mark.rule, kind: "improvement", uncertainty: "tentative", ...copy[mark.rule] }] : []
+    if (!segment) return []
+    const suggestions = [
+      ...(mark.slowDown ? [{ direction: "slow_down", start: mark.slowDown.start, end: mark.slowDown.end, text: mark.slowDown.text }] : []),
+      ...(mark.speedUp ? [{ direction: "speed_up", start: mark.speedUp.start, end: mark.speedUp.end, text: mark.speedUp.text }] : []),
+    ]
+    return [{
+      segment_id: segment.id,
+      rule_id: mark.rule,
+      kind: "improvement",
+      uncertainty: "tentative",
+      start: mark.start,
+      end: mark.end,
+      text: mark.text,
+      ...copy[mark.rule],
+      ...(suggestions.length ? { suggestions } : {}),
+    }]
   })
   return {
     overall: message ? `Your main message: ${message}` : "Review your pace around the main point.",
