@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import type { Word } from "./types.ts"
 import { detectRate, syllables } from "./rate.ts"
+import { pacingPhrases, type PacingPrediction } from "./pacing.ts"
 
 /** One-syllable words, each lasting `seconds`, with `gap` seconds of silence after it. */
 function speech(durations: number[], gap = 0): Word[] {
@@ -75,4 +76,52 @@ test("too little or implausible speech is uncertain, not a clean assessment", ()
   assert.equal(detectRate([...speech(Array(100).fill(.2))].reverse()).reliable, false)
   assert.equal(detectRate([{ text: "hello", start: NaN, end: 2 }]).reliable, false)
   assert.deepEqual(detectRate(speech(Array(40).fill(.1))).marks, [])
+})
+
+/**
+ * Twelve five-word sentences alternating key point (-2) and setup (+2), with
+ * key words lasting `key` seconds and setup words `setup` seconds.
+ */
+function passage(key: number, setup: number) {
+  let t = 0
+  const words = Array.from({ length: 60 }, (_, i) => {
+    const start = t
+    t += Math.floor(i / 5) % 2 ? setup : key
+    return { text: i % 5 === 4 ? "day." : "day", start, end: t }
+  })
+  const pacing: PacingPrediction = { phrases: pacingPhrases(words), scores: Array.from({ length: 12 }, (_, i) => i % 2 ? 2 : -2) }
+  return { words, pacing }
+}
+
+test("a passage is flagged when its key points were not slower than the setup", () => {
+  const flat = passage(.2, .2)
+  const [mark] = detectRate(flat.words, {}, [], flat.pacing).marks
+  assert.equal(mark.reason, "contrast")
+  assert.equal(mark.rule, "RATE_IMPORTANCE_FAST")
+  assert.deepEqual([mark.first, mark.last], [0, 59])
+  assert.deepEqual(mark.suggestions!.map(s => s.direction), ["slow_down", "speed_up"])
+  const inverted = passage(.17, .25)
+  const [worse] = detectRate(inverted.words, {}, [], inverted.pacing).marks
+  assert.deepEqual(worse.suggestions!.map(s => [s.direction, s.text]), [["slow_down", "day day day day day."], ["speed_up", "day day day day day."]])
+  assert.ok(worse.suggestions!.every(s => s.last - s.first === 4), "each suggestion is one whole phrase")
+})
+test("key points spoken slower than the setup are left alone, for fast and slow talkers alike", () => {
+  for (const scale of [.7, 1, 1.4]) {
+    const good = passage(.25 * scale, .17 * scale)
+    assert.deepEqual(detectRate(good.words, {}, [], good.pacing).marks, [])
+    const flat = passage(.2 * scale, .2 * scale)
+    assert.equal(detectRate(flat.words, {}, [], flat.pacing).marks.length, 1)
+  }
+})
+test("without a pacing prediction the contrast check does not run", () => {
+  const flat = passage(.2, .2)
+  const analysis = detectRate(flat.words)
+  assert.equal(analysis.contrast, false)
+  assert.deepEqual(analysis.marks, [])
+  assert.equal(detectRate(flat.words, {}, [], flat.pacing).contrast, true)
+})
+test("a passage needs at least two key and two setup phrases to judge", () => {
+  const flat = passage(.2, .2)
+  const scores = flat.pacing.scores.map((s, i) => i < 11 ? 2 : s)
+  assert.deepEqual(detectRate(flat.words, {}, [], { ...flat.pacing, scores }).marks, [])
 })

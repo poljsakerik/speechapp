@@ -68,7 +68,7 @@ test("CLI gates both missed mistakes and clean false alarms", () => {
       return { id, base, audioExtension: "wav" }
     })
     writeFileSync(join(root, "manifest.json"), JSON.stringify({ schemaVersion: 1, id: "test", takes }))
-    const gate = (ids: string[]) => spawnSync(process.execPath, [join(import.meta.dirname, "../scripts/eval-rate.ts"), "--recordings-dir", root, "--recognizer-timing", "--require-pass", ...ids], { encoding: "utf8" })
+    const gate = (ids: string[]) => spawnSync(process.execPath, [join(import.meta.dirname, "../scripts/eval-rate.ts"), "--recordings-dir", root, "--recognizer-timing", "--no-pacing", "--require-pass", ...ids], { encoding: "utf8" })
     const report = () => JSON.parse(readFileSync(join(root, "rate-benchmark.json"), "utf8"))
     assert.equal(gate([]).status, 1, "unreviewed takes cannot make an incomplete suite pass")
     assert.equal(report().reviewed, 2)

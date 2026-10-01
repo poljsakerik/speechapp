@@ -6,6 +6,8 @@
   "exports": {
     "./align": "./src/align.ts",
     "./deepgram": "./src/deepgram.ts",
+    "./openai": "./src/openai.ts",
+    "./pacing": "./src/pacing.ts",
     "./pauses": "./src/pauses.ts",
     "./rate": "./src/rate.ts"
   },
