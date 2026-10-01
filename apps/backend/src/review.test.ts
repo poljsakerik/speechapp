@@ -6,8 +6,8 @@ test("rate review preserves both phrase actions within one sentence", () => {
   const words = "We need more time now.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
   const segments = segmentWords(words)
   const marks = [
-    { first: 0, last: 1, start: 0, end: 1.8, text: "We need", rule: "RATE_IMPORTANCE_SLOW" as const, ratio: 1, impact: .5 },
-    { first: 2, last: 3, start: 2, end: 3.8, text: "more time", rule: "RATE_IMPORTANCE_FAST" as const, ratio: 1, impact: .5 },
+    { first: 0, last: 1, start: 0, end: 1.8, text: "We need", rule: "RATE_IMPORTANCE_SLOW" as const, impact: .5 },
+    { first: 2, last: 3, start: 2, end: 3.8, text: "more time", rule: "RATE_IMPORTANCE_FAST" as const, impact: .5 },
   ]
   const findings = rateReview(segments, marks, "We need time").assessments[0].findings
   assert.equal(findings.length, 2)
@@ -19,7 +19,7 @@ test("rate review preserves both phrase actions within one sentence", () => {
 
 test("an adjustment crossing segment boundaries retains a precise span in each segment", () => {
   const words = "One. Two three.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
-  const marks = [{ first: 0, last: 1, start: 0, end: 1.8, text: "One. Two", rule: "RATE_IMPORTANCE_FAST" as const, ratio: 1, impact: .5 }]
+  const marks = [{ first: 0, last: 1, start: 0, end: 1.8, text: "One. Two", rule: "RATE_IMPORTANCE_FAST" as const, impact: .5 }]
   const findings = rateReview(segmentWords(words), marks, "").assessments[0].findings
   assert.deepEqual(findings.map(f => [f.segment_id, f.start, f.end]), [["segment-1", 0, .8], ["segment-2", 1, 1.8]])
 })
@@ -27,7 +27,7 @@ test("an adjustment crossing segment boundaries retains a precise span in each s
 test("even-pace findings retain highlights and insufficient evidence stays uncertain", () => {
   const words = "This is one complete passage.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
   const segments = segmentWords(words)
-  const marks = [{ first: 0, last: 4, start: 0, end: 4.8, text: words.map(w => w.text).join(" "), rule: "RATE_VARIATION" as const, ratio: 1, impact: 1 }]
+  const marks = [{ first: 0, last: 4, start: 0, end: 4.8, text: words.map(w => w.text).join(" "), rule: "RATE_VARIATION" as const, impact: 1 }]
   const assessment = rateReview(segments, marks).assessments[0]
   assert.equal(assessment.verdict, "mixed")
   assert.equal(assessment.findings[0].rule_id, "RATE_VARIATION")
@@ -38,7 +38,7 @@ test("even-pace findings retain highlights and insufficient evidence stays uncer
 
 test("interrupted-flow feedback coaches a connected thought without assessing the pause fundamental", () => {
   const words = "We can carry this thought forward.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
-  const mark = { first: 0, last: 5, start: 0, end: 5.8, text: words.map(w => w.text).join(" "), rule: "RATE_FLOW" as const, ratio: 1, impact: 1 }
+  const mark = { first: 0, last: 5, start: 0, end: 5.8, text: words.map(w => w.text).join(" "), rule: "RATE_FLOW" as const, impact: 1 }
   const review = rateReview(segmentWords(words), [mark])
   assert.equal(review.assessments[0].findings[0].rule_id, "RATE_FLOW")
   assert.match(review.assessments[0].findings[0].practice, /connected sentence/)

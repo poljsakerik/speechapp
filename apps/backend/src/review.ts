@@ -2,8 +2,8 @@ import { transcribe, wordsFromDeepgram } from "@micmane/vocal-processing/deepgra
 import { openaiCompletion } from "@micmane/vocal-processing/openai"
 import { alignWords, loadAligner, type Aligner } from "@micmane/vocal-processing/align"
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
-import { detectRate, reviewRate, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
-import { measureProsody } from "@micmane/vocal-processing/prosody"
+import { detectRate, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
+import { reviewRate } from "@micmane/vocal-processing/rate-review"
 import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
@@ -101,10 +101,9 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const pauses = decoded?.pauses
   if (transcript.length < 3) return undefined
   const segments = segmentWords(transcript)
-  const prosody = decoded && measureProsody(decoded.samples, decoded.sampleRate)
-  const analysis = detectRate(transcript, {}, pauses, prosody)
+  const analysis = detectRate(transcript, {}, pauses)
   if (!decoded) analysis.reliable = false
-  const result = await reviewRate(transcript, analysis, openaiCompletion({ model: process.env.RATE_MODEL })).catch(() => ({ ...analysis, marks: [], status: "uncertain" as const }))
+  const result = await reviewRate(transcript, analysis, openaiCompletion()).catch(() => ({ ...analysis, marks: [], status: "uncertain" as const }))
   return {
     audio: audio.toString("base64"),
     audioType,

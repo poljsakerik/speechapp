@@ -1,5 +1,5 @@
 /** Descriptive pace measurements. Silence is an observation, never a pause-coaching verdict. */
-import type { Word } from "./importance.ts"
+import type { Word } from "./types.ts"
 import type { Pause } from "./pauses.ts"
 
 type TimedWord = Word & { start: number; end: number }

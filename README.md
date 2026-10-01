@@ -30,7 +30,7 @@ Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: 
 
 ## Rate of speech
 
-Rate review measures the audio before asking the model to interpret a passage. It no longer labels words as important/unimportant to decide where to slow down. The existing transcript highlights remain the output; there is no new report layout.
+Rate review measures the audio before asking the model to interpret a passage. `rate.ts` detects acoustic patterns; `rate-review.ts` owns contextual review and finding selection, shared by the live app and evaluation. There is no importance-labeling stage or pitch-analysis pass. The existing transcript highlights remain the output; there is no new report layout.
 
 - FFmpeg decodes uploads, measured silence separates speaking pace from articulation speed, and forced alignment refines word boundaries. Alignment downloads a checksum-verified 95 MB English model on first use. `ALIGN_WORDS=0` disables it for live uploads; failed alignment falls back to recognizer timing.
 - A six-second rolling WPM curve separates speaking pace (including silence) from articulation pace (excluding silence). Measured pauses are separate intervals; the articulation line has gaps during silence. This is descriptive evidence, not a pause-foundation score.
@@ -66,7 +66,7 @@ Version 16 passed three fresh context-review runs on this 22-clip development se
 
 Rule IDs preserve compatibility with saved highlights: `RATE_IMPORTANCE_FAST` means rushed delivery, `RATE_IMPORTANCE_SLOW` means dragged delivery, `RATE_VARIATION` means sustained even pace, `RATE_REPETITIVE` means repeated fast/slow cadence, and `RATE_FLOW` means repeated interruptions within an unfinished thought. Flow advice asks for connected delivery rather than faster articulation or a pause-placement correction. The first two names no longer imply an importance label.
 
-Evaluation uses forced alignment by default; `--recognizer-timing` is an explicit ablation. Context reviews are cached by audio hash, full request, model, effort, rate version and run label. `--label-run` creates an independent review run; `--fresh` replaces the selected run's responses. `RATE_MODEL` overrides the model for both evaluation and live reviews; otherwise `IMPORTANCE_MODEL` (default `gpt-6-sol`) applies. `IMPORTANCE_EFFORT` defaults to `low`.
+Evaluation uses forced alignment by default; `--recognizer-timing` is an explicit ablation. Context reviews are cached by audio hash, full request, model, effort, rate version and run label. `--label-run` creates an independent review run; `--fresh` replaces the selected run's responses. Both evaluation and live reviews use `RATE_MODEL` (default `gpt-6-sol`) and `RATE_EFFORT` (default `low`). Rename existing `IMPORTANCE_MODEL`/`IMPORTANCE_EFFORT` settings to these rate-specific names when upgrading.
 
 This is a two-speaker **development benchmark**, used during tuning. Clips from the same recording are correlated and do not count as independent speakers. Passing it does not establish accuracy on unfamiliar speakers. The ordinary-speech positives currently cover interrupted flow, not a broad range of rushed or monotonous delivery. Check repeat runs and the full recording, not only the cropped passages.
 

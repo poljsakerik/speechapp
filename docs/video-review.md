@@ -4,6 +4,8 @@ Reviewed on 25 September 2026. The five files total **30 minutes 44 seconds**.
 
 Method: decoded all five files, generated full local timestamped transcripts with `faster-whisper small.en`, inspected nine evenly spaced visual frames per video, and ran exploratory acoustic measurements on selected demonstrations. This is a transcript-and-frame review with audio signal analysis, not an uninterrupted audiovisual viewing or a human listening evaluation. Automatic transcription has visible errors and its word boundaries are approximate. Times below are navigation references; verify exact boundaries before curating evaluation clips.
 
+This document records the initial research and proposed rules. The current rate implementation is documented in [README](../README.md#rate-of-speech); it does not use the importance-labeling proposal below.
+
 The videos remain the source of the coaching approach. Descriptions below paraphrase that approach; they do not endorse every broad psychological claim in the lessons as established scientific fact.
 
 ## 1. Rate of speech — 05:37

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import type { Word } from "./importance.ts"
-import { applyRateReview, contextCandidates, detectRate, rateReviewRequest, reviewRate, syllables, type RateAnalysis } from "./rate.ts"
+import type { Word } from "./types.ts"
+import { detectRate, syllables, type RateAnalysis } from "./rate.ts"
+import { applyRateReview, contextCandidates, rateReviewRequest, reviewRate } from "./rate-review.ts"
+import { openaiCompletion } from "./openai.ts"
 
 function speech(durations: number[], gap = 0): Word[] {
   let t = 0
@@ -50,34 +52,32 @@ test("steady and periodically repeated pacing differ from irregular pace", () =>
   const mild = detectRate(speech(Array.from({ length: 60 }, (_, i) => [1 / 7.14, 1 / 5.26, 1 / 6.19, 1 / 5.33, 1 / 6.52, 1 / 5.46][Math.floor(i / 10)])))
   assert.ok(!mild.candidates.some(c => c.rule === "RATE_REPETITIVE"), "one large contrast cannot turn several mild fluctuations into a repeated pattern")
 })
-test("pitch movement is context evidence, never an automatic rate exemption", () => {
-  const words = speech(Array(70).fill(.1))
-  const frames = Array.from({ length: 700 }, (_, i) => ({ time: i / 100, pitch: 100 * 2 ** ((i % 100) / 100), db: -20 }))
-  assert.deepEqual(detectRate(words, {}, [], frames).candidates.map(c => [c.first, c.last, c.rule]), detectRate(words).candidates.map(c => [c.first, c.last, c.rule]))
-})
 test("context review preserves exact highlights and rejects fabricated or escaped decisions", async () => {
-  const words = speech(Array(70).fill(.1)), analysis = detectRate(words)
+  const words = speech(Array(200).fill(.1)), analysis = detectRate(words)
   analysis.candidates.forEach(c => { c.pattern = "relative-fast" })
+  let requests = 0
   const result = await reviewRate(words, analysis, async request => {
+    requests++
     assert.ok(request.user.includes("Full original lecture"))
     assert.ok(!request.user.includes("golden"))
     return respond(analysis, "keep")
   }, "Full original lecture")
+  assert.equal(requests, 1, "all contextual candidates share one full-context request")
   assert.ok(result.marks.length)
   for (const mark of result.marks) {
     assert.equal(mark.start, words[mark.first].start)
     assert.equal(mark.end, words[mark.last].end)
     assert.equal(mark.text, words.slice(mark.first, mark.last + 1).map(w => w.text).join(" "))
   }
-  assert.throws(() => applyRateReview(words, analysis, { decisions: [] }), /cover every/)
+  assert.throws(() => applyRateReview(analysis, { decisions: [] }), /cover every/)
   const bad = respond(analysis, "keep"); bad.decisions[0].first = -1
-  assert.throws(() => applyRateReview(words, analysis, bad), /Invalid/)
+  assert.throws(() => applyRateReview(analysis, bad), /Invalid/)
   const cropped = respond(analysis, "keep"); cropped.decisions[0].last--
-  assert.throws(() => applyRateReview(words, analysis, cropped), /Invalid/, "cropping invalidates the measured span")
+  assert.throws(() => applyRateReview(analysis, cropped), /Invalid/, "cropping invalidates the measured span")
   const unknown = respond(analysis, "keep"); unknown.decisions[0].id = "made-up"
-  assert.throws(() => applyRateReview(words, analysis, unknown), /Invalid/)
-  assert.equal(applyRateReview(words, analysis, respond(analysis, "uncertain")).status, "uncertain")
-  assert.deepEqual(applyRateReview(words, analysis, respond(analysis, "dismiss")).marks, [])
+  assert.throws(() => applyRateReview(analysis, unknown), /Invalid/)
+  assert.equal(applyRateReview(analysis, respond(analysis, "uncertain")).status, "uncertain")
+  assert.deepEqual(applyRateReview(analysis, respond(analysis, "dismiss")).marks, [])
 })
 test("short or invalid timing is uncertain, not a clean assessment; no model call is made", async () => {
   const words = speech([.3, .3, .3]), analysis = detectRate(words)
@@ -91,7 +91,7 @@ test("short or invalid timing is uncertain, not a clean assessment; no model cal
 
 test("sustained measured patterns keep their evidence span without a language-model veto", async () => {
   const words = speech(Array(70).fill(.1)), analysis = detectRate(words)
-  const result = await reviewRate(words, analysis, async () => { throw new Error("No context call for absolute measurements") })
+  const result = await reviewRate(words, analysis, openaiCompletion({ apiKey: "" }))
   assert.ok(result.marks.length)
   assert.ok(result.marks.every(m => analysis.candidates.some(c => c.first === m.first && c.last === m.last)))
 })

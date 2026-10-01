@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import { isAbsolute, relative, resolve } from "node:path"
 import { alignMarks, type GoldenMark } from "./golden.ts"
-import type { Word } from "./importance.ts"
+import type { Word } from "./types.ts"
 import type { RateRule } from "./rate.ts"
 
 export const RATE_RULES: RateRule[] = ["RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW", "RATE_VARIATION", "RATE_REPETITIVE", "RATE_FLOW"]

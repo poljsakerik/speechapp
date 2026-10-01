@@ -516,16 +516,14 @@ function renderMarks() {
   if (showingPred()) renderPred(list);
 }
 
-// Each pipeline mark identifies a specific phrase to slow down or speed up.
+// Each prediction identifies a measured passage and its coaching rule.
 function renderPred(list) {
-  const c = pred.config, esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
-  const pace = pred.speakerPace ? `pace ×${(pred.speakerPace / c.referencePace).toFixed(2)} of the ${c.referencePace} s/syllable reference` : "";
-  const wpm = pred.wordsPerMinute ? `${Math.round(pred.wordsPerMinute)} words/min${typeof pred.pace === "string" && pred.pace !== "ok" ? ` (too ${pred.pace})` : ""}` : "";
+  const esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+  const wpm = pred.wordsPerMinute ? `${Math.round(pred.wordsPerMinute)} words/min` : "";
   const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)}` : "";
   const pauses = pred.pauses ? `${pred.pauses.length} measured pause${pred.pauses.length === 1 ? "" : "s"}` : "";
   list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
-    ${pred.message ? `<p class="pred-summary"><b>Message:</b> ${esc(pred.message.message)}</p>` : ""}
-    <p class="pred-summary">${[wpm, pace, variation, pauses].filter(Boolean).join(" · ")}</p>
+    <p class="pred-summary">${[wpm, variation, pauses].filter(Boolean).join(" · ")}</p>
     <div class="legend">
       <span><i class="u" style="background:var(--rule-fast-ink)"></i>slow down</span><span><i class="u" style="background:var(--f-rate-ink)"></i>other pace adjustments</span>
     </div>`);
@@ -536,7 +534,7 @@ function renderPred(list) {
     el.className = "mark pred";
     const label = m.rule;
     const hit = m.hit == null ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
-    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
+    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
       <span>${hit}</span>
       <div class="quote"></div>`;
     el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);

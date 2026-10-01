@@ -16,7 +16,7 @@ import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
-import type { Word } from "./importance.ts"
+import type { Word } from "./types.ts"
 import type { Pause } from "./pauses.ts"
 
 export const ALIGN_MODEL = {

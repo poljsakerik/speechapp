@@ -6,11 +6,11 @@ import { parseArgs } from "node:util"
 import { loadAnnotation, loadCorpus, metrics, RATE_RULES, scoreRate, type Counts } from "../src/benchmark.ts"
 import { wordsFromDeepgram } from "../src/deepgram.ts"
 import { wordOffsets } from "../src/golden.ts"
-import { openaiCompletion } from "../src/openai.ts"
+import { openaiCompletion, rateReviewSettings } from "../src/openai.ts"
 import { decodeWav, findPauses } from "../src/pauses.ts"
 import { ALIGN_MODEL, alignWords, loadAligner, resample, type Aligner } from "../src/align.ts"
-import { measureProsody } from "../src/prosody.ts"
-import { RATE_VERSION, DEFAULT_RATE_CONFIG, contextCandidates, detectRate, rateReviewRequest, applyRateReview, type RateRule } from "../src/rate.ts"
+import { RATE_VERSION, DEFAULT_RATE_CONFIG, detectRate, type RateRule } from "../src/rate.ts"
+import { rateReviewRequest, applyRateReview, reviewRate } from "../src/rate-review.ts"
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   fresh: { type: "boolean", default: false }, "recordings-dir": { type: "string" },
@@ -20,8 +20,7 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
 const root = resolve(values["recordings-dir"] ?? join(import.meta.dirname, "../../../recordings-rate-development"))
 const corpus = loadCorpus(root), takes = corpus.takes.filter(t => !positionals.length || positionals.includes(t.id))
 if (positionals.some(id => !corpus.takes.some(t => t.id === id))) throw new Error("Unknown take ID")
-const model = process.env.RATE_MODEL ?? process.env.IMPORTANCE_MODEL ?? "gpt-6-sol"
-const effort = process.env.IMPORTANCE_EFFORT ?? "low"
+const { model, effort } = rateReviewSettings()
 const totals: Counts = { tp: 0, fp: 0, fn: 0 }
 const byRule = Object.fromEntries(RATE_RULES.map(r => [r, { tp: 0, fp: 0, fn: 0 }])) as Record<RateRule, Counts>
 const rows: Record<string, unknown>[] = []
@@ -51,25 +50,22 @@ for (const take of takes) {
         writeFileSync(file, JSON.stringify(words) + "\n")
       }
     }
-    const analysis = detectRate(words, {}, pauses, measureProsody(wav.samples, wav.sampleRate))
+    const analysis = detectRate(words, {}, pauses)
     const context = existsSync(`${base}.context.txt`) ? readFileSync(`${base}.context.txt`, "utf8") : undefined
     const request = rateReviewRequest(words, analysis, context)
     const key = hash({ request, audioHash, model, effort, version: RATE_VERSION, run: values["label-run"] })
     const file = join(cacheDir, `rate-${key}.json`)
-    let reply: unknown = { decisions: [] }
-    if (analysis.reliable && contextCandidates(analysis).length) {
-      if (existsSync(file) && !values.fresh) reply = JSON.parse(readFileSync(file, "utf8"))
-      else {
-        reply = await openaiCompletion({ model })(request)
-        // Validate before caching; a malformed reply must not poison later runs.
-        applyRateReview(words, analysis, reply)
-        writeFileSync(file, JSON.stringify(reply) + "\n")
-      }
-    }
-    const result = analysis.reliable ? applyRateReview(words, analysis, reply) : { ...analysis, marks: [], decisions: [], status: "uncertain" }
+    const result = await reviewRate(words, analysis, async request => {
+      if (existsSync(file) && !values.fresh) return JSON.parse(readFileSync(file, "utf8"))
+      const reply = await openaiCompletion({ model, effort })(request)
+      // Validate before caching; a malformed reply must not poison later runs.
+      applyRateReview(analysis, reply)
+      writeFileSync(file, JSON.stringify(reply) + "\n")
+      return reply
+    }, context)
     if (result.status === "uncertain") uncertain++
     const offsets = wordOffsets(text, original)
-    const predicted = result.marks.map(m => ({ startAt: m.start, endAt: m.end, startIndex: offsets[m.first]![0], endIndex: offsets[m.last]![1], foundationType: "rate", rule: m.rule, ratio: m.ratio }))
+    const predicted = result.marks.map(m => ({ startAt: m.start, endAt: m.end, startIndex: offsets[m.first]![0], endIndex: offsets[m.last]![1], foundationType: "rate", rule: m.rule }))
     const score = scoreRate(text, original, annotation.marks, predicted)
     reviewed++; add(totals, score)
     for (const rule of RATE_RULES) add(byRule[rule], score.byRule[rule])

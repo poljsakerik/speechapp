@@ -8,7 +8,6 @@ import { metrics, scoreRate } from "./benchmark.ts"
 import type { GoldenMark } from "./golden.ts"
 import { detectRate } from "./rate.ts"
 import { decodeWav, findPauses } from "./pauses.ts"
-import { measureProsody } from "./prosody.ts"
 
 const words = "One two three four five six seven eight nine ten.".split(" ").map((text, i) => ({ text, start: i * .3, end: (i + 1) * .3 }))
 const text = words.map(w => w.text).join(" ")
@@ -51,7 +50,7 @@ test("CLI gates both missed mistakes and clean false alarms, without API access"
     wav.write("data", 36); wav.writeUInt32LE(wav.length - 44, 40)
     for (let i = 0; i < 16000 * 12; i++) wav.writeInt16LE(Math.round(9000 * Math.sin(i * 2 * Math.PI * 160 / 16000)), 44 + i * 2)
     const audio = decodeWav(wav)
-    const analysis = detectRate(words, {}, findPauses(audio.samples, audio.sampleRate), measureProsody(audio.samples, audio.sampleRate))
+    const analysis = detectRate(words, {}, findPauses(audio.samples, audio.sampleRate))
     assert.ok(analysis.reliable)
     assert.equal(analysis.candidates.length, 1)
     assert.equal(analysis.candidates[0].rule, "RATE_VARIATION")
@@ -68,7 +67,7 @@ test("CLI gates both missed mistakes and clean false alarms, without API access"
       return { id, base, audioExtension: "wav" }
     })
     writeFileSync(join(root, "manifest.json"), JSON.stringify({ schemaVersion: 1, id: "test", takes }))
-    const gate = (ids: string[]) => spawnSync(process.execPath, [join(import.meta.dirname, "../scripts/eval-rate.ts"), "--recordings-dir", root, "--recognizer-timing", "--require-pass", ...ids], { encoding: "utf8", env: { ...process.env, OPENAI_API_KEY: "", RATE_MODEL: "test-model", IMPORTANCE_EFFORT: "low" } })
+    const gate = (ids: string[]) => spawnSync(process.execPath, [join(import.meta.dirname, "../scripts/eval-rate.ts"), "--recordings-dir", root, "--recognizer-timing", "--require-pass", ...ids], { encoding: "utf8", env: { ...process.env, OPENAI_API_KEY: "", RATE_MODEL: "test-model", RATE_EFFORT: "low" } })
     const report = () => JSON.parse(readFileSync(join(root, "rate-benchmark.json"), "utf8"))
     assert.equal(gate([]).status, 1, "unreviewed takes cannot make an incomplete suite pass")
     assert.equal(report().reviewed, 2)
