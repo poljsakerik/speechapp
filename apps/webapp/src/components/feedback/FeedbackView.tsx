@@ -20,8 +20,8 @@ type FeedbackViewProps = {
 
 /** What each rule is called in a note, and whether it marks a whole stretch rather than one phrase. */
 const RULES: Record<string, { label: string; stretch?: boolean }> = {
-  RATE_IMPORTANCE_FAST: { label: "Slow down" },
-  RATE_IMPORTANCE_SLOW: { label: "Speed up" },
+  RATE_IMPORTANCE_FAST: { label: "Rushed point" },
+  RATE_IMPORTANCE_SLOW: { label: "Dragged passage" },
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]

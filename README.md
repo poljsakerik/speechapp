@@ -58,7 +58,7 @@ Audio, transcripts, annotations, caches, and generated reports remain local and 
 
 ## Vocal processing
 
-The first stage labels transcript phrases by message importance. The rate stage identifies specific phrases to slow down or speed up; live reviews quote those words and preserve their exact highlight boundaries. Live processing needs the API keys in `.env`; tests need neither.
+The first stage labels transcript phrases by message importance. The rate stage identifies specific phrases to slow down or speed up; live reviews preserve their exact highlight boundaries. Live processing needs the API keys in `.env`; tests need neither.
 
 ```sh
 pnpm --dir packages/vocal-processing rate ../../recordings/rate/rate-01/rate-01.wav

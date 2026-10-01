@@ -33,7 +33,7 @@ if (flags.includes("--json")) {
   const overall = result.speakerPace ? `x${(result.speakerPace / referencePace).toFixed(2)} of` : "too short to compare with"
   const variation = result.variation === undefined ? "too short to measure" : result.variation.toFixed(2)
   console.log(`Overall pace ${overall} the reference; pace variation ${variation}\n`)
-  const labels = { RATE_IMPORTANCE_FAST: "slow down", RATE_IMPORTANCE_SLOW: "speed up" }
+  const labels = { RATE_IMPORTANCE_FAST: "point rushed", RATE_IMPORTANCE_SLOW: "dragging" }
   for (const m of result.marks) {
     const what = `x${m.ratio.toFixed(2)}  ${m.text}`
     console.log(`${m.start.toFixed(1).padStart(6)}s  ${labels[m.rule].padEnd(16)} ${what}`)

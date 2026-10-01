@@ -208,7 +208,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">MicMane <span>/</span> voice benchmarks</div>
+  <div class="brand">MicMane <span>/</span> golden set</div>
   <select id="recording" aria-label="Recording"></select>
   <button id="previous" aria-label="Previous take">←</button><button id="next" aria-label="Next take">→</button>
   <div class="tabs" id="tabs" role="group" aria-label="Foundation"></div>
@@ -263,7 +263,7 @@
 // Foundations and rules, from docs/video-review.md.
 const FOUNDATIONS = [
   { key: "rate", label: "Rate of speech", rules: [
-    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down on these words so the important point has time to land." },
+    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down on this important phrase, or give it a pause or another emphasis cue." },
     { id: "RATE_IMPORTANCE_SLOW", hint: "Speed up through this less important material." },
   ]},
   { key: "volume", label: "Volume", rules: [
@@ -309,7 +309,6 @@ let stopAt = null;
 let nowIdx = -1;
 let pred = null;     // pipeline rate marks, from <id>.rate.pred.json
 const RULE_FAST = "RATE_IMPORTANCE_FAST";
-const rateAction = rule => rule === RULE_FAST ? "Slow down" : rule === "RATE_IMPORTANCE_SLOW" ? "Speed up" : rule;
 const predColor = m => m.rule === RULE_FAST ? "var(--rule-fast-ink)" : "var(--f-rate-ink)";
 const predClasses = m => ["pred", ...(m.rule === RULE_FAST ? ["pfast"] : [])];
 const showingPred = () => !!pred && foundation === "rate" && $("showPred").checked;
@@ -345,7 +344,7 @@ function setFoundation(key) {
   document.documentElement.style.setProperty("--cur", `var(--f-${key})`);
   document.documentElement.style.setProperty("--cur-ink", `var(--f-${key}-ink)`);
   $("fLabel").textContent = byKey[key].label;
-  $("rules").innerHTML = byKey[key].rules.map(r => `<div class="rule"><b>${rateAction(r.id)}</b><p>${r.hint}</p></div>`).join("");
+  $("rules").innerHTML = byKey[key].rules.map(r => `<div class="rule"><b>${r.id}</b><p>${r.hint}</p></div>`).join("");
   closePop();
   renderAll();
 }
@@ -498,7 +497,7 @@ function renderMarks() {
   for (const m of mine) {
     const el = document.createElement("div");
     el.className = "mark";
-    el.innerHTML = `<div class="meta"><b>${rateAction(m.rule)}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
+    el.innerHTML = `<div class="meta"><b>${m.rule}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
       <button class="del" title="Delete mark" aria-label="Delete mark">×</button>
       <div class="quote"></div>`;
     el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
@@ -529,7 +528,7 @@ function renderPred(list) {
   for (const m of order) {
     const el = document.createElement("div");
     el.className = "mark pred";
-    const label = rateAction(m.rule);
+    const label = m.rule;
     const hit = m.hit == null ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
     el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
       <span>${hit}</span>
@@ -650,7 +649,7 @@ function openPop(rect) {
   f.rules.forEach((r, i) => {
     const b = document.createElement("button");
     b.className = "opt";
-    b.innerHTML = `<kbd>${i + 1}</kbd><b>${rateAction(r.id)}</b><span>${r.hint}</span>`;
+    b.innerHTML = `<kbd>${i + 1}</kbd><b>${r.id}</b><span>${r.hint}</span>`;
     b.onclick = () => addMark(r.id);
     $("popOpts").append(b);
   });

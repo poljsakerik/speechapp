@@ -46,11 +46,11 @@ export type RateConfig = {
   /** Seconds between the starts of consecutive variance windows. */
   varianceStep: number
   /** Below this standard deviation of log2 pace, a window has little pace contrast (0.1 is about ±7%). */
-  lowVariationBelow: number
+  monotoneBelow: number
   /** Windows with fewer phrases are too sparse to judge. */
   minWindowPhrases: number
   /** Low-variation stretches shorter than this (seconds) do not generate contrast suggestions. */
-  minContrastSeconds: number
+  minMonotoneSeconds: number
 
   // Outliers
   /** Labels whose phrases can be rushed; the first present in the transcript is used. */
@@ -85,7 +85,7 @@ export type RateConfig = {
  * with pauses), its slowest 3% of phrases run 1.4x that, and its pace
  * variation over 30 s windows never drops below 0.15, and none of its
  * dragging would save a full second (the most is 0.8 s); it rushes no message
- * phrase. So dragAbove, lowVariationBelow, minDragImpact and minRushImpact sit just outside what the good delivery does; lowVariationBelow
+ * phrase. So dragAbove, monotoneBelow, minDragImpact and minRushImpact sit just outside what the good delivery does; monotoneBelow
  * 0.1 (about ±7%) is also close to the ~6% change listeners can notice.
  */
 export const DEFAULT_RATE_CONFIG: RateConfig = {
@@ -95,9 +95,9 @@ export const DEFAULT_RATE_CONFIG: RateConfig = {
   minSyllables: 3,
   varianceWindow: 30,
   varianceStep: 5,
-  lowVariationBelow: 0.1,
+  monotoneBelow: 0.1,
   minWindowPhrases: 6,
-  minContrastSeconds: 20,
+  minMonotoneSeconds: 20,
   rushLabels: ["message", "important"],
   dragLabels: ["unimportant"],
   dragAbove: 1.5,
@@ -155,7 +155,7 @@ export function detectRate(words: MarkedWord[], config: Partial<RateConfig> = {}
   const rushLabel = c.rushLabels.find((label) => words.some((w) => w.importance === label))
   const canRush = (p: RatePhrase) => p.importance === rushLabel
   const canDrag = (p: RatePhrase) => c.dragLabels.includes(p.importance)
-  const contrastGroups = lowVariationStretches(windows, breaths, c)
+  const contrastGroups = monotoneStretches(windows, breaths, c)
     .map(stretch => suggestAdjustments(stretch, phrases, canRush, canDrag, c))
     .filter(group => group.length)
 
@@ -295,10 +295,10 @@ export function varianceWindows(phrases: RatePhrase[], c: RateConfig): VarianceW
 }
 
 /** Merge overlapping low-variation windows into stretches, snapped to the phrases inside them. */
-function lowVariationStretches(windows: VarianceWindow[], phrases: RatePhrase[], c: RateConfig) {
+function monotoneStretches(windows: VarianceWindow[], phrases: RatePhrase[], c: RateConfig) {
   const merged: { start: number; end: number }[] = []
   for (const w of windows) {
-    if (w.sd >= c.lowVariationBelow) continue
+    if (w.sd >= c.monotoneBelow) continue
     const last = merged[merged.length - 1]
     if (last && w.start <= last.end) last.end = Math.max(last.end, w.end)
     else merged.push({ start: w.start, end: w.end })
@@ -307,7 +307,7 @@ function lowVariationStretches(windows: VarianceWindow[], phrases: RatePhrase[],
     const inside = phrases.filter((p) => middle(p) >= s.start && middle(p) <= s.end)
     if (!inside.length) return []
     const snapped = { start: start(inside[0]), end: end(inside[inside.length - 1]) }
-    return snapped.end - snapped.start >= c.minContrastSeconds ? [snapped] : []
+    return snapped.end - snapped.start >= c.minMonotoneSeconds ? [snapped] : []
   })
 }
 

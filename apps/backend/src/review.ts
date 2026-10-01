@@ -51,14 +51,9 @@ export function rateReview(segments: Segment[], marks: RateMark[], message: stri
     const covered = segment.words.filter(word => word.start >= mark.start && word.end <= mark.end)
     if (!covered.length) return []
     const phrase = covered.map(word => word.text).join(" ")
-    const action = mark.rule === "RATE_IMPORTANCE_FAST" ? "Slow down on" : "Speed up through"
     return [{
       segment_id: segment.id, rule_id: mark.rule, kind: "improvement", uncertainty: "tentative",
       ...copy[mark.rule],
-      observation: `${action} “${phrase}”`,
-      practice: mark.rule === "RATE_IMPORTANCE_FAST"
-        ? `Give “${phrase}” more time, then resume your natural pace.`
-        : `Move through “${phrase}” more briskly to leave room for the key idea.`,
       start: covered[0].start, end: covered[covered.length - 1].end, text: phrase,
     }]
   }))

@@ -67,7 +67,7 @@ for (const take of takes) {
     failed++; rows.push({ id: take.id, status: "error", error: (error as Error).message }); console.error(`${take.id}: ${(error as Error).message}`)
   }
 }
-const report = { corpus: corpus.id, createdAt: new Date().toISOString(), mode: values["predict-only"] ? "predict-only" : "benchmark", selected: takes.length, reviewed, failed, detectorLimits: { minContrastSeconds: DEFAULT_RATE_CONFIG.minContrastSeconds, shorterTakes: takes.filter(t => t.duration < DEFAULT_RATE_CONFIG.minContrastSeconds).length }, matching: "same rule, word IoU >= 0.3, maximum one-to-one matching; direct speed-up/slow-down phrase marks", totals: { ...totals, ...metrics(totals) }, byRule, cleanTakes, cleanTakesWithFalseAlarms, takes: rows }
+const report = { corpus: corpus.id, createdAt: new Date().toISOString(), mode: values["predict-only"] ? "predict-only" : "benchmark", selected: takes.length, reviewed, failed, detectorLimits: { minMonotoneSeconds: DEFAULT_RATE_CONFIG.minMonotoneSeconds, shorterTakes: takes.filter(t => t.duration < DEFAULT_RATE_CONFIG.minMonotoneSeconds).length }, matching: "same rule, word IoU >= 0.3, maximum one-to-one matching; direct speed-up/slow-down phrase marks", totals: { ...totals, ...metrics(totals) }, byRule, cleanTakes, cleanTakesWithFalseAlarms, takes: rows }
 writeFileSync(join(root, values["predict-only"] ? "rate-predictions.json" : "rate-benchmark.json"), JSON.stringify(report, null, 2) + "\n")
 console.log(`\n${reviewed}/${takes.length} reviewed takes scored. TP ${totals.tp}, FP ${totals.fp}, FN ${totals.fn}.`)
 if (!reviewed && !values["predict-only"]) console.log("No benchmark score yet. Annotate takes and mark Rate of speech as reviewed in pnpm markup-tools. Empty reviewed takes count as clear examples.")

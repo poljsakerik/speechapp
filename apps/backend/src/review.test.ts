@@ -12,9 +12,9 @@ test("rate review preserves both phrase actions within one sentence", () => {
   const findings = rateReview(segments, marks, "We need time").assessments[0].findings
   assert.equal(findings.length, 2)
   assert.deepEqual(findings.map(f => [f.rule_id, f.start, f.end]), [["RATE_IMPORTANCE_SLOW", 0, 1.8], ["RATE_IMPORTANCE_FAST", 2, 3.8]])
-  assert.equal(findings[0].observation, "Speed up through “We need”")
-  assert.equal(findings[1].observation, "Slow down on “more time”")
-  assert.match(findings[1].practice, /“more time”/)
+  assert.equal(findings[0].observation, "This setup took more time than the point needs.")
+  assert.equal(findings[1].observation, "This point passed quickly.")
+  assert.deepEqual(findings.map(f => f.text), ["We need", "more time"])
 })
 
 test("an adjustment crossing segment boundaries retains a precise span in each segment", () => {
