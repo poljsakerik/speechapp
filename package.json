@@ -14,7 +14,8 @@
     "markup-tools": "pnpm --dir apps/markup-tools dev",
     "rate": "pnpm --dir packages/vocal-processing rate",
     "eval:rate": "pnpm --dir packages/vocal-processing eval:rate",
-    "import:voice-pack": "pnpm --dir packages/vocal-processing import:voice-pack"
+    "import:voice-pack": "pnpm --dir packages/vocal-processing import:voice-pack",
+    "import:rate": "pnpm --dir packages/vocal-processing import:rate"
   },
   "devDependencies": {
     "turbo": "^2.11.5",

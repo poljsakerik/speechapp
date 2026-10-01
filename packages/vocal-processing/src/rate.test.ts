@@ -1,93 +1,97 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import type { Importance, MarkedWord } from "./importance.ts"
-import { detectRate, syllables } from "./rate.ts"
+import type { Word } from "./importance.ts"
+import { applyRateReview, contextCandidates, detectRate, rateReviewRequest, reviewRate, syllables, type RateAnalysis } from "./rate.ts"
 
-type Part = [text: string, importance: Importance, pace?: number, pauseBefore?: number]
-
-/** Words spoken one after another at `pace` × the 0.25 s per syllable reference, with an optional pause before each part. */
-function speak(parts: Part[]): MarkedWord[] {
+function speech(durations: number[], gap = 0): Word[] {
   let t = 0
-  return parts
-    .flatMap(([text, importance, pace = 1, pauseBefore = 0]) => {
-      t += pauseBefore
-      return text.split(" ").map((word) => {
-        const start = t
-        t += syllables(word) * 0.25 * pace
-        return { text: word, start, end: t, importance, index: 0 }
-      })
-    })
-    .map((w, index) => ({ ...w, index }))
+  return durations.map((duration, i) => {
+    const start = t; t += duration
+    const word = { text: i % 10 === 9 ? "day." : "day", start, end: t }; t += gap
+    return word
+  })
 }
+const respond = (a: RateAnalysis, decision: "keep" | "dismiss" | "uncertain") => ({ decisions: contextCandidates(a).map(c => ({ id: c.id, decision, first: c.first, last: c.last, reason: "Measured pattern checked in context." })) })
 
-/** A sentence of about 16 syllables. */
-const said = (pace: number, pauseBefore = 0.35): Part => ["we went through the numbers on the call together again.", "unimportant", pace, pauseBefore]
-/** Speech whose pace swings from phrase to phrase, so it never sounds monotone. */
-const varied = (n: number): Part[] => Array.from({ length: n }, (_, i) => said([0.8, 1.2, 0.9, 1.15][i % 4]))
-const rules = (words: MarkedWord[], config = {}) => detectRate(words, config).marks.map((m) => [m.rule, m.text])
-
-test("flags a less important phrase dragged far past normal pace, not a mildly slow one", () => {
-  const words = speak([...varied(4), ["and then we talked about it for a while.", "unimportant", 2, 0.35], ...varied(4), ["and so on and so forth.", "unimportant", 1.3, 0.35], ...varied(4)])
-  assert.deepEqual(rules(words), [["RATE_IMPORTANCE_SLOW", "and then we talked about it for a while."]])
+test("counts pronunciation syllables and spoken numbers instead of digits", () => {
+  assert.deepEqual(["300", "100", "times", "people", "performing", "0.03%"].map(syllables), [3, 3, 1, 2, 3, 8])
 })
-
-test("flags a rushed message phrase only when nothing else emphasizes it", () => {
-  const rushed = speak([...varied(4), ["sales fell by half.", "important", 0.8, 0.35], ...varied(4)])
-  assert.deepEqual(rules(rushed), [["RATE_IMPORTANCE_FAST", "sales fell by half."]])
-  const paused = speak([...varied(4), ["sales fell by half.", "important", 0.8, 1], ...varied(4)])
-  assert.deepEqual(rules(paused), [])
+test("sustained rushing and dragging generate candidates without importance labels", () => {
+  const fast = detectRate(speech(Array(70).fill(.1)))
+  assert.ok(fast.candidates.some(c => c.rule === "RATE_IMPORTANCE_FAST"))
+  const slow = detectRate(speech(Array(30).fill(.6)))
+  assert.ok(slow.candidates.some(c => c.rule === "RATE_IMPORTANCE_SLOW"))
+  assert.ok(fast.candidates.every(c => c.last - c.first >= 2 && c.end - c.start >= 5))
 })
-
-test("with message labels, only message phrases can be rushed and only unimportant ones dragged", () => {
-  const words = speak([
-    ...varied(4),
-    ["sales fell by half.", "message", 0.8, 0.35],
-    ...varied(2),
-    ["the whole team gasped out loud.", "important", 0.7, 0.35],
-    ...varied(2),
-    ["and nobody said a single word for the rest of the day.", "important", 2, 0.35],
-    ...varied(4),
-  ])
-  assert.deepEqual(rules(words), [["RATE_IMPORTANCE_FAST", "sales fell by half."]])
+test("a brief fast burst is not sustained rushing", () => {
+  const words = speech([...Array(20).fill(.22), ...Array(5).fill(.1), ...Array(20).fill(.22)])
+  assert.ok(!detectRate(words).candidates.some(c => c.rule === "RATE_IMPORTANCE_FAST"))
+  const interrupted = speech([...Array(20).fill(.1), ...Array(10).fill(.2), ...Array(30).fill(.1)])
+  assert.ok(!detectRate(interrupted).candidates.some(c => c.rule === "RATE_IMPORTANCE_FAST"), "separate bursts cannot be added into one sustained rush")
 })
-
-test("flat delivery produces two direct phrase adjustments rather than a passage finding", () => {
-  const flat: Part[] = Array.from({ length: 6 }, () => said(1))
-  const words = speak([...flat, ["sales fell by half.", "important", 1, 0.35], ...flat])
-  const { marks } = detectRate(words)
-  assert.equal(marks.length, 2)
-  assert.deepEqual(marks.map(m => [m.rule, m.text]), [
-    ["RATE_IMPORTANCE_FAST", "sales fell by half."],
-    ["RATE_IMPORTANCE_SLOW", "we went through the numbers on the call together again."],
-  ])
-  for (const m of marks) {
-    assert.equal(m.start, words[m.first].start)
-    assert.equal(m.end, words[m.last].end)
-    assert.ok(m.last - m.first < 12)
-    assert.equal("slowDown" in m || "speedUp" in m, false)
+test("measured silence distinguishes articulation from experienced pace without removing fillers", () => {
+  const words = speech(Array(35).fill(.2), .3)
+  const pauses = words.slice(0, -1).map((w, i) => ({ start: w.end!, end: words[i + 1].start! }))
+  const a = detectRate(words, {}, pauses)
+  assert.ok(a.articulationRate! > a.wordsPerMinute! / 60 * 2)
+  const smeared = words.map((w, i) => ({ ...w, end: words[i + 1]?.start ?? w.end }))
+  assert.ok(Math.abs(detectRate(smeared, {}, pauses).articulationRate! - a.articulationRate!) < .01)
+  assert.equal(detectRate(words, {}, [...pauses, ...pauses]).articulationRate, a.articulationRate, "overlapping silence cannot be subtracted twice")
+  const fillers = words.map((w, i) => ({ ...w, text: i % 7 === 0 ? "um" : w.text }))
+  assert.equal(detectRate(fillers, {}, pauses).phrases[0].first, 0)
+})
+test("steady and periodically repeated pacing differ from irregular pace", () => {
+  const even = detectRate(speech(Array(60).fill(.2)))
+  assert.ok(even.candidates.some(c => c.rule === "RATE_VARIATION"))
+  const irregular = detectRate(speech(Array.from({ length: 60 }, (_, i) => [.14, .35, .2, .45, .16, .27][Math.floor(i / 10)])))
+  assert.ok(!irregular.candidates.some(c => c.rule === "RATE_REPETITIVE"))
+  const repeated = detectRate(speech(Array.from({ length: 80 }, (_, i) => Math.floor(i / 10) % 2 ? .35 : .2)))
+  assert.ok(repeated.candidates.some(c => c.rule === "RATE_REPETITIVE"))
+  const mild = detectRate(speech(Array.from({ length: 60 }, (_, i) => [1 / 7.14, 1 / 5.26, 1 / 6.19, 1 / 5.33, 1 / 6.52, 1 / 5.46][Math.floor(i / 10)])))
+  assert.ok(!mild.candidates.some(c => c.rule === "RATE_REPETITIVE"), "one large contrast cannot turn several mild fluctuations into a repeated pattern")
+})
+test("pitch movement is context evidence, never an automatic rate exemption", () => {
+  const words = speech(Array(70).fill(.1))
+  const frames = Array.from({ length: 700 }, (_, i) => ({ time: i / 100, pitch: 100 * 2 ** ((i % 100) / 100), db: -20 }))
+  assert.deepEqual(detectRate(words, {}, [], frames).candidates.map(c => [c.first, c.last, c.rule]), detectRate(words).candidates.map(c => [c.first, c.last, c.rule]))
+})
+test("context review preserves exact highlights and rejects fabricated or escaped decisions", async () => {
+  const words = speech(Array(70).fill(.1)), analysis = detectRate(words)
+  analysis.candidates.forEach(c => { c.pattern = "relative-fast" })
+  const result = await reviewRate(words, analysis, async request => {
+    assert.ok(request.user.includes("Full original lecture"))
+    assert.ok(!request.user.includes("golden"))
+    return respond(analysis, "keep")
+  }, "Full original lecture")
+  assert.ok(result.marks.length)
+  for (const mark of result.marks) {
+    assert.equal(mark.start, words[mark.first].start)
+    assert.equal(mark.end, words[mark.last].end)
+    assert.equal(mark.text, words.slice(mark.first, mark.last + 1).map(w => w.text).join(" "))
   }
-  assert.deepEqual(rules(speak(varied(13))), [])
+  assert.throws(() => applyRateReview(words, analysis, { decisions: [] }), /cover every/)
+  const bad = respond(analysis, "keep"); bad.decisions[0].first = -1
+  assert.throws(() => applyRateReview(words, analysis, bad), /Invalid/)
+  const cropped = respond(analysis, "keep"); cropped.decisions[0].last--
+  assert.throws(() => applyRateReview(words, analysis, cropped), /Invalid/, "cropping invalidates the measured span")
+  const unknown = respond(analysis, "keep"); unknown.decisions[0].id = "made-up"
+  assert.throws(() => applyRateReview(words, analysis, unknown), /Invalid/)
+  assert.equal(applyRateReview(words, analysis, respond(analysis, "uncertain")).status, "uncertain")
+  assert.deepEqual(applyRateReview(words, analysis, respond(analysis, "dismiss")).marks, [])
+})
+test("short or invalid timing is uncertain, not a clean assessment; no model call is made", async () => {
+  const words = speech([.3, .3, .3]), analysis = detectRate(words)
+  const result = await reviewRate(words, analysis, async () => { throw new Error("must not be called") })
+  assert.equal(result.status, "uncertain")
+  assert.equal(detectRate(speech(Array(120).fill(.05))).reliable, false, "no usable phrase measurements cannot certify clean speech")
+  assert.equal(detectRate([...words].reverse()).reliable, false)
+  assert.equal(detectRate([{ text: "hello", start: NaN, end: 2 }]).reliable, false)
+  assert.notEqual(rateReviewRequest(words, analysis, "context A").user, rateReviewRequest(words, analysis, "context B").user)
 })
 
-test("low variation alone does not invent advice without an unemphasized message", () => {
-  const flat: Part[] = Array.from({ length: 6 }, () => said(1))
-  assert.deepEqual(rules(speak([...flat, ...flat])), [])
-  assert.deepEqual(rules(speak([...flat, ["sales fell by half.", "important", 1, 1], ...flat])), [])
-})
-
-test("keeps only the biggest outliers per minute", () => {
-  const drag = (pace: number): Part => ["and then we talked about it for a while.", "unimportant", pace, 0.35]
-  const words = speak([...varied(3), drag(1.6), ...varied(3), drag(2.5), ...varied(3), drag(1.8), ...varied(3)])
-  const { marks } = detectRate(words, { marksPerMinute: 1 })
-  assert.equal(marks.length, 1)
-  assert.equal(marks[0].ratio.toFixed(1), "2.5")
-})
-
-test("fillers and the time they take are left out", () => {
-  const words = speak([...varied(4), ["the result", "unimportant", 1, 0.35], ["um um um", "filler", 4], ["was clear.", "unimportant"], ...varied(4)])
-  assert.deepEqual(rules(words), [])
-})
-
-test("counts syllables", () => {
-  assert.deepEqual(["a", "gambling.", "possible", "divorce", "people", "300", "the"].map(syllables), [1, 2, 3, 2, 2, 4, 1])
+test("sustained measured patterns keep their evidence span without a language-model veto", async () => {
+  const words = speech(Array(70).fill(.1)), analysis = detectRate(words)
+  const result = await reviewRate(words, analysis, async () => { throw new Error("No context call for absolute measurements") })
+  assert.ok(result.marks.length)
+  assert.ok(result.marks.every(m => analysis.candidates.some(c => c.first === m.first && c.last === m.last)))
 })

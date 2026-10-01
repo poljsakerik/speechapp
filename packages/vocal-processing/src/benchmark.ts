@@ -4,14 +4,14 @@ import { alignMarks, type GoldenMark } from "./golden.ts"
 import type { Word } from "./importance.ts"
 import type { RateRule } from "./rate.ts"
 
-export const RATE_RULES: RateRule[] = ["RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW"]
+export const RATE_RULES: RateRule[] = ["RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW", "RATE_VARIATION", "RATE_REPETITIVE", "RATE_FLOW"]
 export type Review = { status: "pending" | "reviewed" | "excluded"; notes: string }
 export type Annotation = { schemaVersion: 2; marks: GoldenMark[]; reviews: Record<string, Review> }
 export type Take = { id: string; foundation: string; take: number; base: string; audioExtension: string; duration: number; source: string; sourceStart: number; sourceEnd: number; assignment: string; evidence: string }
 export type Corpus = { schemaVersion: 1; id: string; takes: Take[]; referenceTakes?: Record<string, string> }
 export function loadCorpus(root: string): Corpus {
   const corpus = JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8")) as Corpus
-  if (corpus.schemaVersion !== 1 || !Array.isArray(corpus.takes) || !corpus.takes.length) throw new Error("Import the new voice pack first: pnpm import:voice-pack --archive <zip>")
+  if (corpus.schemaVersion !== 1 || !Array.isArray(corpus.takes) || !corpus.takes.length) throw new Error("Invalid corpus manifest; import the rate corpus with pnpm import:rate --videos-dir <videos>")
   const ids = new Set<string>()
   for (const take of corpus.takes) {
     const path = relative(resolve(root), resolve(root, take.base))
@@ -32,7 +32,7 @@ export function metrics({ tp, fp, fn }: Counts) {
 
 /** Maximum one-to-one matching by rule and word IoU. Every prediction is a concrete phrase adjustment. */
 export function scoreRate(text: string, words: Word[], golden: GoldenMark[], predicted: GoldenMark[], minIou = 0.3) {
-  if ([...golden, ...predicted].some(m => m.foundationType === "rate" && !RATE_RULES.includes(m.rule as RateRule))) throw new Error("Unknown rate rule: use a specific speed-up or slow-down phrase mark")
+  if ([...golden, ...predicted].some(m => m.foundationType === "rate" && !RATE_RULES.includes(m.rule as RateRule))) throw new Error("Unknown rate rule: use a supported pacing rule")
   const gold = golden.filter(m => m.foundationType === "rate" && RATE_RULES.includes(m.rule as RateRule))
   const pred = predicted.filter(m => m.foundationType === "rate" && RATE_RULES.includes(m.rule as RateRule))
   const gs = alignMarks(text, words, gold), ps = alignMarks(text, words, pred)

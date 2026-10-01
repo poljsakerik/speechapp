@@ -1,7 +1,10 @@
 import { transcribe, wordsFromDeepgram } from "@micmane/vocal-processing/deepgram"
-import { markMessage } from "@micmane/vocal-processing/importance"
 import { openaiCompletion } from "@micmane/vocal-processing/openai"
-import { detectRate, type RateMark } from "@micmane/vocal-processing/rate"
+import { alignWords, loadAligner, type Aligner } from "@micmane/vocal-processing/align"
+import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
+import { detectRate, reviewRate, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
+import { measureProsody } from "@micmane/vocal-processing/prosody"
+import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
 type Segment = { id: string; start: number; end: number; text: string; words: Word[]; wpm: number }
@@ -35,47 +38,78 @@ export function segmentWords(words: Word[]): Segment[] {
 
 const copy = {
   RATE_IMPORTANCE_FAST: {
-    observation: "This point passed quickly.",
-    why_it_matters: "The listener may miss a point that carries your message.",
+    observation: "This passage moves quickly.",
+    why_it_matters: "A little more time can make this passage easier to follow.",
     practice: "Give this phrase a little more time, then resume your natural pace.",
   },
   RATE_IMPORTANCE_SLOW: {
-    observation: "This setup took more time than the point needs.",
-    why_it_matters: "The pacing can draw attention away from your main point.",
+    observation: "This passage moves slowly.",
+    why_it_matters: "A brisker pace can help this passage keep its momentum.",
     practice: "Move through this phrase more briskly and save time for the key idea.",
   },
+  RATE_FLOW: { observation: "This thought loses momentum in repeated fragments.", why_it_matters: "A connected delivery helps the listener follow one idea.", practice: "Rehearse this highlighted thought as one connected sentence at a comfortable pace." },
+  RATE_VARIATION: { observation: "The pace stays similar across this passage.", why_it_matters: "A pace change can give the ideas more contrast.", practice: "Move through the setup, then slow down as the next idea lands." },
+  RATE_REPETITIVE: { observation: "The same pacing pattern repeats here.", why_it_matters: "A repeated rhythm can make different ideas sound alike.", practice: "Change pace with the next idea rather than repeating the same rhythm." },
 } as const
 
-export function rateReview(segments: Segment[], marks: RateMark[], message: string) {
-  const findings = marks.flatMap(mark => segments.flatMap(segment => {
+export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {
+  const findings = marks.flatMap((mark, markIndex) => segments.flatMap(segment => {
     const covered = segment.words.filter(word => word.start >= mark.start && word.end <= mark.end)
     if (!covered.length) return []
     const phrase = covered.map(word => word.text).join(" ")
     return [{
-      segment_id: segment.id, rule_id: mark.rule, kind: "improvement", uncertainty: "tentative",
+      segment_id: segment.id, group_id: String(markIndex), rule_id: mark.rule, kind: "improvement", uncertainty: "tentative",
       ...copy[mark.rule],
       start: covered[0].start, end: covered[covered.length - 1].end, text: phrase,
     }]
   }))
   return {
-    overall: message ? `Your main message: ${message}` : "Review your pace around the main point.",
+    overall: message ? `Your main message: ${message}` : "Review your rate of speech.",
     assessments: [
-      { foundation: "rate", verdict: marks.length ? "mixed" : "effective", summary: marks.length ? "There are a few places where a pace change may help the point land." : "No substantial rate issue was detected in this take.", findings },
+      { foundation: "rate", verdict: marks.length ? "mixed" : status === "uncertain" ? "uncertain" : "effective", summary: marks.length ? "There are a few places where a pace change may help the point land." : status === "uncertain" ? "There is not enough reliable evidence to judge the rate in this take." : "No substantial rate issue was detected in this take.", findings },
       ...(["volume", "pitch_melody", "tonality", "pauses"] as const).map((foundation) => ({ foundation, verdict: "uncertain", summary: "This foundation has not been analyzed yet.", findings: [] })),
     ],
   }
 }
 
+/** The decoded audio and its measured pauses, since recognizers stretch words over them; undefined if it can't be decoded. */
+async function measurePauses(audio: Uint8Array): Promise<{ samples: Float32Array; sampleRate: number; pauses: Pause[] } | undefined> {
+  try {
+    const { samples, sampleRate } = await decodeAudio(audio)
+    return { samples, sampleRate, pauses: findPauses(samples, sampleRate) }
+  } catch {
+    return undefined
+  }
+}
+
+// Refine recognizer timing before phrase-level pace measurement.
+let aligner: Promise<Aligner> | undefined
+async function retime(words: Word[], decoded: { samples: Float32Array; pauses: Pause[] } | undefined): Promise<Word[]> {
+  if (process.env.ALIGN_WORDS === "0" || !decoded) return words
+  try {
+    aligner ??= loadAligner()
+    return await alignWords(words, decoded.samples, await aligner, decoded.pauses)
+  } catch {
+    aligner = undefined
+    return words
+  }
+}
+
 export async function reviewAudio(audio: Buffer, audioType: string) {
-  const transcript = wordsFromDeepgram(await transcribe(new Uint8Array(audio))) as Word[]
+  const [response, decoded] = await Promise.all([transcribe(new Uint8Array(audio)), measurePauses(audio)])
+  const transcript = await retime(wordsFromDeepgram(response) as Word[], decoded)
+  const pauses = decoded?.pauses
   if (transcript.length < 3) return undefined
   const segments = segmentWords(transcript)
-  const labeled = await markMessage(transcript, { complete: openaiCompletion() })
-  const result = detectRate(labeled.words)
+  const prosody = decoded && measureProsody(decoded.samples, decoded.sampleRate)
+  const analysis = detectRate(transcript, {}, pauses, prosody)
+  if (!decoded) analysis.reliable = false
+  const result = await reviewRate(transcript, analysis, openaiCompletion({ model: process.env.RATE_MODEL })).catch(() => ({ ...analysis, marks: [], status: "uncertain" as const }))
   return {
     audio: audio.toString("base64"),
     audioType,
     segments,
-    review: rateReview(segments, result.marks, labeled.message.message),
+    rateDiagnostics: { version: RATE_VERSION, status: result.status, pace: analysis.pace, candidates: analysis.candidates, decisions: "decisions" in result ? result.decisions : [] },
+    review: rateReview(segments, result.marks, "", result.status),
   }
 }

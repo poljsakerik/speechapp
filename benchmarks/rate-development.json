@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "id": "rate-development",
+  "purpose": "Development benchmark combining Vinh controls and ordinary practice speech. Provisional transcript/acoustic annotations chosen before revised detector evaluation; not independently listener-validated.",
+  "segmentation": "Cuts fall in measured silences between words. Takes keep their internal pauses and the audio is not normalized. Cut points were chosen from Deepgram nova-3 word times and pauses measured from the audio; review them by listening.",
+  "sources": [
+    {
+      "file": "02-Rate of Speech.mp4",
+      "sha256": "4e5e37c07b145dce4ff2dbf04d561d2e3e034dd689c638c760919f363e0a3550",
+      "foundation": "rate",
+      "takes": [
+        {
+          "id": "vinh_rate-01",
+          "start": 6.86,
+          "end": 29.435,
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-01",
+          "start": 29.435,
+          "end": 40.09,
+          "marks": [
+            {
+              "start": 29.435,
+              "end": 40.09,
+              "rule": "RATE_IMPORTANCE_SLOW",
+              "note": "Deliberately slow greeting."
+            }
+          ]
+        },
+        {
+          "id": "vinh_rate-02",
+          "start": 40.09,
+          "end": 66.355,
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-02",
+          "start": 66.355,
+          "end": 75.398,
+          "marks": [
+            {
+              "start": 67.91,
+              "end": 75.398,
+              "rule": "RATE_IMPORTANCE_FAST",
+              "note": "Deliberately rushed greeting; introductory question is not marked."
+            }
+          ]
+        },
+        {
+          "id": "vinh_rate-03",
+          "start": 75.398,
+          "end": 94.045,
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-03",
+          "start": 94.045,
+          "end": 104.183,
+          "marks": [
+            {
+              "start": 94.045,
+              "end": 104.183,
+              "rule": "RATE_VARIATION",
+              "note": "Deliberately constant rate across the demonstration."
+            }
+          ]
+        },
+        {
+          "id": "vinh_rate-04",
+          "start": 104.183,
+          "end": 137.423,
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-04",
+          "start": 137.423,
+          "end": 151.8,
+          "marks": [
+            {
+              "start": 137.423,
+              "end": 151.8,
+              "rule": "RATE_VARIATION",
+              "note": "Deliberately predictable, sustained same-rate cadence. This demonstrates low variation, not evidence of alternating fast/slow periodicity."
+            }
+          ]
+        },
+        {
+          "id": "vinh_rate-05",
+          "start": 151.8,
+          "end": 230.93,
+          "marks": []
+        },
+        {
+          "id": "vinh_rate-06",
+          "start": 309.357,
+          "end": 334.539,
+          "marks": []
+        }
+      ],
+      "excluded": [
+        {
+          "start": 230.93,
+          "end": 309.357,
+          "reason": "\"Check this out.\" and the student's two readings, with the coach's \"Slower.\" prompt between them"
+        }
+      ]
+    },
+    {
+      "file": "06-Pause.mp4",
+      "sha256": "50f8459a9ba9b1e17f565f58e041e6580cbde13c8741f51bec909d2d7408599a",
+      "foundation": "pauses",
+      "takes": [
+        {
+          "id": "vinh_pauses-01",
+          "start": 19.195,
+          "end": 105.313,
+          "marks": []
+        },
+        {
+          "id": "vinh_pauses-02",
+          "start": 109.1,
+          "end": 127.58,
+          "marks": []
+        },
+        {
+          "id": "vinh_pauses-03",
+          "start": 145.248,
+          "end": 179.195,
+          "marks": []
+        },
+        {
+          "id": "vinh_pauses-04",
+          "start": 188.99,
+          "end": 218.305,
+          "marks": []
+        },
+        {
+          "id": "vinh_pauses-05",
+          "start": 227.11,
+          "end": 247.67,
+          "marks": []
+        },
+        {
+          "id": "vinh_pauses-06",
+          "start": 263.575,
+          "end": 273.885,
+          "marks": []
+        },
+        {
+          "id": "vinh_pauses-07",
+          "start": 301.625,
+          "end": 385.78,
+          "marks": []
+        }
+      ],
+      "excluded": [
+        {
+          "start": 0,
+          "end": 19.195,
+          "reason": "Opening, with a 4 s break before the lesson proper"
+        },
+        {
+          "start": 105.313,
+          "end": 109.1,
+          "reason": "Filler-word demonstration: \"And so do you know what I mean? Like,\""
+        },
+        {
+          "start": 127.58,
+          "end": 145.248,
+          "reason": "Filler-laden example on purpose: \"I was, you know, getting through rate and, you know, ...\""
+        },
+        {
+          "start": 179.195,
+          "end": 188.99,
+          "reason": "Trailing off at sentence ends on purpose: \"they're just gonna trail off ... like this\""
+        },
+        {
+          "start": 218.305,
+          "end": 227.11,
+          "reason": "Rapid no-pause scenario and listener imitation: \"Maybe people have a question ... my question's gone now.\" Conservatively excluded from normal teaching."
+        },
+        {
+          "start": 247.67,
+          "end": 263.575,
+          "reason": "Student's first Gladiator reading"
+        },
+        {
+          "start": 273.885,
+          "end": 301.625,
+          "reason": "Student's second reading, with the coach's \"pause, hold, hold, go\" prompts"
+        }
+      ]
+    },
+    {
+      "file": "selection-bias.m4a",
+      "sha256": "56426c2596276bc8e9010eafa174175ec32d42ffc2b0e88925e586a2e4189f14",
+      "foundation": "rate",
+      "kind": "practice",
+      "takes": [
+        {
+          "id": "practice-05",
+          "start": 19.1,
+          "end": 35.9,
+          "marks": [],
+          "note": "Clean rate counterexample: natural setup with sentence-boundary pauses and a local speed change. Repeating \u201cphenomenal\u201d alone is not a rate error."
+        },
+        {
+          "id": "practice-01",
+          "start": 37.5,
+          "end": 55.4,
+          "marks": [
+            {
+              "start": 41,
+              "end": 48.161,
+              "rule": "RATE_FLOW",
+              "note": "The sentence loses momentum inside the unfinished phrase: repeated \u201cit\u2019s\u201d, then a long break between \u201cvery\u201d and \u201cfeasible\u201d. Coach connected delivery, not faster articulation or a pause-foundation correction."
+            }
+          ]
+        },
+        {
+          "id": "practice-03",
+          "start": 99.9,
+          "end": 107.6,
+          "marks": [],
+          "note": "Clean counterexample: the reveal \u201che\u2019s a divorce lawyer\u201d is followed by a separate rhetorical question. Boundary silence is not slow articulation."
+        },
+        {
+          "id": "practice-02",
+          "start": 147.6,
+          "end": 164.1,
+          "marks": [
+            {
+              "start": 148.03,
+              "end": 158.251,
+              "rule": "RATE_FLOW",
+              "note": "The explanation breaks down across \u201csort of create the experiment. By... And because he... He\u2019s a...\u201d. Repeated restarts interrupt one thought; rehearse a connected delivery."
+            }
+          ]
+        },
+        {
+          "id": "practice-04",
+          "start": 195.4,
+          "end": 212.2,
+          "marks": [],
+          "note": "Clean rate counterexample: contrast and numerical conclusion allow deliberate spacing. Individual pause choices are outside this rate annotation."
+        }
+      ],
+      "excluded": []
+    }
+  ]
+}

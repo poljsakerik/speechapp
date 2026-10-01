@@ -10,7 +10,7 @@ This is a pnpm and Turborepo workspace modeled on the layout of `../leksoro`:
 - `apps/backend` — Fastify `/api/review` and `/api/health`.
 - `apps/markup-tools` — local golden-set annotator.
 - `packages/ui` — reusable components, `cn`, and the single shared Tailwind stylesheet used by the web app.
-- `packages/vocal-processing` — transcription, message labeling, rate detection, evaluation scripts, and tests.
+- `packages/vocal-processing` — transcription, alignment, rate detection, evaluation scripts, and tests.
 - `packages/config-typescript` and `packages/config-eslint` — shared compiler and ESLint flat configs.
 
 Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY` and `OPENAI_API_KEY` for live reviews. The API keys stay on the backend.
@@ -24,49 +24,61 @@ pnpm lint
 pnpm test
 ```
 
-The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, labeled with OpenAI, and analyzed by the rate package. The backend returns the original audio, timed segments, and rate findings to the editor. Other foundations are marked uncertain.
+The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, measured by the rate package, and reviewed in context with OpenAI. The backend returns the original audio, timed segments, and rate findings to the editor. Other foundations are marked uncertain.
 
 Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
-## Voice-pack annotation and benchmarking
+## Rate of speech
 
-Run `pnpm markup-tools` and open http://localhost:8765. The active corpus is the October 1 voice pack: **14 separate paragraph takes**, grouped in `recordings/rate/`, `pauses/`, `volume/`, `tonality/`, and `pitch_melody/`. Recordings 36–40 map to those foundations in that order, as confirmed by the speaker. Each folder retains its original source recording and transcript under `source/`.
+Rate review measures the audio before asking the model to interpret a passage. It no longer labels words as important/unimportant to decide where to slow down. The existing transcript highlights remain the output; there is no new report layout.
 
-1. Choose a take, play it, and select transcript words to mark mistakes. Tabs choose the foundation being annotated. Use the recording selector or previous/next arrows to move between takes.
-2. Marks autosave alongside the existing notes and review metadata. The review-controls section has been removed; editing a mark preserves its existing review status. Listening volume changes playback only, and pipeline predictions start hidden.
-3. Run `pnpm eval:rate` to evaluate rate-reviewed takes, or `pnpm eval:rate rate-01 rate-02` for selected takes. `pnpm eval:rate --predict-only` generates predictions without scoring or changing review status. Reload the annotator to see them.
+- FFmpeg decodes uploads, measured silence separates speaking pace from articulation speed, and forced alignment refines word boundaries. Alignment downloads a checksum-verified 95 MB English model on first use. `ALIGN_WORDS=0` disables it for live uploads; failed alignment falls back to recognizer timing.
+- A six-second rolling WPM curve separates speaking pace (including silence) from articulation pace (excluding silence). Measured pauses are separate intervals; the articulation line has gaps during silence. This is descriptive evidence, not a pause-foundation score.
+- Commas and full stops suggest clause boundaries; ellipses can indicate unfinished thoughts. Acoustic interruptions stay inside a clause instead of breaking it into apparently fluent fragments. ASR punctuation is fallible and the context reviewer checks the actual meaning.
+- Dictionary syllables help compare different words. Local fast/slow candidates compare clause articulation with the preceding clauses and require a sustained change; a brief isolated emphasis is insufficient. Future acceleration cannot retroactively make earlier delivery “too slow.” Absolute extremes remain detectable too. Repeated internal interruptions can nominate connected-delivery feedback even when the words themselves are spoken at a normal speed.
+- Even-pace candidates compare shorter word groups (including gaps) with syllable-based phrase rates, while the full clause profile supplies context. Clear breaks after completed sentences count as rhythmic framing; stable articulation alone is insufficient to call that delivery monotonous. This catches regular cadence without treating all silence as an automatic exemption or averaging away local contrast.
+- Sustained absolute patterns produce tentative, descriptive coaching observations directly from the measurements. The language model cannot erase or crop their evidence. The context reviewer handles broader local speed changes and interrupted thoughts, using the complete transcript plus nearby clauses and pauses. It can keep, dismiss or abstain, but must preserve each measured span. No reference-speaker identity enters the detector.
+- Accepted findings retain exact word highlights. Inadequate timing, unsupported text, or a failed review produces an uncertain assessment. Other speech fundamentals remain unanalyzed.
 
-Your selected good references are take 3 for rate, pauses, volume and pitch/melody, and take 2 for tonality. After your corrections and confirmation, all 14 takes are reviewed for their respective foundations. A reviewed take with no marks is an explicit good example for that foundation; other foundations are not implicitly reviewed. Pending and excluded annotations still do not affect scores. Review notes and comparison notes remain saved in the annotation JSON.
+These are English development heuristics, not a measure of comprehension or a model trained to imitate Vinh. Syllable normalization reduces word-length effects but does not model every phoneme or accent. The deterministic absolute-pattern policy trades contextual flexibility for reproducible observations: an intentionally fast performance or an unbroken list can still warrant no correction despite triggering a pattern. Fixed thresholds need validation with other speakers; repeated fast/slow cadence currently has synthetic tests but no real positive example in this corpus.
 
-The draft recipe is `benchmarks/voice-pack-20261001.markup.json`. After a fresh import, restore this starting point with `node packages/vocal-processing/scripts/seed-reference-markup.ts` from the repository root. It saves a backup under `recordings/.annotation-history/` and refuses to replace existing marks or notes with differing seed data. Later human edits remain the source of truth.
+## Rate benchmark and annotation
 
-The report is `recordings/rate-benchmark.json`, with per-take and per-rule counts, precision/recall/F1, and false alarms on reviewed good examples. Matching requires the same rule and word intersection-over-union ≥ 0.3, with one-to-one matching so duplicate predictions cannot inflate hits. The only rate rules are `RATE_IMPORTANCE_FAST` (slow down on these words) and `RATE_IMPORTANCE_SLOW` (speed up through these words). Each phrase adjustment is scored directly. Low pace variation may help the detector choose a pair of phrases, but is never a standalone finding. There is no old retake comparison or within-recording train/test split. With no reviewed takes, the command writes coverage information, reports no score, exits nonzero and makes no model calls.
+The active rate corpus contains **22 excerpts**: the 17 Vinh controls (13 clean and four deliberate mistakes), plus five excerpts from the uploaded selection-bias recording (two interrupted-flow corrections and three clean rate controls). The practice annotations were chosen from transcript/acoustic inspection before the revised detector was evaluated. They are provisional, not independent listener judgments. Student readings and unrelated course demonstrations are excluded. Original recordings are preserved.
 
-This is a single-speaker development benchmark using one repeated paragraph. It is not an independent test set. The rate detector's existing thresholds remain unchanged until annotation supplies a new target; its internal low-variation comparison still requires a 20-second stretch, while phrase-level rushed/dragging checks also work on short takes. The reference drafts identify specific phrase adjustments regardless of that internal threshold. The report records this limitation. Model labels are cached by transcript, strategy, model, effort and prompt version; annotations and take identity are never model inputs. Use `--fresh` to relabel.
-
-### Reimporting the pack
+`benchmarks/rate-development.json` contains source hashes, cut boundaries, excluded ranges and the expected mistake spans. These annotations come from lesson demonstrations and transcript/acoustic curation, not an independent listening study. Source audio hashes and annotation notes make their provenance explicit. The importer writes playable WAVs, word-aligned golden marks, and the complete source transcript alongside each excerpt so context is preserved. Import refuses to overwrite existing annotations.
 
 ```sh
-pnpm import:voice-pack --archive /path/to/drive-download-20261001T103829Z-1-001.zip
-# Add --ffmpeg /path/to/ffmpeg if it is not on PATH.
-# Add --replace to move an existing corpus to a sibling archive before importing.
+pnpm import:rate --videos-dir /path/to/videos --speech-dir /path/to/practice-sources --ffmpeg /path/to/ffmpeg
+# Optional: --transcripts-dir /path/to/cache reuses <video stem>.deepgram.json.
+# The practice source directory holds selection-bias.m4a and selection-bias.deepgram.json.
+pnpm markup-tools           # http://localhost:8765
+pnpm eval:rate --require-pass
+pnpm eval:rate --label-run repeat-1 --require-pass
+pnpm eval:rate vinh_demo-01 vinh_rate-01
 ```
 
-Import requires FFmpeg and `unzip`, plus `DEEPGRAM_API_KEY` in `.env`. `--transcripts-dir /path/to/cache` can reuse `<source filename>.json` Deepgram responses instead. The checked-in recipe, `benchmarks/voice-pack-20261001.json`, contains source hashes and verified boundaries between complete readings. Cuts fall in the quiet gaps; all source audio is retained, including the long pauses inside Recording 37. PCM WAV takes preserve level and pitch without normalization. Source word timestamps are rebased to each take, and transcripts remain the recognizer's output rather than being silently replaced by the reference paragraph. In particular, check “Do you have” in tonality take 1 and “A few” in volume take 3 against playback before reviewing. Notes can flag a transcript problem; exclude a take until its timed transcript is corrected if needed.
+In the annotator, play a take and select transcript words to adjust its golden marks. An empty reviewed annotation explicitly means no rate problem. Pipeline predictions are a separate, initially hidden overlay. Enable **Pipeline** and open **Pace trace** to inspect the WPM curves and silence bands; click the graph to seek. The upload UI retains passage highlights. Its API response also carries `rateDiagnostics` with the measurements, candidates and contextual decisions for debugging. Gold is never generated from predictions or sent to the context model.
 
-Audio, transcripts, annotations, caches, and generated reports remain local and gitignored. The importer stages and validates the whole corpus before replacing it. `--replace` starts fresh pending annotations; it does not migrate prior marks. In linked worktrees, point `recordings/` at the shared local corpus or set `RECORDINGS_DIR` for the annotator and `--recordings-dir` for evaluation. The importer resolves a recordings symlink to its real destination.
+The report is `recordings-rate-development/rate-benchmark.json`. `--require-pass` requires every selected take to be reviewed and scored, no uncertain/error results, no missed mistakes and no false alarms. Matching requires the same rate rule and word intersection-over-union ≥ 0.3, with one-to-one matching. This prevents either duplicate predictions or returning no findings everywhere from passing the full corpus.
 
-## Vocal processing
+Version 16 passed three fresh context-review runs on this 22-clip development set: each found all six annotated corrections, with no false alarms on the 16 clean takes and no uncertain/error results. The full uploaded recording also retained the interrupted thoughts at 0:41–0:48 and 2:33–2:38 in a replay with the original alignment. Reports for the default run and `repeat-1`/`repeat-2` are kept in the local corpus directory.
 
-The first stage labels transcript phrases by message importance. The rate stage identifies specific phrases to slow down or speed up; live reviews preserve their exact highlight boundaries. Live processing needs the API keys in `.env`; tests need neither.
+Rule IDs preserve compatibility with saved highlights: `RATE_IMPORTANCE_FAST` means rushed delivery, `RATE_IMPORTANCE_SLOW` means dragged delivery, `RATE_VARIATION` means sustained even pace, `RATE_REPETITIVE` means repeated fast/slow cadence, and `RATE_FLOW` means repeated interruptions within an unfinished thought. Flow advice asks for connected delivery rather than faster articulation or a pause-placement correction. The first two names no longer imply an importance label.
+
+Evaluation uses forced alignment by default; `--recognizer-timing` is an explicit ablation. Context reviews are cached by audio hash, full request, model, effort, rate version and run label. `--label-run` creates an independent review run; `--fresh` replaces the selected run's responses. `RATE_MODEL` overrides the model for both evaluation and live reviews; otherwise `IMPORTANCE_MODEL` (default `gpt-6-sol`) applies. `IMPORTANCE_EFFORT` defaults to `low`.
+
+This is a two-speaker **development benchmark**, used during tuning. Clips from the same recording are correlated and do not count as independent speakers. Passing it does not establish accuracy on unfamiliar speakers. The ordinary-speech positives currently cover interrupted flow, not a broad range of rushed or monotonous delivery. Check repeat runs and the full recording, not only the cropped passages.
+
+Audio, transcripts, annotations, caches and reports stay local and gitignored. `--recordings-dir` selects another evaluation corpus; `RECORDINGS_DIR` selects another annotator corpus. The historical voice-pack importer and annotations remain available for other foundations, but are not the active rate benchmark.
 
 ```sh
-pnpm --dir packages/vocal-processing rate ../../recordings/rate/rate-01/rate-01.wav
+pnpm --dir packages/vocal-processing rate ../../recordings-rate-development/rate/vinh_demo-01/vinh_demo-01.wav
 pnpm --dir packages/vocal-processing test
 python3 -m unittest discover -s apps/markup-tools -p 'test_*.py'
 ```
 
-Script paths are relative to `packages/vocal-processing`, including paths passed through the root `pnpm rate` command. Importance evaluation now also uses reviewed marks from this corpus.
+CLI file paths are relative to `packages/vocal-processing`, including arguments passed through root package scripts. The rate CLI accepts PCM WAV; live uploads use FFmpeg to decode the supported upload formats.
 
 ## Research and evaluation
 

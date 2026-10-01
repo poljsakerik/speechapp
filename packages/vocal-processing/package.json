@@ -4,9 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
+    "./align": "./src/align.ts",
     "./deepgram": "./src/deepgram.ts",
     "./importance": "./src/importance.ts",
     "./openai": "./src/openai.ts",
+    "./pauses": "./src/pauses.ts",
+    "./prosody": "./src/prosody.ts",
     "./rate": "./src/rate.ts"
   },
   "scripts": {
@@ -17,12 +20,18 @@
     "eval:importance": "node --env-file-if-exists=../../.env scripts/eval-importance.ts",
     "rate": "node --env-file-if-exists=../../.env scripts/rate.ts",
     "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts",
-    "import:voice-pack": "node --env-file-if-exists=../../.env scripts/import-voice-pack.ts"
+    "import:voice-pack": "node --env-file-if-exists=../../.env scripts/import-voice-pack.ts",
+    "import:rate": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",
     "@micmane/typescript-config": "workspace:*",
     "@types/node": "^26.6.3",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "cmu-pronouncing-dictionary": "^3.0.0",
+    "onnxruntime-node": "^1.30.0",
+    "pitchy": "^4.1.0"
   }
 }

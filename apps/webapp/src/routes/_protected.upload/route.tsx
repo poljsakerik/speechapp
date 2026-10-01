@@ -26,6 +26,7 @@ function Upload() {
         <FeedbackView
           take={result.take}
           findings={result.review.findings}
+          assessments={result.review.assessments}
           audioSrc={result.audioUrl}
           action={
             <Button
