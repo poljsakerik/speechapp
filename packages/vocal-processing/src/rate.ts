@@ -5,13 +5,11 @@
  * point, but a good speaker doesn't slow down for every important word. So this
  * stage looks for the few things worth fixing rather than grading every phrase:
  *
- * - RATE_MONOTONE: a stretch where pace barely changes. It comes with
- *   suggestions: a phrase carrying the message to slow down on, and a less
- *   important phrase to speed up through.
- * - RATE_IMPORTANCE_FAST: outside monotone stretches, a phrase carrying the
- *   message said at or above normal pace, not slower than its surroundings and
- *   with no pause around it, so the point is missed.
- * - RATE_IMPORTANCE_SLOW: an unimportant phrase dragged far past normal pace.
+ * - RATE_IMPORTANCE_FAST: slow down on the identified message phrase.
+ * - RATE_IMPORTANCE_SLOW: speed up through the identified supporting phrase.
+ *
+ * Low delivery variation is an internal cue for selecting specific phrases,
+ * never a separate whole-passage finding.
  *
  * With message-first labels, only "message" phrases can be rushed and only
  * "unimportant" ones dragged; "important" ones (punchlines, key facts) are
@@ -27,7 +25,7 @@
  */
 import type { Importance, MarkedWord } from "./importance.ts"
 
-export type RateRule = "RATE_IMPORTANCE_FAST" | "RATE_IMPORTANCE_SLOW" | "RATE_MONOTONE"
+export type RateRule = "RATE_IMPORTANCE_FAST" | "RATE_IMPORTANCE_SLOW"
 
 export type RateConfig = {
   // Reference
@@ -47,11 +45,11 @@ export type RateConfig = {
   varianceWindow: number
   /** Seconds between the starts of consecutive variance windows. */
   varianceStep: number
-  /** Below this standard deviation of log2 pace, a window sounds monotone (0.1 is about ±7%). */
+  /** Below this standard deviation of log2 pace, a window has little pace contrast (0.1 is about ±7%). */
   monotoneBelow: number
   /** Windows with fewer phrases are too sparse to judge. */
   minWindowPhrases: number
-  /** Monotone stretches shorter than this (seconds) are not flagged. */
+  /** Low-variation stretches shorter than this (seconds) do not generate contrast suggestions. */
   minMonotoneSeconds: number
 
   // Outliers
@@ -77,7 +75,7 @@ export type RateConfig = {
   minDragImpact: number
   /** A rushed point that slowing down would lengthen by less than this many seconds is dropped. Message phrases are short, so this is lower. */
   minRushImpact: number
-  /** At most this many marks per minute of speech: monotone stretches first, then outliers by impact. */
+  /** Coaching opportunities per minute. A contrast opportunity can emit a pair of phrase marks. */
   marksPerMinute: number
 }
 
@@ -131,11 +129,9 @@ export type PhraseRef = { first: number; last: number; start: number; end: numbe
 
 export type RateMark = PhraseRef & {
   rule: RateRule
-  /** Seconds the fix would add (rushed) or save (dragged); for monotone stretches, their length. */
+  /** Estimated seconds the phrase adjustment would add (slow down) or save (speed up). */
   impact: number
-  /** For RATE_MONOTONE: a message phrase to slow down on and a less important one to speed up. */
-  slowDown?: PhraseRef
-  speedUp?: PhraseRef
+
 }
 
 export type VarianceWindow = { start: number; end: number; sd: number }
@@ -159,13 +155,13 @@ export function detectRate(words: MarkedWord[], config: Partial<RateConfig> = {}
   const rushLabel = c.rushLabels.find((label) => words.some((w) => w.importance === label))
   const canRush = (p: RatePhrase) => p.importance === rushLabel
   const canDrag = (p: RatePhrase) => c.dragLabels.includes(p.importance)
-  const monotone = monotoneStretches(windows, breaths, c).map((stretch) => suggest(stretch, phrases, canRush, canDrag, c))
-  const inMonotone = (p: RatePhrase) => monotone.some((m) => start(p) < m.end && end(p) > m.start)
+  const contrastGroups = monotoneStretches(windows, breaths, c)
+    .map(stretch => suggestAdjustments(stretch, phrases, canRush, canDrag, c))
+    .filter(group => group.length)
 
   // Outlier phrases, with directly neighbouring ones of the same rule merged into one issue.
   const groups: { rule: RateRule; phrases: RatePhrase[]; next: number }[] = []
   for (const [i, p] of phrases.entries()) {
-    if (inMonotone(p)) continue
     const ratio = paceRatio(p, c)
     const rule: RateRule | undefined =
       canDrag(p) && ratio > c.dragAbove ? "RATE_IMPORTANCE_SLOW"
@@ -192,16 +188,19 @@ export function detectRate(words: MarkedWord[], config: Partial<RateConfig> = {}
   const timed = words.filter((w) => w.start !== undefined && w.end !== undefined)
   const minutes = timed.length ? (timed[timed.length - 1].end! - timed[0].start!) / 60 : 0
   const budget = Math.max(1, Math.round(minutes * c.marksPerMinute))
+  const contrast = contrastGroups.slice(0, budget).flat()
+  const overlapsContrast = (m: RateMark) => contrast.some(p => p.rule === m.rule && p.first <= m.last && m.first <= p.last)
   const kept = outliers
+    .filter(m => !overlapsContrast(m))
     .filter((m) => m.impact >= (m.rule === "RATE_IMPORTANCE_SLOW" ? c.minDragImpact : c.minRushImpact))
     .sort((a, b) => b.impact - a.impact)
-    .slice(0, Math.max(0, budget - monotone.length))
+    .slice(0, Math.max(0, budget - Math.min(contrastGroups.length, budget)))
 
   return {
     speakerPace: medianPace(breaths, c.minSyllables * 3),
     variation: median(windows.map((w) => w.sd)),
     windows,
-    marks: [...monotone, ...kept].sort((a, b) => a.start - b.start),
+    marks: [...contrast, ...kept].sort((a, b) => a.start - b.start),
   }
 }
 
@@ -295,7 +294,7 @@ export function varianceWindows(phrases: RatePhrase[], c: RateConfig): VarianceW
   return windows
 }
 
-/** Merge overlapping monotone windows into stretches, snapped to the phrases inside them. */
+/** Merge overlapping low-variation windows into stretches, snapped to the phrases inside them. */
 function monotoneStretches(windows: VarianceWindow[], phrases: RatePhrase[], c: RateConfig) {
   const merged: { start: number; end: number }[] = []
   for (const w of windows) {
@@ -312,27 +311,29 @@ function monotoneStretches(windows: VarianceWindow[], phrases: RatePhrase[], c: 
   })
 }
 
-/** A monotone mark with the fastest phrase that can be rushed to slow down on, and the slowest that can drag to speed up. */
-function suggest(
+/** Select concrete adjustments from a low-variation passage, without a passage-level mark. */
+function suggestAdjustments(
   stretch: { start: number; end: number },
   phrases: RatePhrase[],
   canRush: (p: RatePhrase) => boolean,
   canDrag: (p: RatePhrase) => boolean,
   c: RateConfig,
-): RateMark {
-  const inside = phrases.filter((p) => middle(p) >= stretch.start && middle(p) <= stretch.end)
+): RateMark[] {
+  const inside = phrases.filter(p => middle(p) >= stretch.start && middle(p) <= stretch.end)
   const byPace = (a: RatePhrase, b: RatePhrase) => paceRatio(a, c) - paceRatio(b, c)
-  const slowDown = inside.filter(canRush).sort(byPace)[0]
+  const slowDown = inside.filter(p => canRush(p) && !emphasized(p, phrases, c)).sort(byPace)[0]
+  // Speeding up the setup serves a contrasting message phrase, not speed for its own sake.
+  if (!slowDown) return []
   const speedUp = inside.filter(canDrag).sort(byPace).at(-1)
-  return {
-    ...span(inside, c),
-    rule: "RATE_MONOTONE",
-    start: stretch.start,
-    end: stretch.end,
-    impact: stretch.end - stretch.start,
-    slowDown: slowDown && ref(slowDown, c),
-    speedUp: speedUp && ref(speedUp, c),
-  }
+  const marks: RateMark[] = [{
+    ...ref(slowDown, c), rule: "RATE_IMPORTANCE_FAST",
+    impact: Math.max(0, slowDown.syllables * c.referencePace * c.messagePace - slowDown.seconds),
+  }]
+  if (speedUp) marks.push({
+    ...ref(speedUp, c), rule: "RATE_IMPORTANCE_SLOW",
+    impact: Math.max(0, speedUp.seconds - speedUp.syllables * c.referencePace / c.messagePace),
+  })
+  return marks
 }
 
 /** Syllable-weighted median seconds per syllable; undefined with fewer than `minTotal` syllables. */

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "corpus": "voice-pack-20261001",
+  "method": "Assistant-authored draft comparisons of aligned word timings, recorded speech level and exploratory autocorrelation pitch measurements against user-designated good takes. No rate detector predictions were used as labels. This is not a human listening evaluation; expressive judgments and exact word boundaries require review.",
+  "referenceTakes": {
+    "rate": "rate-03",
+    "volume": "volume-03",
+    "pitch_melody": "pitch_melody-03",
+    "tonality": "tonality-02",
+    "pauses": "pauses-03"
+  },
+  "drafts": [
+    {
+      "id": "rate-01",
+      "notes": "Draft against rate-03. Overall reading speed is similar; make a local contrast by moving through the connecting phrase and giving “outstanding” more time.",
+      "marks": [
+        {
+          "first": 12,
+          "last": 17,
+          "rule": "RATE_IMPORTANCE_SLOW",
+          "note": "Speed up through “that they are performing at an”. This connecting phrase takes 1.60 s here versus 1.20 s in good take 3. Move through it more briskly to leave time for the important contrast."
+        },
+        {
+          "first": 18,
+          "last": 18,
+          "rule": "RATE_IMPORTANCE_FAST",
+          "note": "Slow down on “outstanding”. It takes 0.64 s here versus 0.88 s in good take 3. Let this key word stand out from the faster connecting phrase before it."
+        }
+      ]
+    },
+    {
+      "id": "rate-02",
+      "notes": "Draft against rate-03. The paragraph is about 7.28 s of elapsed speech versus 9.67 s in the good take. I marked the compressed contrasts, not every faster word: “know they are performing poorly” is already about as long as the reference.",
+      "marks": [
+        {
+          "first": 0,
+          "last": 3,
+          "rule": "RATE_IMPORTANCE_FAST",
+          "note": "Draft vs rate-03: “Most poorly performing employees” lasts 1.44 s versus 2.24 s. Give “Most” more weight before moving through the description; it sets up the contrast with “Few”."
+        },
+        {
+          "first": 9,
+          "last": 11,
+          "rule": "RATE_IMPORTANCE_FAST",
+          "note": "Draft vs rate-03: “Few have delusions” lasts 0.88 s versus 1.28 s. Give the contrasting point time to land; this take also runs into it without the reference’s roughly 0.55 s sentence break."
+        },
+        {
+          "first": 18,
+          "last": 22,
+          "rule": "RATE_IMPORTANCE_FAST",
+          "note": "Draft vs rate-03: the final contrast lasts 2.00 s versus 2.64 s. In particular, “outstanding” is 0.48 s versus 0.88 s. Stretch that emphasis instead of rushing through both “outstanding” and “adequate”."
+        }
+      ]
+    },
+    {
+      "id": "pauses-01",
+      "notes": "Draft against pauses-03. Marks straddle the words on either side of each pause so playback includes the gap. No silences were removed from the audio.",
+      "marks": [
+        {
+          "first": 3,
+          "last": 4,
+          "rule": "PAUSE_UNNECESSARY",
+          "note": "Draft vs pauses-03: the gap after “employees” is about 2.08 s, compared with 0.40 s in the reference. Shorten this interruption between the subject and “know”; keep a brief emphasis beat rather than deleting every pause."
+        },
+        {
+          "first": 8,
+          "last": 9,
+          "rule": "PAUSE_NECESSARY",
+          "note": "Draft vs pauses-03: after the completed thought “performing poorly”, the break is 0.64 s versus 2.43 s. Move more of the breathing room here, before the contrast beginning “Few”. Extend the existing pause rather than adding a new one inside the sentence."
+        }
+      ]
+    },
+    {
+      "id": "pauses-02",
+      "notes": "Draft against pauses-03; this is the least certain pause mark. The 3.28 s sentence break is NOT automatically labeled unnecessary: the good take also uses a deliberate 2.43 s break there. Review whether the missing short internal emphasis beat is the intended difference.",
+      "marks": [
+        {
+          "first": 3,
+          "last": 4,
+          "rule": "PAUSE_NECESSARY",
+          "note": "Tentative vs pauses-03: “employees know” runs together with no measured gap; the reference inserts about 0.40 s before “know”. Try a brief beat here to emphasize what the employees already know. Do not copy the reference’s timings mechanically."
+        }
+      ]
+    },
+    {
+      "id": "volume-01",
+      "notes": "Draft against volume-03 using unchanged recorded levels, not a claim about real-world loudness. The opening is stronger, but the ending loses projection. Listening volume should be the same for both takes.",
+      "marks": [
+        {
+          "first": 0,
+          "last": 2,
+          "rule": "VOLUME_HIGH",
+          "note": "Draft vs volume-03: ease the opening burst, especially the first “poorly” (about -7.2 dB RMS versus -13.7 dB in the reference). Aim for the reference’s more controlled emphasis; loudness is not inherently wrong."
+        },
+        {
+          "first": 21,
+          "last": 22,
+          "rule": "VOLUME_FADE",
+          "note": "Draft vs volume-03: maintain projection through “adequate level”. Those words fall to approximately -28/-30 dB RMS here, versus -23/-23 dB in the good take. The thought’s ending fades relative to the stronger material before it."
+        }
+      ]
+    },
+    {
+      "id": "volume-02",
+      "notes": "Draft against volume-03. Speech-wide level is about 4.4 dB lower, with the clearest loss of projection in the second sentence. I did not label every naturally quiet connecting word.",
+      "marks": [
+        {
+          "first": 9,
+          "last": 22,
+          "rule": "VOLUME_LOW",
+          "note": "Draft vs volume-03: bring more projection to the second sentence and sustain it. “Few”, “delusions”, and “level” are roughly 8.7, 8.4, and 8.0 dB lower than their counterparts in the good take. Preserve dynamics rather than raising every syllable equally."
+        }
+      ]
+    },
+    {
+      "id": "pitch_melody-01",
+      "notes": "Draft against pitch_melody-03. This is a comparison with your selected delivery, not a universal target pitch or a claim that naturally high voices are wrong.",
+      "marks": [
+        {
+          "first": 0,
+          "last": 22,
+          "rule": "PITCH_HIGH",
+          "note": "Draft vs pitch_melody-03: the estimated voiced median is about 372 Hz versus 126 Hz. Bring this sustained high register closer to the comfortable register used in your good take while keeping expressive rises and falls."
+        }
+      ]
+    },
+    {
+      "id": "pitch_melody-02",
+      "notes": "Draft against pitch_melody-03. Average register is close to the reference; the missing feature is melodic movement, not simply a low voice. Pitch estimates are exploratory.",
+      "marks": [
+        {
+          "first": 0,
+          "last": 22,
+          "rule": "PITCH_VARIETY",
+          "note": "Draft vs pitch_melody-03: the central voiced pitch range is about 4.1 semitones versus 7.6 in the reference. Add meaningful contour, especially on “Most poorly performing employees”; avoid raising the whole paragraph just to sound higher."
+        }
+      ]
+    },
+    {
+      "id": "tonality-01",
+      "notes": "Tentative draft against tonality-02. Tonality is subjective: pitch/level measurements support a contrast but cannot establish emotional intent. The good take is louder; loudness alone is not why this is marked. ASR writes “Do you have” where the shared paragraph says “Few have”; verify against playback.",
+      "marks": [
+        {
+          "first": 0,
+          "last": 23,
+          "rule": "TONE_FLAT",
+          "note": "Tentative vs tonality-02: try the more expressive contrast of your good take, particularly between what employees “know” and the claim that “Few have delusions”. This take has a narrower measured pitch range (about 3.4 versus 8.3 semitones), which is only a supporting cue. Confirm by listening; no particular emotion is being assigned."
+        }
+      ]
+    }
+  ]
+}

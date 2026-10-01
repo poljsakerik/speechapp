@@ -16,7 +16,8 @@
     "importance": "node --env-file-if-exists=../../.env scripts/importance.ts",
     "eval:importance": "node --env-file-if-exists=../../.env scripts/eval-importance.ts",
     "rate": "node --env-file-if-exists=../../.env scripts/rate.ts",
-    "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts"
+    "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts",
+    "import:voice-pack": "node --env-file-if-exists=../../.env scripts/import-voice-pack.ts"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",

@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "voice-pack-20261001",
+  "paragraph": "Most poorly performing employees know they are performing poorly. Few have delusions that they are performing at an outstanding or even adequate level.",
+  "sources": [
+    {
+      "file": "Recording (36).m4a",
+      "sha256": "583ba15912053954e645d2bd4ba920bc95dedccf1a010baa8d1ca6cec0c1ee00",
+      "foundation": "rate",
+      "assignment": "user-confirmed",
+      "evidence": "Pace changes between readings (about 138, 190 and 143 words/minute).",
+      "takes": [
+        {
+          "id": "rate-01",
+          "start": 0,
+          "end": 12.167
+        },
+        {
+          "id": "rate-02",
+          "start": 12.167,
+          "end": 20.855
+        },
+        {
+          "id": "rate-03",
+          "start": 20.855,
+          "end": 34.538667
+        }
+      ],
+      "sampleRate": 48000
+    },
+    {
+      "file": "Recording (37).m4a",
+      "sha256": "1039f15d69f50494e6a0875ca88860a5d9dad016d121f0226eefb2ef57f90194",
+      "foundation": "pauses",
+      "assignment": "user-confirmed",
+      "evidence": "Long pauses inside sentences and between sentences; these must stay inside takes.",
+      "takes": [
+        {
+          "id": "pauses-01",
+          "start": 0,
+          "end": 15.322
+        },
+        {
+          "id": "pauses-02",
+          "start": 15.322,
+          "end": 30.498
+        },
+        {
+          "id": "pauses-03",
+          "start": 30.498,
+          "end": 48.234667
+        }
+      ],
+      "sampleRate": 48000
+    },
+    {
+      "file": "Recording (38).m4a",
+      "sha256": "5c37c67cc9f506d2c845061b504a99d5da4e8796744ac906e7c068000d9a46df",
+      "foundation": "volume",
+      "assignment": "user-confirmed",
+      "evidence": "Large level contrast between readings (approximately -15, -24 and -20 dB RMS).",
+      "takes": [
+        {
+          "id": "volume-01",
+          "start": 0,
+          "end": 11.143
+        },
+        {
+          "id": "volume-02",
+          "start": 11.143,
+          "end": 22.765
+        },
+        {
+          "id": "volume-03",
+          "start": 22.765,
+          "end": 37.269333
+        }
+      ],
+      "sampleRate": 48000
+    },
+    {
+      "file": "Recording (39).m4a",
+      "sha256": "be57363c664fd793a5b988c3aee1cc48285ae66d86bc209842f24a8cb34d3cf0",
+      "foundation": "tonality",
+      "assignment": "user-confirmed",
+      "evidence": "Two readings with contrasting expression; foundation confirmed by the speaker.",
+      "takes": [
+        {
+          "id": "tonality-01",
+          "start": 0,
+          "end": 11.963
+        },
+        {
+          "id": "tonality-02",
+          "start": 11.963,
+          "end": 26.730667
+        }
+      ],
+      "sampleRate": 48000
+    },
+    {
+      "file": "Recording (40).m4a",
+      "sha256": "f30d057011178e55f76e1fc9ded7628e1cfe806445c751d380a7889c1d639c3f",
+      "foundation": "pitch_melody",
+      "assignment": "user-confirmed",
+      "evidence": "First reading is markedly higher pitched; later readings use a lower register.",
+      "takes": [
+        {
+          "id": "pitch_melody-01",
+          "start": 0,
+          "end": 11.12
+        },
+        {
+          "id": "pitch_melody-02",
+          "start": 11.12,
+          "end": 22.775
+        },
+        {
+          "id": "pitch_melody-03",
+          "start": 22.775,
+          "end": 35.349333
+        }
+      ],
+      "sampleRate": 48000
+    }
+  ],
+  "segmentation": "Consecutive source slices, cut in the gap between complete paragraph readings. No within-paragraph silence removal, leading/trailing speech trim, or level normalization.",
+  "referenceTakes": {
+    "rate": "rate-03",
+    "volume": "volume-03",
+    "pitch_melody": "pitch_melody-03",
+    "tonality": "tonality-02",
+    "pauses": "pauses-03"
+  }
+}

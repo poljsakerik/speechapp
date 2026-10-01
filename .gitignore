@@ -15,4 +15,6 @@ apps/*/dist/
 
 # Voice recordings (local only)
 *.zip
-recordings/
+/recordings
+recordings-archive-*/
+.voice-pack-*/

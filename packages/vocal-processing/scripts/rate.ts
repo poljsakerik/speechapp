@@ -28,16 +28,14 @@ const result = detectRate(labeled.words)
 if (flags.includes("--json")) {
   console.log(JSON.stringify({ message, speakerPace: result.speakerPace, variation: result.variation, marks: result.marks }, null, 2))
 } else {
-  const { referencePace, monotoneBelow } = DEFAULT_RATE_CONFIG
+  const { referencePace } = DEFAULT_RATE_CONFIG
   if (message) console.log(`Message: ${message.message}`)
   const overall = result.speakerPace ? `x${(result.speakerPace / referencePace).toFixed(2)} of` : "too short to compare with"
-  const variation = result.variation === undefined ? "too short to measure" : `${result.variation.toFixed(2)} (monotone below ${monotoneBelow})`
+  const variation = result.variation === undefined ? "too short to measure" : result.variation.toFixed(2)
   console.log(`Overall pace ${overall} the reference; pace variation ${variation}\n`)
-  const labels = { RATE_MONOTONE: "monotone stretch", RATE_IMPORTANCE_FAST: "point rushed", RATE_IMPORTANCE_SLOW: "dragging" }
+  const labels = { RATE_IMPORTANCE_FAST: "point rushed", RATE_IMPORTANCE_SLOW: "dragging" }
   for (const m of result.marks) {
-    const what = m.rule === "RATE_MONOTONE" ? `${Math.round(m.end - m.start)}s` : `x${m.ratio.toFixed(2)}  ${m.text}`
+    const what = `x${m.ratio.toFixed(2)}  ${m.text}`
     console.log(`${m.start.toFixed(1).padStart(6)}s  ${labels[m.rule].padEnd(16)} ${what}`)
-    if (m.slowDown) console.log(`${"".padEnd(25)}slow down on: ${m.slowDown.text}`)
-    if (m.speedUp) console.log(`${"".padEnd(25)}speed up through: ${m.speedUp.text}`)
   }
 }
