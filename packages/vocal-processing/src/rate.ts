@@ -44,14 +44,17 @@ export type RateAnalysis = {
   speakingRate?: number; articulationRate?: number
   /** False when there is too little usable speech to judge. */
   reliable: boolean
-  /** Whether the contrast check ran; it needs a pacing prediction. */
+  /**
+   * Whether the contrast check judged at least one passage. It needs a pacing
+   * prediction and a passage with two or more key and setup phrases.
+   */
   contrast: boolean
   /** Measured phrases: predicted score and pace relative to the speaker's own median phrase (log2). */
   phrases: (Span & { score: number; pace: number })[]
   /** Judged passages: mean relative pace of key and setup phrases, and whether the passage was flagged. */
   passages: (Span & { keyPace: number; setupPace: number; flagged: boolean })[]
 }
-export const RATE_VERSION = 20
+export const RATE_VERSION = 21
 /** Rates are syllables/second of speaking; durations are seconds of speaking. */
 export const DEFAULT_RATE_CONFIG = {
   passagePhrases: 12, // About 30 s of speech.
@@ -141,6 +144,6 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
     ]
     marks.push({ ...span(first.from, last.to), rule: "RATE_IMPORTANCE_FAST", reason: "contrast", articulationRate: rate(first.from, last.to), suggestions })
   }
-  return { ...base, contrast: !!pacing, marks: marks.sort((a, b) => a.start - b.start), passages: judged,
+  return { ...base, contrast: judged.length > 0, marks: marks.sort((a, b) => a.start - b.start), passages: judged,
     phrases: phrases.map(({ first, last, start, end, text, score, pace }) => ({ first, last, start, end, text, score, pace })) }
 }

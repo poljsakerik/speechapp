@@ -123,5 +123,8 @@ test("without a pacing prediction the contrast check does not run", () => {
 test("a passage needs at least two key and two setup phrases to judge", () => {
   const flat = passage(.2, .2)
   const scores = flat.pacing.scores.map((s, i) => i < 11 ? 2 : s)
-  assert.deepEqual(detectRate(flat.words, {}, [], { ...flat.pacing, scores }).marks, [])
+  const analysis = detectRate(flat.words, {}, [], { ...flat.pacing, scores })
+  assert.deepEqual(analysis.marks, [])
+  assert.deepEqual(analysis.passages, [])
+  assert.equal(analysis.contrast, false, "nothing was judged, so this is not a clean assessment")
 })

@@ -141,44 +141,50 @@ export function viterbiAlign<W extends Word>(words: W[], emission: Emission, opt
   })
   if (states.length < 3) return words
   // Separators and blanks may sit anywhere between their neighbouring letters.
-  for (let s = 0; s < states.length; s++) {
-    if (states[s].word >= 0) continue
-    const before = states.slice(0, s).reverse().find((x) => x.word >= 0)
-    const after = states.slice(s + 1).find((x) => x.word >= 0)
-    states[s].lo = before ? before.lo : 0
-    states[s].hi = after ? after.hi : frames - 1
+  for (let s = 0, lo = 0; s < states.length; s++) {
+    if (states[s].word >= 0) lo = states[s].lo
+    else states[s].lo = lo
+  }
+  for (let s = states.length - 1, hi = frames - 1; s >= 0; s--) {
+    if (states[s].word >= 0) hi = states[s].hi
+    else states[s].hi = hi
   }
   for (let s = 1; s < states.length; s++) states[s].hi = Math.max(states[s].hi, states[s - 1].hi)
   for (let s = states.length - 2; s >= 0; s--) states[s].lo = Math.min(states[s].lo, states[s + 1].lo)
 
   const S = states.length
   const NEG = -Infinity
+  // Only the active band of each frame is written. Both ends of the band only
+  // move forward, so states above the previous band still hold -Infinity and
+  // states below it are stale and must not be read.
   let score = new Float64Array(S).fill(NEG)
-  let next = new Float64Array(S)
+  let next = new Float64Array(S).fill(NEG)
   // Back pointers per frame for the states active in it: 0 stay, 1 from s-1, 2 from s-2.
   const active: [number, number][] = []
   const back: Uint8Array[] = []
   let sLo = 0
   let sHi = 0
+  let prevLo = 0
   for (let t = 0; t < frames; t++) {
     while (sHi + 1 < S && states[sHi + 1].lo <= t) sHi++
     while (sLo < sHi && states[sLo].hi < t) sLo++
     const ptr = new Uint8Array(sHi - sLo + 1)
-    next.fill(NEG)
     for (let s = sLo; s <= sHi; s++) {
+      next[s] = NEG
       const emit = logProbs[t * V + states[s].token]
       if (t === 0) {
         if (s <= 1) next[s] = emit
         continue
       }
-      let best = score[s]
+      let best = s >= prevLo ? score[s] : NEG
       let from = 0
-      if (s > 0 && score[s - 1] > best) { best = score[s - 1]; from = 1 }
-      if (s > 1 && states[s].token !== BLANK && states[s].token !== states[s - 2].token && score[s - 2] > best) { best = score[s - 2]; from = 2 }
+      if (s - 1 >= prevLo && score[s - 1] > best) { best = score[s - 1]; from = 1 }
+      if (s - 2 >= prevLo && states[s].token !== BLANK && states[s].token !== states[s - 2].token && score[s - 2] > best) { best = score[s - 2]; from = 2 }
       if (best === NEG) continue
       next[s] = best + emit
       ptr[s - sLo] = from
     }
+    prevLo = sLo
     active.push([sLo, sHi])
     back.push(ptr)
     ;[score, next] = [next, score]
