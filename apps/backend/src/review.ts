@@ -1,9 +1,7 @@
 import { transcribe, wordsFromDeepgram } from "@micmane/vocal-processing/deepgram"
-import { openaiCompletion } from "@micmane/vocal-processing/openai"
 import { alignWords, loadAligner, type Aligner } from "@micmane/vocal-processing/align"
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
 import { detectRate, syllables, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
-import { reviewRate } from "@micmane/vocal-processing/rate-review"
 import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
@@ -47,8 +45,6 @@ const copy = {
     why_it_matters: "A brisker pace can help this passage keep its momentum.",
     practice: "Move through this phrase more briskly and save time for the key idea.",
   },
-  RATE_FLOW: { observation: "This thought loses momentum in repeated fragments.", why_it_matters: "A connected delivery helps the listener follow one idea.", practice: "Rehearse this highlighted thought as one connected sentence at a comfortable pace." },
-  RATE_VARIATION: { observation: "The pace stays similar across this passage.", why_it_matters: "A pace change can give the ideas more contrast.", practice: "Move through the setup, then slow down as the next idea lands." },
 } as const
 
 export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {
@@ -81,7 +77,7 @@ async function measurePauses(audio: Uint8Array): Promise<{ samples: Float32Array
   }
 }
 
-// Refine recognizer timing before phrase-level pace measurement.
+// Refine recognizer timing before measuring speaking time.
 let aligner: Promise<Aligner> | undefined
 async function retime(words: Word[], decoded: { samples: Float32Array; pauses: Pause[] } | undefined): Promise<Word[]> {
   if (process.env.ALIGN_WORDS === "0" || !decoded) return words
@@ -100,14 +96,15 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const pauses = decoded?.pauses
   if (transcript.length < 3) return undefined
   const segments = segmentWords(transcript)
+  // Without the waveform, silence cannot be told from speech.
   const analysis = detectRate(transcript, {}, pauses)
-  if (!decoded) analysis.reliable = false
-  const result = await reviewRate(transcript, analysis, openaiCompletion()).catch(() => ({ ...analysis, marks: [], status: "uncertain" as const }))
+  const status = decoded && analysis.reliable ? "reviewed" as const : "uncertain" as const
+  const marks = status === "reviewed" ? analysis.marks : []
   return {
     audio: audio.toString("base64"),
     audioType,
     segments,
-    rateDiagnostics: { version: RATE_VERSION, status: result.status, pace: analysis.pace, candidates: analysis.candidates, decisions: "decisions" in result ? result.decisions : [] },
-    review: rateReview(segments, result.marks, "", result.status),
+    rateDiagnostics: { version: RATE_VERSION, status, pace: analysis.pace, articulationRate: analysis.articulationRate, marks },
+    review: rateReview(segments, marks, "", status),
   }
 }

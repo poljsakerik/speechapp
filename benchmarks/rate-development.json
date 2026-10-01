@@ -23,10 +23,15 @@
             {
               "start": 29.435,
               "end": 40.09,
-              "rule": "RATE_IMPORTANCE_SLOW",
-              "note": "Deliberately slow greeting."
+              "rule": "PAUSE_UNNECESSARY",
+              "note": "Deliberately slow greeting: about half the clip is silence (4.6 s of speech in 9.8 s). Moved from rate, which needs at least 5 s of speech to judge.",
+              "foundation": "pauses"
             }
-          ]
+          ],
+          "rate": {
+            "status": "excluded",
+            "notes": "Only 4.6 s of speech: too little to judge rate. The slowness is mostly silence, which the pause fundamental reviews."
+          }
         },
         {
           "id": "vinh_rate-02",
@@ -61,8 +66,9 @@
             {
               "start": 94.045,
               "end": 104.183,
-              "rule": "RATE_VARIATION",
-              "note": "Deliberately constant rate across the demonstration."
+              "rule": "PAUSE_NECESSARY",
+              "note": "Deliberately constant delivery with no pause across the whole demonstration. Moved from rate: the words are at an everyday speed; the missing pauses make it sound monotonous.",
+              "foundation": "pauses"
             }
           ]
         },
@@ -80,8 +86,9 @@
             {
               "start": 137.423,
               "end": 151.8,
-              "rule": "RATE_VARIATION",
-              "note": "Deliberately predictable, sustained same-rate cadence. This demonstrates low variation, not evidence of alternating fast/slow periodicity."
+              "rule": "PAUSE_NECESSARY",
+              "note": "Deliberately predictable delivery, almost without pauses. Moved from rate: the words are at an everyday speed; the missing pauses make it sound monotonous.",
+              "foundation": "pauses"
             }
           ]
         },
@@ -203,7 +210,7 @@
           "start": 19.1,
           "end": 35.9,
           "marks": [],
-          "note": "Clean rate counterexample: natural setup with sentence-boundary pauses and a local speed change. Repeating \u201cphenomenal\u201d alone is not a rate error."
+          "note": "Clean rate counterexample: natural setup with sentence-boundary pauses and a local speed change. Repeating “phenomenal” alone is not a rate error."
         },
         {
           "id": "practice-01",
@@ -213,8 +220,9 @@
             {
               "start": 41,
               "end": 48.161,
-              "rule": "RATE_FLOW",
-              "note": "The sentence loses momentum inside the unfinished phrase: repeated \u201cit\u2019s\u201d, then a long break between \u201cvery\u201d and \u201cfeasible\u201d. Coach connected delivery, not faster articulation or a pause-foundation correction."
+              "rule": "PAUSE_UNNECESSARY",
+              "note": "The sentence loses momentum inside the unfinished phrase: repeated “it’s”, then a long break between “very” and “feasible”. Coach connected delivery, not faster articulation or a pause-foundation correction. Moved from rate (RATE_FLOW): hesitations and restarts inside one thought are a pause problem; the words themselves are at an everyday speed.",
+              "foundation": "pauses"
             }
           ]
         },
@@ -223,7 +231,11 @@
           "start": 99.9,
           "end": 107.6,
           "marks": [],
-          "note": "Clean counterexample: the reveal \u201che\u2019s a divorce lawyer\u201d is followed by a separate rhetorical question. Boundary silence is not slow articulation."
+          "note": "Clean counterexample: the reveal “he’s a divorce lawyer” is followed by a separate rhetorical question. Boundary silence is not slow articulation.",
+          "rate": {
+            "status": "excluded",
+            "notes": "Only about 4.7 s of speech: too little to judge rate."
+          }
         },
         {
           "id": "practice-02",
@@ -233,8 +245,9 @@
             {
               "start": 148.03,
               "end": 158.251,
-              "rule": "RATE_FLOW",
-              "note": "The explanation breaks down across \u201csort of create the experiment. By... And because he... He\u2019s a...\u201d. Repeated restarts interrupt one thought; rehearse a connected delivery."
+              "rule": "PAUSE_UNNECESSARY",
+              "note": "The explanation breaks down across “sort of create the experiment. By... And because he... He’s a...”. Repeated restarts interrupt one thought; rehearse a connected delivery. Moved from rate (RATE_FLOW): hesitations and restarts inside one thought are a pause problem; the words themselves are at an everyday speed.",
+              "foundation": "pauses"
             }
           ]
         },

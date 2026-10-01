@@ -38,10 +38,12 @@ test("phrase adjustments are scored directly, clear examples count false alarms 
 test("unknown rate rules are rejected instead of silently disappearing from scores", () => {
   assert.throws(() => scoreRate(text, words, [mark(0, 3, "RATE_UNKNOWN")], []), /Unknown rate rule/)
 })
-test("CLI gates both missed mistakes and clean false alarms, without API access", () => {
+test("CLI gates both missed mistakes and clean false alarms", () => {
   const root = mkdtempSync(join(tmpdir(), "voice-benchmark-"))
   try {
-    const words = Array.from({ length: 40 }, (_, i) => ({ text: (i + 1) % 10 ? "day" : "day.", start: i * .3, end: (i + 1) * .3 }))
+    // A rushed take at 10 syllables/s and a normal one at 5, both on the same 12 s tone.
+    const speak = (count: number, seconds: number) => Array.from({ length: count }, (_, i) => ({ text: (i + 1) % 10 ? "day" : "day.", start: i * seconds, end: (i + 1) * seconds }))
+    const words = speak(60, .1), normal = speak(40, .2)
     const text = words.map(w => w.text).join(" ")
     const wav = Buffer.alloc(44 + 16000 * 12 * 2)
     wav.write("RIFF"); wav.writeUInt32LE(wav.length - 8, 4); wav.write("WAVEfmt ", 8)
@@ -52,25 +54,25 @@ test("CLI gates both missed mistakes and clean false alarms, without API access"
     const audio = decodeWav(wav)
     const analysis = detectRate(words, {}, findPauses(audio.samples, audio.sampleRate))
     assert.ok(analysis.reliable)
-    assert.equal(analysis.candidates.length, 1)
-    assert.equal(analysis.candidates[0].rule, "RATE_VARIATION")
+    assert.deepEqual(analysis.marks.map(m => m.rule), ["RATE_IMPORTANCE_FAST"])
     const statuses = ["reviewed", "reviewed", "pending", "excluded"]
     const takes = statuses.map((status, i) => {
       const id = `rate-0${i + 1}`, base = `rate/${id}/${id}`, dir = join(root, "rate", id)
       mkdirSync(join(dir, ".cache"), { recursive: true })
-      const takeWords = i === 1 ? words.slice(0, 20) : words
+      const takeWords = i === 1 ? normal : words
       writeFileSync(join(root, `${base}.txt`), takeWords.map(w => w.text).join(" "))
       writeFileSync(join(root, `${base}.wav`), wav)
       writeFileSync(join(root, `${base}.json`), JSON.stringify({ results: { channels: [{ alternatives: [{ words: takeWords.map(w => ({ word: w.text, start: w.start, end: w.end })) }] }] } }))
-      const marks = i === 0 ? [{ startAt: 0, endAt: 12, startIndex: 0, endIndex: text.length, foundationType: "rate", rule: "RATE_VARIATION" }] : []
+      const marks = i === 0 ? [{ startAt: 0, endAt: 6, startIndex: 0, endIndex: text.length, foundationType: "rate", rule: "RATE_IMPORTANCE_FAST" }] : []
       writeFileSync(join(root, `${base}.golden.json`), JSON.stringify({ schemaVersion: 2, marks, reviews: { rate: { status, notes: "" } } }))
       return { id, base, audioExtension: "wav" }
     })
     writeFileSync(join(root, "manifest.json"), JSON.stringify({ schemaVersion: 1, id: "test", takes }))
-    const gate = (ids: string[]) => spawnSync(process.execPath, [join(import.meta.dirname, "../scripts/eval-rate.ts"), "--recordings-dir", root, "--recognizer-timing", "--require-pass", ...ids], { encoding: "utf8", env: { ...process.env, OPENAI_API_KEY: "", RATE_MODEL: "test-model", RATE_EFFORT: "low" } })
+    const gate = (ids: string[]) => spawnSync(process.execPath, [join(import.meta.dirname, "../scripts/eval-rate.ts"), "--recordings-dir", root, "--recognizer-timing", "--require-pass", ...ids], { encoding: "utf8" })
     const report = () => JSON.parse(readFileSync(join(root, "rate-benchmark.json"), "utf8"))
     assert.equal(gate([]).status, 1, "unreviewed takes cannot make an incomplete suite pass")
     assert.equal(report().reviewed, 2)
+    assert.equal(report().takes.find((t: { id: string }) => t.id === "rate-04").status, "excluded", "an excluded take is out of scope, not a failure")
     assert.equal(report().failed, 0)
     const good = gate(["rate-01", "rate-02"])
     assert.equal(good.status, 0, good.stderr)

@@ -6,10 +6,8 @@
   "exports": {
     "./align": "./src/align.ts",
     "./deepgram": "./src/deepgram.ts",
-    "./openai": "./src/openai.ts",
     "./pauses": "./src/pauses.ts",
-    "./rate": "./src/rate.ts",
-    "./rate-review": "./src/rate-review.ts"
+    "./rate": "./src/rate.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

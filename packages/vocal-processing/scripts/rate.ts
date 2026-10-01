@@ -1,11 +1,9 @@
 /** Analyze a WAV file (with audio evidence) or a saved Deepgram JSON response. */
 import { readFileSync } from "node:fs"
 import { transcribe, wordsFromDeepgram } from "../src/deepgram.ts"
-import { openaiCompletion } from "../src/openai.ts"
 import { decodeWav, findPauses } from "../src/pauses.ts"
 import { alignWords, loadAligner, resample } from "../src/align.ts"
 import { detectRate } from "../src/rate.ts"
-import { reviewRate } from "../src/rate-review.ts"
 
 const [path, ...flags] = process.argv.slice(2)
 if (!path) throw new Error("Usage: pnpm rate <recording.wav | deepgram.json> [--json]")
@@ -18,10 +16,9 @@ const pauses = wav && findPauses(wav.samples, wav.sampleRate)
 if (wav) words = await alignWords(words, resample(wav.samples, wav.sampleRate), await loadAligner(), pauses ?? [])
 const analysis = detectRate(words, {}, pauses)
 // Timing without the waveform is inspection data, not a completed audio review.
-if (!wav) analysis.reliable = false
-const result = await reviewRate(words, analysis, openaiCompletion())
-if (flags.includes("--json")) console.log(JSON.stringify(result, null, 2))
+const status = wav && analysis.reliable ? "reviewed" : "uncertain"
+if (flags.includes("--json")) console.log(JSON.stringify({ ...analysis, status }, null, 2))
 else {
-  console.log(`${result.status}; ${result.speakingRate?.toFixed(1) ?? "unavailable"} syllables/s including silence`)
-  for (const mark of result.marks) console.log(`${mark.start.toFixed(1)}–${mark.end.toFixed(1)}s ${mark.rule}: ${mark.text}`)
+  console.log(`${status}; ${analysis.articulationRate?.toFixed(1) ?? "unavailable"} syllables/s while speaking, ${analysis.speakingRate?.toFixed(1) ?? "unavailable"} including silence`)
+  for (const mark of status === "reviewed" ? analysis.marks : []) console.log(`${mark.start.toFixed(1)}–${mark.end.toFixed(1)}s ${mark.rule} (${mark.articulationRate.toFixed(1)} syllables/s): ${mark.text}`)
 }

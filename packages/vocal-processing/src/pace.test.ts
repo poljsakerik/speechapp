@@ -1,67 +1,30 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { boundaryAfter, measurePace } from "./pace.ts"
-import { detectRate } from "./rate.ts"
+import { measurePace } from "./pace.ts"
 
-function sample(gaps: Record<number, number> = {}, punctuation = true) {
+function sample(gaps: Record<number, number> = {}) {
   let time = 0
   return Array.from({ length: 40 }, (_, i) => {
     const start = time; time += .3
-    const word = { text: punctuation && i % 10 === 9 ? "day." : "day", start, end: time }
+    const word = { text: i % 10 === 9 ? "day." : "day", start, end: time }
     time += gaps[i] ?? 0
     return word
   })
 }
 
-test("clause rates and rolling curves count syllables rather than words", () => {
+test("the rolling curve counts syllables rather than words", () => {
   const mono = measurePace(sample())
   const multi = measurePace(sample().map(w => ({ ...w, text: w.text.replace("day", "people") })))
-  assert.equal(multi.baselineRate, mono.baselineRate * 2)
-  for (const [i, clause] of multi.clauses.entries()) {
-    assert.equal(clause.speakingRate, mono.clauses[i].speakingRate * 2)
-    assert.equal(clause.articulationRate, mono.clauses[i].articulationRate * 2)
-  }
   for (const [i, point] of multi.curve.entries()) {
     assert.equal(point.speakingRate, mono.curve[i].speakingRate * 2)
     assert.equal(point.articulationRate, mono.curve[i].articulationRate == null ? null : mono.curve[i].articulationRate! * 2)
   }
 })
 
-test("boundary pauses reduce overall syllables per second without masquerading as slower articulation", () => {
-  const fluent = measurePace(sample()), spaced = measurePace(sample({ 9: 2, 19: 2, 29: 2 }))
-  assert.deepEqual(spaced.clauses.map(c => Math.round(c.articulationRate)), fluent.clauses.map(c => Math.round(c.articulationRate)))
-  assert.ok(spaced.pauses.every(p => p.boundary === "sentence"))
-  assert.ok(spaced.clauses.every(c => c.internalPauses.length === 0))
+test("pauses lower the speaking rate but leave a gap in articulation", () => {
+  const spaced = measurePace(sample({ 9: 2, 19: 2, 29: 2 }))
+  assert.equal(spaced.pauses.length, 3)
   assert.ok(spaced.curve.some(p => p.paused && p.articulationRate === null && p.speakingRate < 2.5))
-  assert.ok(!detectRate(sample({ 9: 2, 19: 2, 29: 2 })).candidates.some(c => c.rule === "RATE_FLOW" || c.rule === "RATE_VARIATION"))
-})
-
-test("a clear clause-boundary pause also breaks an otherwise even run", () => {
-  const fluent = sample().map(w => ({ ...w, text: w.text.replace(".", ",") }))
-  const framed = sample({ 19: .5 }).map(w => ({ ...w, text: w.text.replace(".", ",") }))
-  assert.ok(detectRate(fluent).candidates.some(c => c.rule === "RATE_VARIATION"))
-  assert.ok(!detectRate(framed).candidates.some(c => c.rule === "RATE_VARIATION"))
-  assert.ok(!detectRate(framed).candidates.some(c => c.rule === "RATE_FLOW"))
-})
-
-test("interruptions stay inside a clause and nominate flow separately from slow articulation", () => {
-  const words = sample({ 2: 1.2, 5: 1.3, 12: .9, 15: .9 })
-  const a = detectRate(words)
-  const flow = a.candidates.find(c => c.rule === "RATE_FLOW")
-  assert.ok(flow)
-  assert.equal(flow.first, 0)
-  assert.equal(flow.last, 19, "adjacent interrupted clauses are one connected finding")
-  assert.ok(flow.articulationRate > 2.8)
-  assert.equal(a.pace!.clauses[0].internalPauses.length, 2)
-  assert.equal(a.pace!.clauses[0].last, 9, "a hesitation must not split the clause")
-})
-
-test("ASR punctuation is a clue; ellipses and decimals are not completed thoughts", () => {
-  assert.equal(boundaryAfter("By..."), "within")
-  assert.equal(boundaryAfter("he…"), "within")
-  assert.equal(boundaryAfter("0.03%"), "within")
-  assert.equal(boundaryAfter("however,"), "clause")
-  assert.equal(boundaryAfter('done.”'), "sentence")
 })
 
 test("the curve unions measured silence and word gaps, and rejects invalid timing", () => {

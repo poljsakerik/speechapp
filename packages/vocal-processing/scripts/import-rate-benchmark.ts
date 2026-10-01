@@ -15,7 +15,7 @@ if (!values["videos-dir"]) throw new Error("Usage: node scripts/import-rate-benc
 const root = resolve(import.meta.dirname, "../../..")
 const output = resolve(values.output ?? join(root, "recordings-rate-development"))
 if (existsSync(output)) throw new Error(`${output} exists; choose a new output to preserve annotations`)
-type Source = { kind?: string; file: string; sha256: string; foundation: string; takes: { id: string; start: number; end: number; note?: string; marks: { start: number; end: number; rule: string; note: string }[] }[] }
+type Source = { kind?: string; file: string; sha256: string; foundation: string; takes: { id: string; start: number; end: number; note?: string; rate?: { status: "reviewed" | "excluded"; notes: string }; marks: { start: number; end: number; rule: string; note: string; foundation?: string }[] }[] }
 type SourceWord = { word: string; punctuated_word?: string; start: number; end: number }
 const recipe = JSON.parse(readFileSync(join(root, "benchmarks/rate-development.json"), "utf8")) as { id: string; purpose: string; sources: Source[] }
 mkdirSync(dirname(output), { recursive: true })
@@ -58,9 +58,13 @@ try {
         const first = selected[0], last = selected.at(-1)!
         const startIndex = words.slice(0, first.index).reduce((s, w) => s + (w.punctuated_word ?? w.word).length + 1, 0)
         const endIndex = words.slice(0, last.index + 1).reduce((s, w) => s + (w.punctuated_word ?? w.word).length + 1, 0) - 1
-        return { startAt: first.start, endAt: last.end, startIndex, endIndex, foundationType: "rate", rule: mark.rule, note: mark.note }
+        return { startAt: first.start, endAt: last.end, startIndex, endIndex, foundationType: mark.foundation ?? "rate", rule: mark.rule, note: mark.note }
       })
-      writeFileSync(`${base}.golden.json`, JSON.stringify({ schemaVersion: 2, marks, reviews: { rate: { status: "reviewed", notes: (take.note ? take.note + " " : "") + "Provisional development annotations from transcript and acoustic inspection, chosen before detector evaluation. User-authorized Vinh and practice excerpts. Not independently listener-validated. Other foundations are unreviewed." } } }, null, 2) + "\n")
+      const provenance = "Provisional development annotations from transcript and acoustic inspection, chosen before detector evaluation. User-authorized Vinh and practice excerpts. Not independently listener-validated."
+      const reviews: Record<string, { status: string; notes: string }> = { rate: { status: take.rate?.status ?? "reviewed", notes: [take.note, take.rate?.notes, provenance].filter(Boolean).join(" ") } }
+      // Marks kept for another foundation await that foundation's own review.
+      for (const foundation of new Set(marks.map(m => m.foundationType).filter(f => f !== "rate"))) reviews[foundation] = { status: "pending", notes: "Marks moved from the rate benchmark; not yet a complete review of this foundation." }
+      writeFileSync(`${base}.golden.json`, JSON.stringify({ schemaVersion: 2, marks, reviews }, null, 2) + "\n")
       manifest.takes.push({ id: take.id, foundation: "rate", take: manifest.takes.length + 1, base: relativeBase, audioExtension: "wav", duration, source: source.file, sourceStart: take.start, sourceEnd: take.end, assignment: source.kind === "practice" ? (marks.length ? "Practice: rate correction" : "Practice: clean rate control") : marks.length ? "Rate demonstration" : "Clean rate reference", evidence: "benchmarks/rate-development.json" })
       console.log(`${take.id}: ${duration}s, ${words.length} words`)
     }
