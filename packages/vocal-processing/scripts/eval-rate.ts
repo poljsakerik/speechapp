@@ -15,7 +15,7 @@ import { decodeWav, findPauses } from "../src/pauses.ts"
 import { ALIGN_MODEL, alignWords, loadAligner, resample, type Aligner } from "../src/align.ts"
 import { predictPacing } from "../src/pacing.ts"
 import { cachedCompletion } from "./cache.ts"
-import { RATE_VERSION, DEFAULT_RATE_CONFIG, detectRate, type RateRule } from "../src/rate.ts"
+import { RATE_VERSION, DEFAULT_RATE_CONFIG, detectRate, type SpeedRule } from "../src/rate.ts"
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   "recordings-dir": { type: "string" }, "recognizer-timing": { type: "boolean", default: false },
@@ -27,7 +27,7 @@ const root = resolve(values["recordings-dir"] ?? join(import.meta.dirname, "../.
 const corpus = loadCorpus(root), takes = corpus.takes.filter(t => !positionals.length || positionals.includes(t.id))
 if (positionals.some(id => !corpus.takes.some(t => t.id === id))) throw new Error("Unknown take ID")
 const totals: Counts = { tp: 0, fp: 0, fn: 0 }
-const byRule = Object.fromEntries(RATE_RULES.map(r => [r, { tp: 0, fp: 0, fn: 0 }])) as Record<RateRule, Counts>
+const byRule = Object.fromEntries(RATE_RULES.map(r => [r, { tp: 0, fp: 0, fn: 0 }])) as Record<SpeedRule, Counts>
 const rows: Record<string, unknown>[] = []
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex")
 const add = (a: Counts, b: Counts) => { a.tp += b.tp; a.fp += b.fp; a.fn += b.fn }
@@ -61,7 +61,7 @@ for (const take of takes) {
     const analysis = detectRate(words, {}, pauses, pacing)
     if (!analysis.reliable) uncertain++
     const offsets = wordOffsets(text, original)
-    const predicted = (analysis.reliable ? analysis.marks.filter(m => m.reason === "sustained") : []).map(m => ({ startAt: m.start, endAt: m.end, startIndex: offsets[m.first]![0], endIndex: offsets[m.last]![1], foundationType: "rate", rule: m.rule }))
+    const predicted = (analysis.reliable ? analysis.marks.filter(m => m.rule !== "RATE_CONTRAST") : []).map(m => ({ startAt: m.start, endAt: m.end, startIndex: offsets[m.first]![0], endIndex: offsets[m.last]![1], foundationType: "rate", rule: m.rule }))
     const score = scoreRate(text, original, annotation.marks, predicted)
     reviewed++; add(totals, score)
     for (const rule of RATE_RULES) add(byRule[rule], score.byRule[rule])
@@ -69,7 +69,7 @@ for (const take of takes) {
     if (clean) { cleanTakes++; if (predicted.length) cleanTakesWithFalseAlarms++ }
     const status = analysis.reliable ? "reviewed" : "uncertain"
     writeFileSync(`${base}.rate.pred.json`, JSON.stringify({ model: "pacing", version: RATE_VERSION, config: DEFAULT_RATE_CONFIG,
-      ...analysis, status, pauses, contrastMarks: analysis.marks.filter(m => m.reason === "contrast"), marks: predicted.map((m, i) => ({ ...m, hit: score.hits[i] })), score, annotationSignature: JSON.stringify(annotation), corpus: corpus.id }, null, 2) + "\n")
+      ...analysis, status, pauses, contrastMarks: analysis.marks.filter(m => m.rule === "RATE_CONTRAST"), marks: predicted.map((m, i) => ({ ...m, hit: score.hits[i] })), score, annotationSignature: JSON.stringify(annotation), corpus: corpus.id }, null, 2) + "\n")
     const flagged = analysis.passages.filter(p => p.flagged).length
     rows.push({ id: take.id, assignment: take.assignment, status, articulationRate: analysis.articulationRate, score, clean, audioHash, passages: analysis.passages.length, flagged })
     console.log(`${take.id}: TP ${score.tp}, FP ${score.fp}, FN ${score.fn}; ${status}, ${analysis.articulationRate?.toFixed(1)} syllables/s; ${flagged}/${analysis.passages.length} passages flagged`)

@@ -38,7 +38,7 @@ export function segmentWords(words: Word[]): Segment[] {
 
 const copy = {
   // A passage whose key points went by no slower than its setup.
-  contrast: {
+  RATE_CONTRAST: {
     observation: "Your key points go by as fast as the setup around them.",
     why_it_matters: "Slowing down on what matters tells the listener what to focus on.",
     practice: "Slow down on the point, then move through the setup.",
@@ -62,7 +62,7 @@ export function rateReview(segments: Segment[], marks: RateMark[], message = "",
     const phrase = covered.map(word => word.text).join(" ")
     return [{
       segment_id: segment.id, group_id: String(markIndex), rule_id: mark.rule, kind: "improvement", uncertainty: "tentative",
-      ...(mark.reason === "contrast" ? copy.contrast : copy[mark.rule]),
+      ...copy[mark.rule],
       start: covered[0].start, end: covered[covered.length - 1].end, text: phrase,
       // Every part of a passage carries its suggestions; the editor keeps them when it rejoins the parts.
       ...(mark.suggestions?.length ? { suggestions: mark.suggestions.map(({ direction, start, end, text }) => ({ direction, start, end, text })) } : {}),

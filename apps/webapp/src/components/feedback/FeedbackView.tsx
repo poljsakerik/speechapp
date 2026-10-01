@@ -23,6 +23,7 @@ type FeedbackViewProps = {
 const RULES: Record<string, { label: string; stretch?: boolean }> = {
   RATE_IMPORTANCE_FAST: { label: "Rushed passage", stretch: true },
   RATE_IMPORTANCE_SLOW: { label: "Dragged passage", stretch: true },
+  RATE_CONTRAST: { label: "Flat pacing", stretch: true },
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]

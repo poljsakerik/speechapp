@@ -27,13 +27,14 @@ import type { Pause } from "./pauses.ts"
 export { syllables } from "./syllables.ts"
 
 // Keep the existing speed-action IDs so saved highlights remain readable.
-export type RateRule = "RATE_IMPORTANCE_FAST" | "RATE_IMPORTANCE_SLOW"
+/** A whole stretch too fast or too slow. */
+export type SpeedRule = "RATE_IMPORTANCE_FAST" | "RATE_IMPORTANCE_SLOW"
+/** RATE_CONTRAST: a passage whose key points were no slower than its setup. */
+export type RateRule = SpeedRule | "RATE_CONTRAST"
 export type Span = { first: number; last: number; start: number; end: number; text: string }
 export type Suggestion = Span & { direction: "slow_down" | "speed_up" }
 export type RateMark = Span & {
   rule: RateRule
-  /** "contrast": key points no slower than the setup; "sustained": a whole stretch too fast or slow. */
-  reason: "contrast" | "sustained"
   /** Syllables per second of speaking over the marked span. */
   articulationRate: number
   /** For contrast marks: the key phrase to slow down on and the setup to move through. */
@@ -54,7 +55,7 @@ export type RateAnalysis = {
   /** Judged passages: mean relative pace of key and setup phrases, and whether the passage was flagged. */
   passages: (Span & { keyPace: number; setupPace: number; flagged: boolean })[]
 }
-export const RATE_VERSION = 21
+export const RATE_VERSION = 22
 /** Rates are syllables/second of speaking; durations are seconds of speaking. */
 export const DEFAULT_RATE_CONFIG = {
   passagePhrases: 12, // About 30 s of speech.
@@ -97,19 +98,19 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
   // Sustained speed: slide a window of speaking time across the words;
   // overlapping windows that cross the same threshold form one passage.
   const need = Math.min(c.sustainedSeconds, totalSpeech) - 1e-9
-  const flagged: Record<RateRule, [number, number][]> = { RATE_IMPORTANCE_FAST: [], RATE_IMPORTANCE_SLOW: [] }
+  const flagged: Record<SpeedRule, [number, number][]> = { RATE_IMPORTANCE_FAST: [], RATE_IMPORTANCE_SLOW: [] }
   for (let i = 0, j = 0, have = 0; i < ws.length; have -= speech[i], i++) {
     while (j < ws.length && have < need) have += speech[j++]
     if (have < need) break
     const r = rate(i, j - 1)
-    const rule: RateRule | undefined = r >= c.fastRate ? "RATE_IMPORTANCE_FAST" : r <= c.slowRate ? "RATE_IMPORTANCE_SLOW" : undefined
+    const rule: SpeedRule | undefined = r >= c.fastRate ? "RATE_IMPORTANCE_FAST" : r <= c.slowRate ? "RATE_IMPORTANCE_SLOW" : undefined
     if (!rule) continue
     const runs = flagged[rule], last = runs.at(-1)
     if (last && i <= last[1]) last[1] = Math.max(last[1], j - 1)
     else runs.push([i, j - 1])
   }
-  const marks: RateMark[] = (Object.entries(flagged) as [RateRule, [number, number][]][]).flatMap(([rule, runs]) =>
-    runs.map(([a, b]): RateMark => ({ ...span(a, b), rule, reason: "sustained", articulationRate: rate(a, b) })))
+  const marks: RateMark[] = (Object.entries(flagged) as [SpeedRule, [number, number][]][]).flatMap(([rule, runs]) =>
+    runs.map(([a, b]): RateMark => ({ ...span(a, b), rule, articulationRate: rate(a, b) })))
 
   // Contrast: phrase pace in phones per second of speaking, relative to the speaker's own median phrase.
   const position = new Map(ws.map((w, i) => [w.index, i]))
@@ -142,7 +143,7 @@ export function detectRate(words: Word[], config: Partial<RateConfig> = {}, paus
       ...(rushed ? [{ ...span(rushed.from, rushed.to), direction: "slow_down" as const }] : []),
       ...(dragged ? [{ ...span(dragged.from, dragged.to), direction: "speed_up" as const }] : []),
     ]
-    marks.push({ ...span(first.from, last.to), rule: "RATE_IMPORTANCE_FAST", reason: "contrast", articulationRate: rate(first.from, last.to), suggestions })
+    marks.push({ ...span(first.from, last.to), rule: "RATE_CONTRAST", articulationRate: rate(first.from, last.to), suggestions })
   }
   return { ...base, contrast: judged.length > 0, marks: marks.sort((a, b) => a.start - b.start), passages: judged,
     phrases: phrases.map(({ first, last, start, end, text, score, pace }) => ({ first, last, start, end, text, score, pace })) }

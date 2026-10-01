@@ -77,7 +77,7 @@ In the annotator, play a take and select transcript words to adjust its golden m
 
 The report is `recordings-rate-development/rate-benchmark.json`. The gold marks cover the obvious sustained-speed mistakes, and only those are gated. `--require-pass` requires every take that isn't excluded to be reviewed and scored, with no uncertain or error results, no missed mistakes and no false alarms. Matching requires the same rate rule and word intersection-over-union ≥ 0.3, with one-to-one matching. The contrast check is reported per group but not gated. Most excerpts are too short for a 30 s passage; use `eval-pacing` on full recordings instead. Evaluation uses forced alignment by default; `--recognizer-timing` is an explicit ablation and `--no-pacing` skips the prediction. Model replies are cached by request, model, effort and pacing version.
 
-Rule IDs preserve compatibility with saved highlights: `RATE_IMPORTANCE_FAST` means rushed delivery and `RATE_IMPORTANCE_SLOW` means dragged delivery. The names no longer imply an importance label.
+Rule IDs: `RATE_CONTRAST` marks a passage whose key points were no slower than its setup. `RATE_IMPORTANCE_FAST` and `RATE_IMPORTANCE_SLOW` mark sustained rushed or dragged delivery; they keep their names for compatibility with saved highlights, and no longer imply an importance label.
 
 ```sh
 pnpm --dir packages/vocal-processing exec node --env-file=../../.env scripts/eval-pacing.ts /path/to/recordings.json

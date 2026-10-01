@@ -25,7 +25,7 @@ else {
   const flagged = analysis.passages.filter(p => p.flagged).length
   console.log(`${status}; ${analysis.articulationRate?.toFixed(1) ?? "unavailable"} syllables/s while speaking; ${flagged} of ${analysis.passages.length} passages with key points no slower than the setup`)
   for (const mark of status === "reviewed" ? analysis.marks : []) {
-    console.log(`${mark.start.toFixed(1)}–${mark.end.toFixed(1)}s ${mark.reason === "contrast" ? "key points not slower than the setup" : `${mark.rule} (${mark.articulationRate.toFixed(1)} syllables/s)`}`)
+    console.log(`${mark.start.toFixed(1)}–${mark.end.toFixed(1)}s ${mark.rule === "RATE_CONTRAST" ? "key points not slower than the setup" : `${mark.rule} (${mark.articulationRate.toFixed(1)} syllables/s)`}`)
     for (const s of mark.suggestions ?? []) console.log(`    ${s.direction === "slow_down" ? "slow down on" : "move through"}: ${s.text}`)
   }
 }

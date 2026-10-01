@@ -96,8 +96,7 @@ function passage(key: number, setup: number) {
 test("a passage is flagged when its key points were not slower than the setup", () => {
   const flat = passage(.2, .2)
   const [mark] = detectRate(flat.words, {}, [], flat.pacing).marks
-  assert.equal(mark.reason, "contrast")
-  assert.equal(mark.rule, "RATE_IMPORTANCE_FAST")
+  assert.equal(mark.rule, "RATE_CONTRAST")
   assert.deepEqual([mark.first, mark.last], [0, 59])
   assert.deepEqual(mark.suggestions!.map(s => s.direction), ["slow_down", "speed_up"])
   const inverted = passage(.17, .25)
