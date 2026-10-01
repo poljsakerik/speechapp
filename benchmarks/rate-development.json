@@ -19,15 +19,7 @@
           "id": "vinh_demo-01",
           "start": 29.435,
           "end": 40.09,
-          "marks": [
-            {
-              "start": 29.435,
-              "end": 40.09,
-              "rule": "PAUSE_UNNECESSARY",
-              "note": "Deliberately slow greeting: about half the clip is silence (4.6 s of speech in 9.8 s). Moved from rate, which needs at least 5 s of speech to judge.",
-              "foundation": "pauses"
-            }
-          ],
+          "marks": [],
           "rate": {
             "status": "excluded",
             "notes": "Only 4.6 s of speech: too little to judge rate. The slowness is mostly silence, which the pause fundamental reviews."
@@ -62,15 +54,11 @@
           "id": "vinh_demo-03",
           "start": 94.045,
           "end": 104.183,
-          "marks": [
-            {
-              "start": 94.045,
-              "end": 104.183,
-              "rule": "PAUSE_NECESSARY",
-              "note": "Deliberately constant delivery with no pause across the whole demonstration. Moved from rate: the words are at an everyday speed; the missing pauses make it sound monotonous.",
-              "foundation": "pauses"
-            }
-          ]
+          "marks": [],
+          "rate": {
+            "status": "excluded",
+            "notes": "Deliberately constant pace. The speed checks do not judge a lack of variation."
+          }
         },
         {
           "id": "vinh_rate-04",
@@ -82,15 +70,11 @@
           "id": "vinh_demo-04",
           "start": 137.423,
           "end": 151.8,
-          "marks": [
-            {
-              "start": 137.423,
-              "end": 151.8,
-              "rule": "PAUSE_NECESSARY",
-              "note": "Deliberately predictable delivery, almost without pauses. Moved from rate: the words are at an everyday speed; the missing pauses make it sound monotonous.",
-              "foundation": "pauses"
-            }
-          ]
+          "marks": [],
+          "rate": {
+            "status": "excluded",
+            "notes": "Deliberately constant pace. The speed checks do not judge a lack of variation."
+          }
         },
         {
           "id": "vinh_rate-05",
@@ -216,15 +200,7 @@
           "id": "practice-01",
           "start": 37.5,
           "end": 55.4,
-          "marks": [
-            {
-              "start": 41,
-              "end": 48.161,
-              "rule": "PAUSE_UNNECESSARY",
-              "note": "The sentence loses momentum inside the unfinished phrase: repeated “it’s”, then a long break between “very” and “feasible”. Coach connected delivery, not faster articulation or a pause-foundation correction. Moved from rate (RATE_FLOW): hesitations and restarts inside one thought are a pause problem; the words themselves are at an everyday speed.",
-              "foundation": "pauses"
-            }
-          ]
+          "marks": []
         },
         {
           "id": "practice-03",
@@ -241,15 +217,7 @@
           "id": "practice-02",
           "start": 147.6,
           "end": 164.1,
-          "marks": [
-            {
-              "start": 148.03,
-              "end": 158.251,
-              "rule": "PAUSE_UNNECESSARY",
-              "note": "The explanation breaks down across “sort of create the experiment. By... And because he... He’s a...”. Repeated restarts interrupt one thought; rehearse a connected delivery. Moved from rate (RATE_FLOW): hesitations and restarts inside one thought are a pause problem; the words themselves are at an everyday speed.",
-              "foundation": "pauses"
-            }
-          ]
+          "marks": []
         },
         {
           "id": "practice-04",
