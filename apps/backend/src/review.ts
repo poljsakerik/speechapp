@@ -44,34 +44,24 @@ const copy = {
     why_it_matters: "The pacing can draw attention away from your main point.",
     practice: "Move through this phrase more briskly and save time for the key idea.",
   },
-  RATE_MONOTONE: {
-    observation: "The pace stayed similar through this stretch.",
-    why_it_matters: "A change of pace can help the main point stand out.",
-    practice: "Slow down on the key phrase and move faster through the setup.",
-  },
 } as const
 
 export function rateReview(segments: Segment[], marks: RateMark[], message: string) {
-  const findings = marks.flatMap((mark) => {
-    const segment = segments.find((part) => part.start <= mark.start && part.end >= mark.start)
-      ?? segments.find((part) => part.start < mark.end && part.end > mark.start)
-    if (!segment) return []
-    const suggestions = [
-      ...(mark.slowDown ? [{ direction: "slow_down", start: mark.slowDown.start, end: mark.slowDown.end, text: mark.slowDown.text }] : []),
-      ...(mark.speedUp ? [{ direction: "speed_up", start: mark.speedUp.start, end: mark.speedUp.end, text: mark.speedUp.text }] : []),
-    ]
+  const findings = marks.flatMap(mark => segments.flatMap(segment => {
+    const covered = segment.words.filter(word => word.start >= mark.start && word.end <= mark.end)
+    if (!covered.length) return []
+    const phrase = covered.map(word => word.text).join(" ")
+    const action = mark.rule === "RATE_IMPORTANCE_FAST" ? "Slow down on" : "Speed up through"
     return [{
-      segment_id: segment.id,
-      rule_id: mark.rule,
-      kind: "improvement",
-      uncertainty: "tentative",
-      start: mark.start,
-      end: mark.end,
-      text: mark.text,
+      segment_id: segment.id, rule_id: mark.rule, kind: "improvement", uncertainty: "tentative",
       ...copy[mark.rule],
-      ...(suggestions.length ? { suggestions } : {}),
+      observation: `${action} “${phrase}”`,
+      practice: mark.rule === "RATE_IMPORTANCE_FAST"
+        ? `Give “${phrase}” more time, then resume your natural pace.`
+        : `Move through “${phrase}” more briskly to leave room for the key idea.`,
+      start: covered[0].start, end: covered[covered.length - 1].end, text: phrase,
     }]
-  })
+  }))
   return {
     overall: message ? `Your main message: ${message}` : "Review your pace around the main point.",
     assessments: [

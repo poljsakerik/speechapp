@@ -51,15 +51,28 @@ test("with message labels, only message phrases can be rushed and only unimporta
   assert.deepEqual(rules(words), [["RATE_IMPORTANCE_FAST", "sales fell by half."]])
 })
 
-test("flags a monotone stretch with where to slow down and speed up", () => {
+test("flat delivery produces two direct phrase adjustments rather than a passage finding", () => {
   const flat: Part[] = Array.from({ length: 6 }, () => said(1))
   const words = speak([...flat, ["sales fell by half.", "important", 1, 0.35], ...flat])
-  const [mark, ...rest] = detectRate(words).marks
-  assert.equal(rest.length, 0)
-  assert.equal(mark.rule, "RATE_MONOTONE")
-  assert.equal(mark.slowDown?.text, "sales fell by half.")
-  assert.equal(mark.speedUp?.text, "we went through the numbers on the call together again.")
+  const { marks } = detectRate(words)
+  assert.equal(marks.length, 2)
+  assert.deepEqual(marks.map(m => [m.rule, m.text]), [
+    ["RATE_IMPORTANCE_FAST", "sales fell by half."],
+    ["RATE_IMPORTANCE_SLOW", "we went through the numbers on the call together again."],
+  ])
+  for (const m of marks) {
+    assert.equal(m.start, words[m.first].start)
+    assert.equal(m.end, words[m.last].end)
+    assert.ok(m.last - m.first < 12)
+    assert.equal("slowDown" in m || "speedUp" in m, false)
+  }
   assert.deepEqual(rules(speak(varied(13))), [])
+})
+
+test("low variation alone does not invent advice without an unemphasized message", () => {
+  const flat: Part[] = Array.from({ length: 6 }, () => said(1))
+  assert.deepEqual(rules(speak([...flat, ...flat])), [])
+  assert.deepEqual(rules(speak([...flat, ["sales fell by half.", "important", 1, 1], ...flat])), [])
 })
 
 test("keeps only the biggest outliers per minute", () => {

@@ -71,10 +71,13 @@
   .tab[aria-pressed="true"] { background: var(--on-graphite); color: var(--ink); border-color: var(--on-graphite); }
   .save-state { margin-left: auto; font-size: 0.75rem; color: var(--on-graphite-muted); }
 
+  header > button { border: 1px solid var(--graphite-line); border-radius: 6px; padding: 3px 9px; background: var(--graphite); color: var(--on-graphite); }
+  #takeMeta { color: var(--ink-3); line-height: 1.8; margin: 0 0 18px; }
+  [hidden] { display: none !important; }
   /* Transport */
   .transport {
     background: var(--graphite); color: var(--on-graphite);
-    display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 14px;
+    display: grid; grid-template-columns: auto auto minmax(100px, 1fr) auto auto auto; align-items: center; gap: 14px;
     padding: 10px 20px;
   }
   .play {
@@ -113,8 +116,6 @@
   .transcript .w.cur.now { box-shadow: 0 0 0 2px var(--cur), inset 0 -3px 0 var(--glass); }
   .transcript .w.pred { text-decoration: underline 3px solid var(--f-rate-ink); text-underline-offset: 7px; }
   .transcript .w.pred.pfast { text-decoration-color: var(--rule-fast-ink); }
-  .transcript .w.pred.pmono { text-decoration: underline 2px dotted var(--ink-3); }
-  .transcript .w.pred.psug { text-decoration-style: dashed; text-decoration-thickness: 3px; }
   .transcript .part { display: none; font: 600 0.6875rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
   .transcript.show-pred .part { display: block; padding: 6px 0; }
   .transcript.show-pred .part.test { margin-top: 18px; border-top: 1px dashed var(--line-strong); padding-top: 14px; }
@@ -123,7 +124,7 @@
 
   aside {
     border-left: 1px solid var(--line); background: var(--surface);
-    display: grid; grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); min-height: 0;
+    display: block; min-height: 0; overflow-y: auto;
   }
   aside section { padding: 16px 20px; border-bottom: 1px solid var(--line); min-height: 0; display: flex; flex-direction: column; }
   aside h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 700; font-stretch: 125%; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
@@ -144,6 +145,7 @@
   .mark .meta { display: flex; gap: 8px; align-items: baseline; }
   .mark .meta b { font-family: var(--mono); font-size: 0.6875rem; font-weight: 600; color: var(--cur-ink); }
   .mark .quote { grid-column: 1 / -1; font-size: 0.8125rem; line-height: 1.45; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mark .comparison-note { grid-column: 1 / -1; font-size: .75rem; color: var(--ink-2); margin: 5px 0 0; line-height: 1.5; }
   .mark .del { border: 0; background: transparent; color: var(--ink-3); font-size: 1rem; line-height: 1; padding: 0 2px; }
   .mark .del:hover { color: var(--destructive); }
   .empty { font-size: 0.8125rem; color: var(--ink-3); }
@@ -206,10 +208,12 @@
 </head>
 <body>
 <header>
-  <div class="brand">MicMane <span>/</span> golden set</div>
+  <div class="brand">MicMane <span>/</span> voice benchmarks</div>
   <select id="recording" aria-label="Recording"></select>
+  <button id="previous" aria-label="Previous take">←</button><button id="next" aria-label="Next take">→</button>
   <div class="tabs" id="tabs" role="group" aria-label="Foundation"></div>
   <div class="save-state" id="saveState"></div>
+  <button id="retrySave" hidden>Retry failed saves</button>
 </header>
 
 <div class="transport">
@@ -217,14 +221,15 @@
   <div class="time mono" id="time">0:00.0 / 0:00</div>
   <div class="track" id="track"><div class="rail"></div><div class="fill" id="fill"></div><div id="segs"></div><div class="head" id="head"></div></div>
   <div class="rates" id="rates"></div>
+  <label class="mono">Listening volume <input id="volume" aria-label="Listening volume" type="range" min="0" max="1" step="0.05" value="1" style="width:80px"></label>
   <div class="toggles">
-    <label class="toggle" id="predToggle" hidden><input type="checkbox" id="showPred" checked> Pipeline</label>
+    <label class="toggle" id="predToggle" hidden><input type="checkbox" id="showPred"> Pipeline</label>
     <label class="toggle"><input type="checkbox" id="follow" checked> Follow</label>
   </div>
 </div>
 
 <main>
-  <div class="transcript-wrap" id="wrap"><div class="transcript" id="transcript"><span class="loading">Loading…</span></div></div>
+  <div class="transcript-wrap" id="wrap"><p class="mono" id="takeMeta"></p><div class="transcript" id="transcript"><span class="loading">Loading…</span></div></div>
   <aside>
     <section>
       <h2><span class="dot"></span><span id="fLabel"></span></h2>
@@ -258,15 +263,16 @@
 // Foundations and rules, from docs/video-review.md.
 const FOUNDATIONS = [
   { key: "rate", label: "Rate of speech", rules: [
-    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down on this important phrase, or give it a pause or another emphasis cue." },
+    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down on these words so the important point has time to land." },
     { id: "RATE_IMPORTANCE_SLOW", hint: "Speed up through this less important material." },
-    { id: "RATE_MONOTONE", hint: "Vary the pace across this passage: slower on key points, quicker through the rest." },
   ]},
   { key: "volume", label: "Volume", rules: [
+    { id: "VOLUME_HIGH", hint: "Ease the level on this phrase toward the good reference while keeping it clear and projected." },
     { id: "VOLUME_LOW", hint: "Project more so this passage is as clear as the speech around it." },
     { id: "VOLUME_FADE", hint: "Hold the volume through the end of the sentence; take a breath before it if needed." },
   ]},
   { key: "pitch_melody", label: "Pitch & melody", rules: [
+    { id: "PITCH_VARIETY", hint: "Add meaningful melodic movement on key words, using the good take as a reference." },
     { id: "PITCH_LOW", hint: "Raise your pitch on this phrase or key word so it lifts out of the speech around it." },
     { id: "PITCH_HIGH", hint: "Bring your pitch down here; end statements on a falling note instead of rising." },
   ]},
@@ -294,14 +300,18 @@ let text = "";
 let words = [];      // { s, e, t0, t1, el }
 let marks = [];
 let allGolden = {};
+let takes = [];
+let reviews = {};
+let loading = false;
 let scope = "one";
 let pending = null;  // selection awaiting a rule
 let stopAt = null;
 let nowIdx = -1;
-let pred = null;     // pipeline rate marks and train/test split, from <id>.rate.pred.json
-const RULE_FAST = "RATE_IMPORTANCE_FAST", RULE_MONO = "RATE_MONOTONE";
-const predColor = m => m.rule === RULE_FAST ? "var(--rule-fast-ink)" : m.rule === RULE_MONO ? "var(--ink-3)" : "var(--f-rate-ink)";
-const predClasses = m => ["pred", ...(m.rule === RULE_FAST ? ["pfast"] : []), ...(m.rule === RULE_MONO ? ["pmono"] : []), ...(m.suggestion ? ["psug"] : [])];
+let pred = null;     // pipeline rate marks, from <id>.rate.pred.json
+const RULE_FAST = "RATE_IMPORTANCE_FAST";
+const rateAction = rule => rule === RULE_FAST ? "Slow down" : rule === "RATE_IMPORTANCE_SLOW" ? "Speed up" : rule;
+const predColor = m => m.rule === RULE_FAST ? "var(--rule-fast-ink)" : "var(--f-rate-ink)";
+const predClasses = m => ["pred", ...(m.rule === RULE_FAST ? ["pfast"] : [])];
 const showingPred = () => !!pred && foundation === "rate" && $("showPred").checked;
 
 const fmt = (t, d = 1) => {
@@ -335,7 +345,7 @@ function setFoundation(key) {
   document.documentElement.style.setProperty("--cur", `var(--f-${key})`);
   document.documentElement.style.setProperty("--cur-ink", `var(--f-${key}-ink)`);
   $("fLabel").textContent = byKey[key].label;
-  $("rules").innerHTML = byKey[key].rules.map(r => `<div class="rule"><b>${r.id}</b><p>${r.hint}</p></div>`).join("");
+  $("rules").innerHTML = byKey[key].rules.map(r => `<div class="rule"><b>${rateAction(r.id)}</b><p>${r.hint}</p></div>`).join("");
   closePop();
   renderAll();
 }
@@ -353,36 +363,55 @@ for (const r of RATES) {
 }
 
 // ---------- Loading ----------
+async function getJson(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  return r.json();
+}
 async function init() {
-  const ids = await (await fetch("/api/recordings")).json();
-  allGolden = await (await fetch("/api/golden")).json();
-  $("recording").innerHTML = ids.map(id => `<option value="${id}">${id}</option>`).join("");
+  const corpus = await getJson("/api/recordings");
+  takes = corpus.takes;
+  if (!takes.length) throw new Error("No voice pack imported. Run pnpm import:voice-pack --archive <zip> first.");
+  allGolden = await getJson("/api/golden");
+  for (const f of FOUNDATIONS) {
+    const group = document.createElement("optgroup"); group.label = f.label;
+    for (const take of takes.filter(t => t.foundation === f.key)) {
+      const option = document.createElement("option"); option.value = take.id;
+      option.textContent = `Take ${take.take} · ${take.duration.toFixed(1)}s`; group.append(option);
+    }
+    $("recording").append(group);
+  }
   const saved = store.get("golden.recording");
-  $("recording").value = ids.includes(saved) ? saved : ids[0];
+  $("recording").value = takes.some(t => t.id === saved) ? saved : takes[0].id;
   $("recording").onchange = () => load($("recording").value);
-  setFoundation(foundation);
   await load($("recording").value);
 }
 
 async function load(id) {
-  recordingId = id;
+  const take = takes.find(t => t.id === id);
+  if (!take) return;
+  recordingId = id; loading = true;
+  $("recording").value = id;
   store.set("golden.recording", id);
-  closePop();
-  audio.pause(); stopAt = null;
+  closePop(); audio.pause(); stopAt = null;
+  words = []; marks = []; pred = null; reviews = {};
   $("transcript").innerHTML = '<span class="loading">Loading…</span>';
-  const base = `/recordings/${id}/${id}`;
-  const [txt, dg, pr] = await Promise.all([
-    fetch(`${base}.txt`).then(r => r.text()),
-    fetch(`${base}.json`).then(r => r.json()),
-    fetch(`${base}.rate.pred.json`).then(r => r.ok ? r.json() : null).catch(() => null),
-  ]);
-  if (recordingId !== id) return;
-  text = txt;
-  pred = pr;
-  $("predToggle").hidden = !pred;
-  audio.src = `${base}.m4a`;
-  marks = (allGolden[id] || []).slice();
-
+  $("showPred").checked = false;
+  const base = `/recordings/${take.base}`;
+  try {
+    const [txt, dg, pr] = await Promise.all([
+      fetch(`${base}.txt`).then(r => { if (!r.ok) throw new Error("Transcript missing"); return r.text(); }),
+      getJson(`${base}.json`),
+      fetch(`${base}.rate.pred.json`).then(r => r.ok ? r.json() : null),
+    ]);
+    if (recordingId !== id) return;
+    text = txt; pred = pr;
+    if (pred && pred.annotationSignature !== JSON.stringify(allGolden[id])) pred.marks.forEach(m => m.hit = null);
+    $("predToggle").hidden = !pred;
+    audio.src = `${base}.${take.audioExtension}`;
+    marks = structuredClone(allGolden[id].marks);
+    reviews = structuredClone(allGolden[id].reviews);
+    $("takeMeta").textContent = `${byKey[take.foundation].label} · Take ${take.take} · ${take.source} · ${fmt(take.sourceStart)}–${fmt(take.sourceEnd)} in source · ${take.assignment}`;
   // Locate each Deepgram word in the raw transcript to get its character span.
   words = [];
   let cursor = 0;
@@ -395,18 +424,8 @@ async function load(id) {
   }
 
   const frag = document.createDocumentFragment();
-  const part = (cls, label) => {
-    const el = document.createElement("span");
-    el.className = `part ${cls}`; el.textContent = label;
-    return el;
-  };
-  if (pred) frag.append(part("train", `Train · before ${fmt(pred.split, 0)}`));
-  let pos = 0, splitShown = !pred;
+  let pos = 0;
   words.forEach((w, i) => {
-    if (!splitShown && w.t0 >= pred.split) {
-      frag.append(text.slice(pos, w.s).replace(/^\s+/, ""), part("test", `Test · from ${fmt(pred.split, 0)}`));
-      pos = w.s; splitShown = true;
-    }
     if (w.s > pos) frag.append(text.slice(pos, w.s));
     const span = document.createElement("span");
     span.className = "w"; span.dataset.i = i;
@@ -418,8 +437,13 @@ async function load(id) {
   $("transcript").replaceChildren(frag);
   $("wrap").scrollTop = 0;
   nowIdx = -1;
-  $("saveState").textContent = marks.length ? `${marks.length} marks loaded` : "";
-  renderAll();
+  loading = false;
+  setFoundation(take.foundation);
+  $("saveState").textContent = failedSaves.size ? "Some edits are not saved — retry" : "Loaded";
+  } catch (error) {
+    if (recordingId !== id) return;
+    $("transcript").textContent = `Could not load take: ${error.message}`;
+  }
 }
 
 // ---------- Rendering ----------
@@ -448,11 +472,9 @@ function renderText() {
     }
   }
   if (showingPred()) {
-    // Monotone stretches first, so the suggestions inside them draw over their underline.
-    for (const m of [...pred.marks].sort((a, b) => (b.rule === RULE_MONO) - (a.rule === RULE_MONO))) {
+    for (const m of pred.marks) {
       for (const w of words) {
         if (w.s < m.startIndex || w.e > m.endIndex) continue;
-        if (m.rule !== RULE_MONO) w.el.classList.remove("pmono");
         w.el.classList.add(...predClasses(m));
       }
     }
@@ -464,8 +486,8 @@ function sortedMarks(list = marks) {
   return list.slice().sort((a, b) => a.startAt - b.startAt || a.startIndex - b.startIndex);
 }
 // The exported shape of one mark, in a fixed key order.
-const clean = list => sortedMarks(list).map(({ startAt, endAt, startIndex, endIndex, foundationType, rule }) =>
-  ({ startAt, endAt, startIndex, endIndex, foundationType, rule }));
+const clean = list => sortedMarks(list).map(({ startAt, endAt, startIndex, endIndex, foundationType, rule, note }) =>
+  ({ startAt, endAt, startIndex, endIndex, foundationType, rule, ...(note ? { note } : {}) }));
 
 function renderMarks() {
   const mine = showingPred() ? [] : sortedMarks().filter(m => m.foundationType === foundation);
@@ -476,10 +498,11 @@ function renderMarks() {
   for (const m of mine) {
     const el = document.createElement("div");
     el.className = "mark";
-    el.innerHTML = `<div class="meta"><b>${m.rule}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
+    el.innerHTML = `<div class="meta"><b>${rateAction(m.rule)}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
       <button class="del" title="Delete mark" aria-label="Delete mark">×</button>
       <div class="quote"></div>`;
     el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
+    if (m.note) { const note = document.createElement("p"); note.className = "comparison-note"; note.textContent = m.note; el.append(note); }
     el.querySelector(".del").onclick = e => { e.stopPropagation(); marks.splice(marks.indexOf(m), 1); changed(); };
     el.onclick = () => playRange(m.startAt, m.endAt);
     el.onmouseenter = () => focusMark(m, true);
@@ -491,27 +514,25 @@ function renderMarks() {
   if (showingPred()) renderPred(list);
 }
 
-// Pipeline marks, colored by rule: rushed point, dragging, monotone stretch (dotted) and its suggestions (dashed).
+// Each pipeline mark identifies a specific phrase to slow down or speed up.
 function renderPred(list) {
   const c = pred.config, esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
   const pace = pred.speakerPace ? `pace ×${(pred.speakerPace / c.referencePace).toFixed(2)} of the ${c.referencePace} s/syllable reference` : "";
-  const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)} (monotone below ${c.monotoneBelow})` : "";
+  const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)}` : "";
   list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
     ${pred.message ? `<p class="pred-summary"><b>Message:</b> ${esc(pred.message.message)}</p>` : ""}
     <p class="pred-summary">${[pace, variation].filter(Boolean).join(" · ")}</p>
     <div class="legend">
-      <span><i class="u" style="background:var(--rule-fast-ink)"></i>point rushed</span><span><i class="u" style="background:var(--f-rate-ink)"></i>dragging</span>
-      <span><i class="u" style="background:var(--ink-3)"></i>monotone (dotted); suggestions dashed</span>
+      <span><i class="u" style="background:var(--rule-fast-ink)"></i>slow down</span><span><i class="u" style="background:var(--f-rate-ink)"></i>speed up</span>
     </div>`);
-  const order = [...pred.marks].sort((a, b) => a.startAt - b.startAt || (a.suggestion ? 1 : 0) - (b.suggestion ? 1 : 0));
+  const order = [...pred.marks].sort((a, b) => a.startAt - b.startAt);
   for (const m of order) {
     const el = document.createElement("div");
-    el.className = `mark pred${m.suggestion ? " sug" : ""}`;
-    const label = m.suggestion ? (m.rule === RULE_FAST ? "↳ slow down here" : "↳ speed up here")
-      : m.rule === RULE_MONO ? `Monotone · ${Math.round(m.endAt - m.startAt)} s` : m.rule === RULE_FAST ? "Point rushed" : "Dragging";
-    const hit = m.rule === RULE_MONO ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
+    el.className = "mark pred";
+    const label = rateAction(m.rule);
+    const hit = m.hit == null ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
     el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
-      <span><span class="part-tag">${m.part}</span> ${hit}</span>
+      <span>${hit}</span>
       <div class="quote"></div>`;
     el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
     el.onclick = () => playRange(m.startAt, m.endAt);
@@ -535,38 +556,57 @@ function renderTrack() {
     `<div class="seg ${m.foundationType === foundation ? "on" : ""}" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:var(--f-${m.foundationType}${m.foundationType === foundation ? "" : "-ink"})"></div>`
   ).filter(() => !showingPred()).join("") + (showingPred() ? pred.marks.map(m =>
     `<div class="pseg" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:${predColor(m)}"></div>`
-  ).join("") + `<div class="split-line" style="left:${pred.split / d * 100}%" title="Train | test split"></div>` : "");
+  ).join("") : "");
 }
 
+function currentAnnotation() { return { schemaVersion: 2, marks: clean(marks), reviews: structuredClone(reviews) }; }
 function currentJson() {
-  if (scope === "one") return JSON.stringify(clean(marks), null, 2);
-  const all = { ...allGolden, [recordingId]: marks };
-  const out = {};
-  for (const id of Object.keys(all).sort()) if (all[id].length) out[id] = clean(all[id]);
-  return JSON.stringify(out, null, 2);
+  return JSON.stringify(scope === "one" ? currentAnnotation() : allGolden, null, 2);
 }
-
 function renderJson() { $("json").textContent = currentJson(); }
 
-// ---------- Saving ----------
-let saveTimer;
-function changed() {
-  allGolden[recordingId] = marks;
-  renderAll();
+// Serialize snapshots, including across take switches. No debounce can discard another take's edits.
+let saveQueue = Promise.resolve();
+let pendingSaves = 0;
+const failedSaves = new Map();
+function queueSave(id, snapshot) {
+  pendingSaves++;
   $("saveState").textContent = "Saving…";
-  clearTimeout(saveTimer);
-  const id = recordingId, body = JSON.stringify(clean(marks));
-  saveTimer = setTimeout(async () => {
+  saveQueue = saveQueue.then(async () => {
     try {
-      const r = await fetch(`/api/golden/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body });
-      if (!r.ok) throw new Error(r.status);
-      $("saveState").textContent = `Saved to recordings/${id}/${id}.golden.json`;
-    } catch (e) {
-      $("saveState").textContent = `Save failed (${e.message}) — copy the JSON`;
+      const r = await fetch(`/api/golden/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(snapshot) });
+      if (!r.ok) throw new Error(await r.text());
+      const saved = await r.json();
+      if (allGolden[id] === snapshot) {
+        allGolden[id] = saved;
+        if (recordingId === id) { reviews = structuredClone(saved.reviews); renderAll(); }
+      }
+      failedSaves.delete(id);
+    } catch (e) { failedSaves.set(id, allGolden[id]); console.error(e); }
+    finally {
+      pendingSaves--;
+      $("retrySave").hidden = !failedSaves.size;
+      $("saveState").textContent = failedSaves.size ? "Save failed — retry or copy JSON" : pendingSaves ? "Saving…" : "Saved";
     }
-  }, 300);
+  });
 }
-
+function changed() {
+  if (loading) return;
+  // Previously calculated hit badges no longer describe this annotation.
+  if (pred) pred.marks.forEach(m => m.hit = null);
+  const snapshot = currentAnnotation();
+  allGolden[recordingId] = snapshot;
+  renderAll(); queueSave(recordingId, snapshot);
+}
+$("retrySave").onclick = () => { for (const id of failedSaves.keys()) queueSave(id, allGolden[id]); };
+window.addEventListener("beforeunload", e => { if (pendingSaves || failedSaves.size) { e.preventDefault(); e.returnValue = ""; } });
+$("volume").oninput = () => { audio.volume = Number($("volume").value); };
+function stepTake(delta) {
+  const i = takes.findIndex(t => t.id === recordingId);
+  load(takes[(i + delta + takes.length) % takes.length].id);
+}
+$("previous").onclick = () => stepTake(-1);
+$("next").onclick = () => stepTake(1);
 // ---------- Selection → mark ----------
 $("transcript").addEventListener("mouseup", () => setTimeout(onSelect, 0));
 $("transcript").addEventListener("keyup", e => { if (e.shiftKey) onSelect(); });
@@ -610,7 +650,7 @@ function openPop(rect) {
   f.rules.forEach((r, i) => {
     const b = document.createElement("button");
     b.className = "opt";
-    b.innerHTML = `<kbd>${i + 1}</kbd><b>${r.id}</b><span>${r.hint}</span>`;
+    b.innerHTML = `<kbd>${i + 1}</kbd><b>${rateAction(r.id)}</b><span>${r.hint}</span>`;
     b.onclick = () => addMark(r.id);
     $("popOpts").append(b);
   });
@@ -731,7 +771,7 @@ $("copy").onclick = async () => {
   setTimeout(() => $("copy").textContent = "Copy", 1400);
 };
 
-init();
+init().catch(error => { $("transcript").textContent = error.message; });
 </script>
 </body>
 </html>

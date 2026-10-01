@@ -12,10 +12,11 @@
  *
  *   pnpm eval:importance gpt-6-luna:low gpt-6-sol:low gpt-6-sol:medium
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { loadAnnotation, loadCorpus } from "../src/benchmark.ts"
 import { wordsFromDeepgram } from "../src/deepgram.ts"
-import { alignMarks, type GoldenMark } from "../src/golden.ts"
+import { alignMarks } from "../src/golden.ts"
 import { markImportance, type Importance, type Word } from "../src/importance.ts"
 import { openaiCompletion, type ReasoningEffort } from "../src/openai.ts"
 
@@ -25,14 +26,12 @@ type Rule = keyof typeof RULES
 type Recording = { id: string; words: Word[]; expected: Map<number, Rule>; spans: { rule: Rule; words: number[] }[] }
 
 function loadRecordings(): Recording[] {
-  const ids = readdirSync(RECORDINGS).filter((id) => /^recording-\d+$/.test(id))
-  return ids.flatMap((id) => {
-    const golden = join(RECORDINGS, id, `${id}.golden.json`)
-    if (!existsSync(golden)) return []
-    const marks = (JSON.parse(readFileSync(golden, "utf8")) as GoldenMark[]).filter((m) => m.rule in RULES)
+  return loadCorpus(RECORDINGS).takes.flatMap(({ id, base }) => {
+    const annotation = loadAnnotation(join(RECORDINGS, base))
+    const marks = annotation.marks.filter(m => m.rule in RULES && annotation.reviews[m.foundationType]?.status === "reviewed")
     if (!marks.length) return []
-    const text = readFileSync(join(RECORDINGS, id, `${id}.txt`), "utf8")
-    const words = wordsFromDeepgram(JSON.parse(readFileSync(join(RECORDINGS, id, `${id}.json`), "utf8")))
+    const text = readFileSync(join(RECORDINGS, `${base}.txt`), "utf8")
+    const words = wordsFromDeepgram(JSON.parse(readFileSync(join(RECORDINGS, `${base}.json`), "utf8")))
     const spans = alignMarks(text, words, marks).map((covered, k) => ({ rule: marks[k].rule as Rule, words: covered }))
     const expected = new Map<number, Rule>()
     for (const span of spans) for (const i of span.words) if (!expected.has(i)) expected.set(i, span.rule)
@@ -43,6 +42,7 @@ function loadRecordings(): Recording[] {
 const specs = process.argv.slice(2)
 if (!specs.length) throw new Error("Usage: pnpm eval:importance <model[:effort]> ...")
 const recordings = loadRecordings()
+if (!recordings.length) throw new Error("No reviewed rate/filler annotations in the new corpus. Annotate it with pnpm markup-tools first.")
 console.log(`Golden words: ${recordings.map((r) => `${r.id} ${r.expected.size}/${r.words.length}`).join(", ")}`)
 console.log("Scores are fast→important, slow→unimportant, fillers→filler.\n")
 

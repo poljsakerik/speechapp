@@ -1,4 +1,4 @@
-import { FOUNDATION_BY_KEY, type FoundationKey } from "@/lib/foundations"
+import { FOUNDATION_BY_KEY, type FoundationKey } from "./foundations.ts"
 
 export type Word = { text: string; start: number; end: number }
 export type Segment = { id: string; start: number; end: number; text: string; words: Word[]; wpm?: number }
@@ -51,7 +51,7 @@ function text(value: unknown): string {
 }
 
 function timeSpan(start: unknown, end: unknown): [number, number] | undefined {
-  return typeof start === "number" && typeof end === "number" && end >= start ? [start, end] : undefined
+  return typeof start === "number" && typeof end === "number" && Number.isFinite(start) && Number.isFinite(end) && end > start ? [start, end] : undefined
 }
 
 /**
@@ -74,7 +74,11 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
       const segment = byId.get(text(f.segment_id))
       const observation = text(f.observation)
       if (!segment || !observation) return
-      const span = timeSpan(f.start, f.end)
+      const range = timeSpan(f.start, f.end)
+      const covered = range && range[0] >= segment.start && range[1] <= segment.end
+        ? segment.words.filter(w => w.start >= range[0] && w.end <= range[1]) : []
+      const span: [number, number] | undefined = covered.length
+        ? [covered[0].start, covered[covered.length - 1].end] : undefined
       const suggestions = (Array.isArray(f.suggestions) ? (f.suggestions as Record<string, unknown>[]) : []).flatMap(
         (s): Suggestion[] => {
           const at = timeSpan(s.start, s.end)

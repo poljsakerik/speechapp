@@ -1,7 +1,7 @@
 import type { Word } from "./importance.ts"
 
 /** A mark from the golden-set annotator; indexes are characters of the .txt transcript. */
-export type GoldenMark = { startAt: number; endAt: number; startIndex: number; endIndex: number; foundationType: string; rule: string }
+export type GoldenMark = { startAt: number; endAt: number; startIndex: number; endIndex: number; foundationType: string; rule: string; note?: string }
 
 /** Character [start, end) of each word in the transcript text, or undefined where a word isn't found. */
 export function wordOffsets(text: string, words: Word[]): ([number, number] | undefined)[] {
