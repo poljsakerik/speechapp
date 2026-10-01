@@ -88,3 +88,15 @@ test("message-first marking finds the message, then marks with it as the preface
   assert.equal(requests[1].system, MESSAGE_MARKING_PROMPT)
   assert.match(requests[1].user, /^The speaker's message: Sales fell\.\nIts points:\n- By half\.\n\nWords 0 to 3:/)
 })
+
+test("pause context includes the next numbered word at chunk seams and owns each boundary once", async () => {
+  const input = words("one two three. four five six. seven eight nine.").map((w, i) => ({ ...w, start: i, end: i + 0.5 }))
+  const requests: string[] = []
+  const result = await markImportance(input, { chunkWords: 3, analyzePauses: true, complete: async ({ user }) => {
+    requests.push(user)
+    const [, from, to] = user.match(/Words (\d+) to (\d+)/)!.map(Number)
+    return { phrases: [], pauseBoundaries: [{ after: to, placement: "processing", confidence: "clear" }, { after: from - 1, placement: "connected", confidence: "clear" }] }
+  } })
+  assert.match(requests[0], /Following word \(context only\): 3: four/)
+  assert.deepEqual(result.pauseBoundaries?.map((b) => b.after), [2, 5])
+})

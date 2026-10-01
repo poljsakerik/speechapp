@@ -298,11 +298,12 @@ let scope = "one";
 let pending = null;  // selection awaiting a rule
 let stopAt = null;
 let nowIdx = -1;
-let pred = null;     // pipeline rate marks and train/test split, from <id>.rate.pred.json
+let predictions = {}; // Separate rate and pause prediction files.
+let pred = null;
 const RULE_FAST = "RATE_IMPORTANCE_FAST", RULE_MONO = "RATE_MONOTONE";
-const predColor = m => m.rule === RULE_FAST ? "var(--rule-fast-ink)" : m.rule === RULE_MONO ? "var(--ink-3)" : "var(--f-rate-ink)";
+const predColor = m => m.foundationType === "pauses" ? "var(--f-pauses-ink)" : m.rule === RULE_FAST ? "var(--rule-fast-ink)" : m.rule === RULE_MONO ? "var(--ink-3)" : "var(--f-rate-ink)";
 const predClasses = m => ["pred", ...(m.rule === RULE_FAST ? ["pfast"] : []), ...(m.rule === RULE_MONO ? ["pmono"] : []), ...(m.suggestion ? ["psug"] : [])];
-const showingPred = () => !!pred && foundation === "rate" && $("showPred").checked;
+const showingPred = () => !!pred && $("showPred").checked;
 
 const fmt = (t, d = 1) => {
   t = Math.max(0, t || 0);
@@ -331,6 +332,8 @@ function renderTabs() {
 
 function setFoundation(key) {
   foundation = key;
+  pred = predictions[key] || null;
+  $("predToggle").hidden = !pred;
   store.set("golden.foundation", key);
   document.documentElement.style.setProperty("--cur", `var(--f-${key})`);
   document.documentElement.style.setProperty("--cur-ink", `var(--f-${key}-ink)`);
@@ -371,14 +374,16 @@ async function load(id) {
   audio.pause(); stopAt = null;
   $("transcript").innerHTML = '<span class="loading">Loading…</span>';
   const base = `/recordings/${id}/${id}`;
-  const [txt, dg, pr] = await Promise.all([
+  const [txt, dg, pr, pp] = await Promise.all([
     fetch(`${base}.txt`).then(r => r.text()),
     fetch(`${base}.json`).then(r => r.json()),
     fetch(`${base}.rate.pred.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${base}.pauses.pred.json`).then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
   if (recordingId !== id) return;
   text = txt;
-  pred = pr;
+  predictions = { rate: pr, pauses: pp };
+  pred = predictions[foundation] || null;
   $("predToggle").hidden = !pred;
   audio.src = `${base}.m4a`;
   marks = (allGolden[id] || []).slice();
@@ -400,11 +405,13 @@ async function load(id) {
     el.className = `part ${cls}`; el.textContent = label;
     return el;
   };
-  if (pred) frag.append(part("train", `Train · before ${fmt(pred.split, 0)}`));
-  let pos = 0, splitShown = !pred;
+  const rateSplit = predictions.rate?.split;
+  const hasSplit = Number.isFinite(rateSplit);
+  if (hasSplit) frag.append(part("train", `Train · before ${fmt(rateSplit, 0)}`));
+  let pos = 0, splitShown = !hasSplit;
   words.forEach((w, i) => {
-    if (!splitShown && w.t0 >= pred.split) {
-      frag.append(text.slice(pos, w.s).replace(/^\s+/, ""), part("test", `Test · from ${fmt(pred.split, 0)}`));
+    if (!splitShown && w.t0 >= rateSplit) {
+      frag.append(text.slice(pos, w.s).replace(/^\s+/, ""), part("test", `Test · from ${fmt(rateSplit, 0)}`));
       pos = w.s; splitShown = true;
     }
     if (w.s > pos) frag.append(text.slice(pos, w.s));
@@ -433,7 +440,7 @@ function renderAll() {
 
 function renderText() {
   for (const w of words) { w.el.className = "w"; w.el.style.textDecorationColor = ""; }
-  $("transcript").classList.toggle("show-pred", showingPred());
+  $("transcript").classList.toggle("show-pred", showingPred() && foundation === "rate");
   for (const m of marks) {
     const cur = m.foundationType === foundation;
     if (showingPred()) break; // only the pipeline's marks are shown
@@ -454,6 +461,7 @@ function renderText() {
         if (w.s < m.startIndex || w.e > m.endIndex) continue;
         if (m.rule !== RULE_MONO) w.el.classList.remove("pmono");
         w.el.classList.add(...predClasses(m));
+        if (m.foundationType === "pauses") w.el.style.textDecorationColor = predColor(m);
       }
     }
   }
@@ -495,11 +503,12 @@ function renderMarks() {
 function renderPred(list) {
   const c = pred.config, esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
   const pace = pred.speakerPace ? `pace ×${(pred.speakerPace / c.referencePace).toFixed(2)} of the ${c.referencePace} s/syllable reference` : "";
+  const pauseSummary = foundation === "pauses" ? `${esc(pred.partition)} · source ${esc(pred.sourceGroup)} · estimated word gaps; all candidates shown` : "";
   const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)} (monotone below ${c.monotoneBelow})` : "";
   list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
     ${pred.message ? `<p class="pred-summary"><b>Message:</b> ${esc(pred.message.message)}</p>` : ""}
-    <p class="pred-summary">${[pace, variation].filter(Boolean).join(" · ")}</p>
-    <div class="legend">
+    <p class="pred-summary">${[pace, variation, pauseSummary].filter(Boolean).join(" · ")}</p>
+    <div class="legend" ${foundation === "pauses" ? 'style="display:none"' : ""}>
       <span><i class="u" style="background:var(--rule-fast-ink)"></i>point rushed</span><span><i class="u" style="background:var(--f-rate-ink)"></i>dragging</span>
       <span><i class="u" style="background:var(--ink-3)"></i>monotone (dotted); suggestions dashed</span>
     </div>`);
@@ -507,11 +516,11 @@ function renderPred(list) {
   for (const m of order) {
     const el = document.createElement("div");
     el.className = `mark pred${m.suggestion ? " sug" : ""}`;
-    const label = m.suggestion ? (m.rule === RULE_FAST ? "↳ slow down here" : "↳ speed up here")
+    const label = m.foundationType === "pauses" ? m.rule : m.suggestion ? (m.rule === RULE_FAST ? "↳ slow down here" : "↳ speed up here")
       : m.rule === RULE_MONO ? `Monotone · ${Math.round(m.endAt - m.startAt)} s` : m.rule === RULE_FAST ? "Point rushed" : "Dragging";
-    const hit = m.rule === RULE_MONO ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
-    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
-      <span><span class="part-tag">${m.part}</span> ${hit}</span>
+    const hit = m.rule === RULE_MONO ? "" : m.hit == null ? "unannotated" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
+    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ${m.ratio != null ? `×${m.ratio.toFixed(2)}` : `${m.observedSeconds.toFixed(2)} s ${m.rule === "PAUSE_FILLERS" ? "filler" : "gap"}`}</span></div>
+      <span><span class="part-tag">${esc(m.part)}</span> ${hit}${m.selected === true ? " · selected" : ""}</span>
       <div class="quote"></div>`;
     el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
     el.onclick = () => playRange(m.startAt, m.endAt);
@@ -535,7 +544,7 @@ function renderTrack() {
     `<div class="seg ${m.foundationType === foundation ? "on" : ""}" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:var(--f-${m.foundationType}${m.foundationType === foundation ? "" : "-ink"})"></div>`
   ).filter(() => !showingPred()).join("") + (showingPred() ? pred.marks.map(m =>
     `<div class="pseg" style="left:${m.startAt / d * 100}%;width:${(m.endAt - m.startAt) / d * 100}%;background:${predColor(m)}"></div>`
-  ).join("") + `<div class="split-line" style="left:${pred.split / d * 100}%" title="Train | test split"></div>` : "");
+  ).join("") + (Number.isFinite(pred.split) ? `<div class="split-line" style="left:${pred.split / d * 100}%" title="Train | test split"></div>` : "") : "");
 }
 
 function currentJson() {

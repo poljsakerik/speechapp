@@ -7,6 +7,9 @@
  * speaker's pace against these labels.
  */
 
+import { PAUSE_BOUNDARY_SCHEMA, PAUSE_CONTEXT_PROMPT, readPauseBoundaries, type PauseBoundary } from "./pauses.ts"
+import { wordGaps } from "./timing.ts"
+
 /** "message" is only produced by message-first marking: the few words that carry the speaker's message. */
 export type Importance = "message" | "important" | "unimportant" | "filler"
 
@@ -16,7 +19,7 @@ export type MarkedWord = Word & { index: number; importance: Importance }
 
 export type Phrase = { first: number; last: number; importance: Importance; text: string }
 
-export type ImportanceResult = { words: MarkedWord[]; phrases: Phrase[] }
+export type ImportanceResult = { words: MarkedWord[]; phrases: Phrase[]; pauseBoundaries?: PauseBoundary[] }
 
 /** Sends a system and user prompt and returns the parsed JSON reply. */
 export type JsonCompletion = (request: {
@@ -38,6 +41,8 @@ export type MarkOptions = {
   preface?: string
   /** Labels the model may use; the three of SYSTEM_PROMPT unless given. */
   labels?: Importance[]
+  /** Include contextual pause placement in the same labeling requests. */
+  analyzePauses?: boolean
 }
 
 const LABELS: Importance[] = ["important", "unimportant", "filler"]
@@ -82,20 +87,30 @@ export const phrasesSchema = (labels: Importance[]) => ({
 export const PHRASES_SCHEMA = phrasesSchema(LABELS)
 
 export async function markImportance(words: Word[], options: MarkOptions): Promise<ImportanceResult> {
-  const { complete, chunkWords = 150, concurrency = 4, system = SYSTEM_PROMPT, preface, labels: allowed = LABELS } = options
-  const schema = phrasesSchema(allowed)
+  const { complete, chunkWords = 150, concurrency = 4, system = SYSTEM_PROMPT, preface, labels: allowed = LABELS, analyzePauses = false } = options
+  const baseSchema = phrasesSchema(allowed)
+  const schema = analyzePauses ? { ...baseSchema,
+    properties: { ...baseSchema.properties, pauseBoundaries: PAUSE_BOUNDARY_SCHEMA },
+    required: [...baseSchema.required, "pauseBoundaries"],
+  } : baseSchema
   const chunks = splitChunks(words, chunkWords)
   const passage = words.map((w) => w.text).join(" ")
   const labels = new Array<Importance | undefined>(words.length)
+  const pauseBoundaries: PauseBoundary[] = []
+  const observedGaps = analyzePauses ? wordGaps(words).filter((g) => g.seconds >= 0.3) : []
 
   await mapLimit(chunks, concurrency, async ([from, to]) => {
-    const user = (preface ? `${preface}\n\n` : "") + buildUserPrompt(words, from, to, chunks.length > 1 ? passage : undefined)
-    const reply = await complete({ system, user, schema, schemaName: "phrases" })
+    const context = buildUserPrompt(words, from, to, chunks.length > 1 ? passage : undefined)
+    const nextWord = analyzePauses && to + 1 < words.length ? `\nFollowing word (context only): ${to + 1}: ${words[to + 1].text}` : ""
+    const candidates = analyzePauses ? `\nObserved-gap boundaries to assess (left word indexes): ${observedGaps.filter((g) => g.after >= from && g.after <= to).map((g) => g.after).join(", ") || "none"}` : ""
+    const user = (preface ? `${preface}\n\n` : "") + context + nextWord + candidates
+    const reply = await complete({ system: system + (analyzePauses ? PAUSE_CONTEXT_PROMPT : ""), user, schema, schemaName: analyzePauses ? "phrases_and_pauses" : "phrases" })
     applyPhrases(reply, from, to, labels, allowed)
+    if (analyzePauses) pauseBoundaries.push(...readPauseBoundaries(reply, from, to, words.length))
   })
 
   const marked = words.map((w, index) => ({ ...w, index, importance: labels[index] ?? "unimportant" }))
-  return { words: marked, phrases: groupPhrases(marked) }
+  return { words: marked, phrases: groupPhrases(marked), ...(analyzePauses ? { pauseBoundaries: pauseBoundaries.sort((a, b) => a.after - b.after) } : {}) }
 }
 
 /** What the speaker is trying to say: one sentence, and the few points that build it. */

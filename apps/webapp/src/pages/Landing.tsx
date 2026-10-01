@@ -38,8 +38,8 @@ function Hero() {
         </h1>
         <div className="lg:pb-2">
           <p className="max-w-[46ch] text-[1.0625rem] leading-relaxed text-pretty text-ink-2">
-            Explore the five foundations in the sample take. The live review currently checks rate of speech and pins
-            notes to the moments where a pace change may help your point land.
+            Explore the five foundations in the sample take. The live review checks rate of speech and pauses, and pins
+            notes to the moments where a change in pace or a pause may help your point land.
           </p>
           <Button asChild size="lg" className="mt-6 sm:hidden">
             <Link to="/upload">Try a free review</Link>
@@ -268,7 +268,7 @@ function Try() {
         <SectionHeading id="try" title="Try a free review.">
           <p className="flex items-start gap-2">
             <ArrowDownIcon className="mt-1.5 size-4 shrink-0 text-glass-ink" aria-hidden="true" />
-            One take, rate of speech feedback pinned to the second.
+            One take, rate and pause feedback pinned to the second.
           </p>
         </SectionHeading>
         <div className="mt-12">

@@ -26,6 +26,7 @@
  * can be retuned without touching the logic.
  */
 import type { Importance, MarkedWord } from "./importance.ts"
+import { isTimed, wordGaps } from "./timing.ts"
 
 export type RateRule = "RATE_IMPORTANCE_FAST" | "RATE_IMPORTANCE_SLOW" | "RATE_MONOTONE"
 
@@ -208,7 +209,7 @@ export function detectRate(words: MarkedWord[], config: Partial<RateConfig> = {}
 /**
  * Split non-filler words into phrases at sentence ends and pauses of at least
  * `pauseSplit`, and, with `byImportance`, wherever the importance label
- * changes. A filler between two words counts as a pause. Without importance
+ * changes. Fillers split phrases but only actual word gaps count as silence. Without importance
  * splits, a phrase takes the highest label among its words.
  */
 export function ratePhrases(
@@ -219,14 +220,29 @@ export function ratePhrases(
   const phrases: RatePhrase[] = []
   let current: RatePhrase | undefined
   let previous: Timed | undefined
-  for (const w of words) {
+  const gaps = new Map(wordGaps(words).map((g) => [g.after + 1, g.seconds]))
+  let silence = 0
+  let filler = false
+  for (const [i, w] of words.entries()) {
     const { importance } = w
-    if (importance === "filler" || w.start === undefined || w.end === undefined) continue
+    if (!isTimed(w)) {
+      current = undefined
+      previous = undefined
+      silence = 0
+      filler = false
+      continue
+    }
+    silence = Math.max(silence, gaps.get(i) ?? 0)
+    if (importance === "filler") {
+      filler = true
+      if (current) current.pauseAfter = silence
+      continue
+    }
     const word = w as Timed
-    const gap = previous ? Math.max(0, word.start - previous.end) : 0
+    const gap = silence
     const sentenceEnded = previous !== undefined && /[.!?]["”’)]*$/.test(previous.text)
     const labelChanged = byImportance && current?.importance !== importance
-    if (!current || labelChanged || gap >= config.pauseSplit || sentenceEnded) {
+    if (!current || filler || labelChanged || gap >= config.pauseSplit || sentenceEnded) {
       if (current) current.pauseAfter = gap
       current = { importance, words: [], syllables: 0, seconds: 0, pauseBefore: gap, pauseAfter: 0 }
       phrases.push(current)
@@ -238,6 +254,8 @@ export function ratePhrases(
     current.syllables += syllables(word.text)
     current.seconds += word.end - word.start
     previous = word
+    silence = 0
+    filler = false
   }
   return phrases
 }

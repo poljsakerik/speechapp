@@ -301,7 +301,7 @@ function Monitor({ take, time, active }: { take: Take; time: number; active?: Fi
   const segment =
     [...take.segments].reverse().find((s) => s.start <= time + 0.05) ?? take.segments[0]
   const foundation = active ? FOUNDATION_BY_KEY[active.foundation] : undefined
-  const span = active && active.segmentId === segment.id ? active.span : undefined
+  const span = active?.span
   const marked = (t: number) => !!span && t >= span[0] - 0.01 && t <= span[1] + 0.01
   return (
     <div className="relative flex min-h-36 flex-col justify-center px-5 py-6 sm:min-h-44 sm:px-8">

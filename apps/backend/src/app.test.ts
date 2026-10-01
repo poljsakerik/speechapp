@@ -6,7 +6,7 @@ test("health and upload contract", async (context) => {
   let received: { audio: Buffer; type: string } | undefined
   const app = buildApp(async (audio, type) => {
     received = { audio, type }
-    return { audio: audio.toString("base64"), audioType: type, segments: [], review: { overall: "test", assessments: [] } }
+    return { audio: audio.toString("base64"), audioType: type, segments: [], pauses: [], review: { overall: "test", assessments: [] } }
   })
   context.after(() => app.close())
   await app.ready()
@@ -24,5 +24,6 @@ test("health and upload contract", async (context) => {
   assert.equal(review.statusCode, 200)
   assert.equal(review.json().audioType, "audio/mpeg")
   assert.equal(review.json().audio, Buffer.from("abc").toString("base64"))
+  assert.deepEqual(review.json().pauses, [])
   assert.deepEqual(received, { audio: Buffer.from("abc"), type: "audio/mpeg" })
 })

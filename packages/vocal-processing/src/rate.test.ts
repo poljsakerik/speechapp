@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import type { Importance, MarkedWord } from "./importance.ts"
-import { detectRate, syllables } from "./rate.ts"
+import { DEFAULT_RATE_CONFIG, detectRate, ratePhrases, syllables } from "./rate.ts"
 
 type Part = [text: string, importance: Importance, pace?: number, pauseBefore?: number]
 
@@ -77,4 +77,15 @@ test("fillers and the time they take are left out", () => {
 
 test("counts syllables", () => {
   assert.deepEqual(["a", "gambling.", "possible", "divorce", "people", "300", "the"].map(syllables), [1, 2, 3, 2, 2, 4, 1])
+})
+
+test("a long filler cannot masquerade as an emphasis pause or add articulation time", () => {
+  const words = speak([...varied(4), ["the result", "unimportant"], ["um", "filler", 8], ["sales fell by half.", "message", 0.8], ...varied(10)])
+  const phrases = ratePhrases(words, DEFAULT_RATE_CONFIG)
+  const point = phrases.find((p) => p.importance === "message")!
+  assert.equal(point.pauseBefore, 0)
+  assert.equal(phrases.find((p) => p.words.map((w) => w.text).join(" ") === "the result")!.pauseAfter, 0)
+  assert.ok(detectRate(words).marks.some((m) => m.rule === "RATE_IMPORTANCE_FAST"))
+  const withSilence = speak([["the result", "unimportant"], ["um", "filler", 8, 0.8], ["sales fell by half.", "message", 0.8], ...varied(10)])
+  assert.equal(ratePhrases(withSilence, DEFAULT_RATE_CONFIG).find((p) => p.importance === "message")!.pauseBefore.toFixed(1), "0.8")
 })
