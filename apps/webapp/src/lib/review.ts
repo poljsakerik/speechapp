@@ -13,6 +13,8 @@ export type Take = {
   segments: Segment[]
 }
 
+export type Suggestion = { direction: "slow_down" | "speed_up"; span: [number, number]; text: string }
+
 export type Verdict = "effective" | "mixed" | "needs_work" | "uncertain"
 
 export type Finding = {
@@ -27,8 +29,10 @@ export type Finding = {
   practice: string
   /** Seconds into the take where the note is pinned. */
   at: number
-  /** Start times of the first and last words the note is about, when known. */
+  /** Seconds the passage the note is about starts and ends at, when known. */
   span?: [number, number]
+  /** Phrases inside the passage to change, e.g. where to slow down in an even stretch. */
+  suggestions?: Suggestion[]
 }
 
 export type Assessment = { foundation: FoundationKey; verdict: Verdict; summary: string }
@@ -44,6 +48,10 @@ const VERDICTS: Verdict[] = ["effective", "mixed", "needs_work", "uncertain"]
 
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : ""
+}
+
+function timeSpan(start: unknown, end: unknown): [number, number] | undefined {
+  return typeof start === "number" && typeof end === "number" && end >= start ? [start, end] : undefined
 }
 
 /**
@@ -66,6 +74,14 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
       const segment = byId.get(text(f.segment_id))
       const observation = text(f.observation)
       if (!segment || !observation) return
+      const span = timeSpan(f.start, f.end)
+      const suggestions = (Array.isArray(f.suggestions) ? (f.suggestions as Record<string, unknown>[]) : []).flatMap(
+        (s): Suggestion[] => {
+          const at = timeSpan(s.start, s.end)
+          const direction = s.direction === "slow_down" || s.direction === "speed_up" ? s.direction : undefined
+          return at && direction ? [{ direction, span: at, text: text(s.text) }] : []
+        },
+      )
       findings.push({
         id: `${foundation}-${index}`,
         foundation,
@@ -76,7 +92,9 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
         observation,
         why: text(f.why_it_matters),
         practice: text(f.practice),
-        at: segment.start,
+        at: span?.[0] ?? segment.start,
+        ...(span ? { span } : {}),
+        ...(suggestions.length ? { suggestions } : {}),
       })
     })
   }

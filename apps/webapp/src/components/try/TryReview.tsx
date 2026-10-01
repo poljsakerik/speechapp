@@ -2,9 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { FileAudioIcon, MicIcon, MicOffIcon, SquareIcon, UploadIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Editor } from "@/components/editor/Editor"
 import { Alert, AlertDescription, AlertTitle } from "@micmane/ui/components/alert"
-import { Badge } from "@micmane/ui/components/badge"
 import { Button } from "@micmane/ui/components/button"
 import { Progress } from "@micmane/ui/components/progress"
 import { ReviewError, requestReview, type ReviewResult } from "@/lib/api"
@@ -22,10 +20,15 @@ type State =
   | { name: "recording"; started: number }
   | { name: "ready"; blob: Blob; label: string; url: string }
   | { name: "reviewing"; blob: Blob; label: string; started: number }
-  | { name: "done"; result: ReviewResult }
   | { name: "error"; message: string; blob?: Blob; label?: string }
 
-export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
+type TryReviewProps = {
+  uploadFirst?: boolean
+  /** Called with the finished review; the caller shows it and owns its audio URL. */
+  onReviewed: (result: ReviewResult) => void
+}
+
+export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
   const [state, setState] = useState<State>({ name: "idle" })
   const [now, setNow] = useState(() => performance.now())
   const [levels, setLevels] = useState<number[]>(() => Array(28).fill(0))
@@ -38,7 +41,7 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
   const live = state.name === "recording" || state.name === "reviewing"
   const promptUpload = uploadFirst && state.name === "idle"
 
-  const audioUrl = state.name === "ready" ? state.url : state.name === "done" ? state.result.audioUrl : undefined
+  const audioUrl = state.name === "ready" ? state.url : undefined
   useEffect(() => {
     return () => {
       if (audioUrl) URL.revokeObjectURL(audioUrl)
@@ -129,8 +132,10 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
     try {
       const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("mpeg") ? "mp3" : blob.type.includes("wav") ? "wav" : "webm"
       const result = await requestReview(blob, label.includes(".") ? label : `take.${ext}`)
-      setState({ name: "done", result })
-      toast.success("Your review is ready", { description: `${result.review.findings.length} rate notes.` })
+      setState({ name: "idle" })
+      onReviewed(result)
+      const count = result.review.findings.length
+      toast.success("Your review is ready", { description: count ? `${count} note${count > 1 ? "s" : ""} on your pace.` : "No pace notes on this take." })
     } catch (error) {
       const message = error instanceof ReviewError ? error.message : "The review couldn't be completed. Send the take again."
       setState({ name: "error", message, blob, label })
@@ -138,30 +143,6 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
   }
 
   const reset = () => setState({ name: "idle" })
-
-  if (state.name === "done") {
-    return (
-      <div className="space-y-4">
-        <Editor
-          take={state.result.take}
-          review={state.result.review}
-          audioSrc={state.result.audioUrl}
-          title="Your take"
-          badge={<Badge variant="outline">AI review</Badge>}
-          action={
-            <Button variant="outline" size="sm" onClick={reset}>
-              {uploadFirst ? <UploadIcon /> : <MicIcon />}
-              {uploadFirst ? "Upload another take" : "Record another take"}
-            </Button>
-          }
-        />
-        <p className="max-w-[70ch] text-[0.8125rem] text-ink-3">
-          This is AI feedback and it can be wrong. Listen back to the passage before you act on a note. Timestamps
-          refer to the minute that was reviewed.
-        </p>
-      </div>
-    )
-  }
 
   const elapsed = state.name === "recording" ? (now - state.started) / 1000 : 0
   const reviewingFor = state.name === "reviewing" ? (now - state.started) / 1000 : 0
@@ -377,7 +358,7 @@ export function TryReview({ uploadFirst = false }: { uploadFirst?: boolean }) {
                   <span className={cn("transition-colors duration-700", lit ? "text-[oklch(0.97_0.002_80)]" : "text-[oklch(0.8_0.004_70)]")}>
                     {f.label}
                   </span>
-                  {lit && <span className="ml-auto font-mono text-[0.625rem] text-[oklch(0.8_0.004_70)]">listening</span>}
+                  {lit && <span className="ml-auto text-xs text-on-graphite-muted">listening</span>}
                 </li>
               )
             })}
