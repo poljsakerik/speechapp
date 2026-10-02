@@ -1,7 +1,7 @@
 import { FOUNDATION_BY_KEY, type FoundationKey } from "./foundations.ts"
 
 export type Word = { text: string; start: number; end: number }
-export type Segment = { id: string; start: number; end: number; text: string; words: Word[]; wpm?: number }
+export type Segment = { id: string; start: number; end: number; text: string; words: Word[]; speakingRate?: number }
 
 /** A recording as the editor draws it. Measurement lanes are optional. */
 export type Take = {
@@ -42,6 +42,13 @@ export type Review = {
   nextTake?: string
   assessments: Assessment[]
   findings: Finding[]
+}
+
+/** An empty findings list is not evidence that every foundation was assessed. */
+export function emptyReviewMessage(assessments: Assessment[]): string {
+  const rate = assessments.find(a => a.foundation === "rate")
+  if (!rate || rate.verdict === "uncertain") return "There wasn’t enough reliable evidence to assess your rate of speech."
+  return "No rate-of-speech issues were flagged. The other four fundamentals haven’t been assessed."
 }
 
 const VERDICTS: Verdict[] = ["effective", "mixed", "needs_work", "uncertain"]
@@ -87,7 +94,7 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
         },
       )
       findings.push({
-        id: `${foundation}-${index}`,
+        id: text(f.group_id) ? `${foundation}-group-${text(f.group_id)}` : `${foundation}-${index}`,
         foundation,
         segmentId: segment.id,
         ruleId: text(f.rule_id),
@@ -103,7 +110,18 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
     })
   }
   findings.sort((a, b) => a.at - b.at)
-  return { overall: text(data.overall), assessments, findings }
+  // One measured passage can cross several ASR segments. Rejoin only adjacent
+  // validated highlights, so one interrupted thought gets one note and replay.
+  const joined: Finding[] = []
+  const words = segments.flatMap(s => s.words)
+  for (const finding of findings) {
+    const previous = joined.find(f => f.id === finding.id && f.ruleId === finding.ruleId)
+    if (previous?.span && finding.span && previous.span[1] <= finding.span[0] &&
+      !words.some(w => w.start >= previous.span![1] && w.end <= finding.span![0])) {
+      previous.span[1] = finding.span[1]
+    } else joined.push(previous ? { ...finding, id: `${finding.id}-part-${joined.length}` } : finding)
+  }
+  return { overall: text(data.overall), assessments, findings: joined }
 }
 
 export function formatTime(seconds: number, precise = true): string {

@@ -319,9 +319,9 @@ export function Components() {
               <Row>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline">280 wpm</Button>
+                    <Button variant="outline">5.2 syll/s</Button>
                   </TooltipTrigger>
-                  <TooltipContent>Words per minute in this passage</TooltipContent>
+                  <TooltipContent>Syllables per second in this passage, including silence</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>

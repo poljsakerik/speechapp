@@ -475,22 +475,24 @@ export function LaneSignal({ foundationKey, take, pct }: { foundationKey: Founda
   const mid = H / 2
 
   if (foundationKey === "rate") {
-    const rates = take.segments.map((s) => s.wpm ?? Math.round((s.words.length / Math.max(s.end - s.start, 0.1)) * 60))
+    const rates = take.segments.map((s) => s.speakingRate).filter((rate): rate is number => rate != null && Number.isFinite(rate))
     const lo = Math.min(...rates)
     const hi = Math.max(...rates)
     return (
       <>
-        {take.segments.map((s, i) => {
-          const h = 6 + ((rates[i] - lo) / Math.max(hi - lo, 1)) * (H - 16)
+        {take.segments.map((s) => {
+          if (s.speakingRate == null || !Number.isFinite(s.speakingRate)) return null
+          const h = 6 + ((s.speakingRate - lo) / Math.max(hi - lo, 1)) * (H - 16)
           return (
             <div
               key={s.id}
+              title={`${s.speakingRate.toFixed(1)} syllables per second, including silence`}
               className="absolute rounded-[2px]"
               style={{ left: pct(s.start), width: pct(s.end - s.start), top: mid - h / 2, height: h, background: f.fill }}
             >
               {s.end - s.start > 1.6 && (
                 <span className="absolute top-1/2 right-1.5 hidden -translate-y-1/2 font-mono text-[0.5625rem] whitespace-nowrap tabular lg:block" style={{ color: f.ink }}>
-                  {rates[i]} wpm
+                  {s.speakingRate.toFixed(1)} syll/s
                 </span>
               )}
             </div>

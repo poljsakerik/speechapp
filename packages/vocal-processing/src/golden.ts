@@ -1,4 +1,4 @@
-import type { Word } from "./importance.ts"
+import type { Word } from "./types.ts"
 
 /** A mark from the golden-set annotator; indexes are characters of the .txt transcript. */
 export type GoldenMark = { startAt: number; endAt: number; startIndex: number; endIndex: number; foundationType: string; rule: string; note?: string }

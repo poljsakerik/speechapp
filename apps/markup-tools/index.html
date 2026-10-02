@@ -263,8 +263,8 @@
 // Foundations and rules, from docs/video-review.md.
 const FOUNDATIONS = [
   { key: "rate", label: "Rate of speech", rules: [
-    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down on this important phrase, or give it a pause or another emphasis cue." },
-    { id: "RATE_IMPORTANCE_SLOW", hint: "Speed up through this less important material." },
+    { id: "RATE_IMPORTANCE_FAST", hint: "Slow down through this rushed passage." },
+    { id: "RATE_IMPORTANCE_SLOW", hint: "Move through this dragged passage more briskly." },
   ]},
   { key: "volume", label: "Volume", rules: [
     { id: "VOLUME_HIGH", hint: "Ease the level on this phrase toward the good reference while keeping it clear and projected." },
@@ -513,24 +513,25 @@ function renderMarks() {
   if (showingPred()) renderPred(list);
 }
 
-// Each pipeline mark identifies a specific phrase to slow down or speed up.
+// Each prediction identifies a measured passage and its coaching rule.
 function renderPred(list) {
-  const c = pred.config, esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
-  const pace = pred.speakerPace ? `pace ×${(pred.speakerPace / c.referencePace).toFixed(2)} of the ${c.referencePace} s/syllable reference` : "";
+  const esc = t => t.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+  const rate = pred.speakingRate != null ? `${pred.speakingRate.toFixed(1)} syll/s including silence` : "";
   const variation = pred.variation != null ? `pace variation ${pred.variation.toFixed(2)}` : "";
+  const pauses = pred.pauses ? `${pred.pauses.length} measured pause${pred.pauses.length === 1 ? "" : "s"}` : "";
   list.insertAdjacentHTML("beforeend", `<h3>Pipeline <span class="mono" style="color:var(--ink-3);font-weight:400">${esc(pred.model)}</span></h3>
-    ${pred.message ? `<p class="pred-summary"><b>Message:</b> ${esc(pred.message.message)}</p>` : ""}
-    <p class="pred-summary">${[pace, variation].filter(Boolean).join(" · ")}</p>
+    <p class="pred-summary">${[rate, variation, pauses].filter(Boolean).join(" · ")}</p>
     <div class="legend">
-      <span><i class="u" style="background:var(--rule-fast-ink)"></i>slow down</span><span><i class="u" style="background:var(--f-rate-ink)"></i>speed up</span>
+      <span><i class="u" style="background:var(--rule-fast-ink)"></i>slow down</span><span><i class="u" style="background:var(--f-rate-ink)"></i>other pace adjustments</span>
     </div>`);
+  if (pred.pace?.curve?.some(p => Number.isFinite(p.speakingRate))) renderPaceTrace(list, pred.pace);
   const order = [...pred.marks].sort((a, b) => a.startAt - b.startAt);
   for (const m of order) {
     const el = document.createElement("div");
     el.className = "mark pred";
     const label = m.rule;
     const hit = m.hit == null ? "" : `<span class="hit ${m.hit ? "yes" : "no"}">${m.hit ? "✓ golden" : "✗ not golden"}</span>`;
-    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)} · ×${m.ratio.toFixed(2)}</span></div>
+    el.innerHTML = `<div class="meta"><b style="color:${predColor(m)}">${label}</b><span class="mono" style="color:var(--ink-3)">${fmt(m.startAt)}–${fmt(m.endAt)}</span></div>
       <span>${hit}</span>
       <div class="quote"></div>`;
     el.querySelector(".quote").textContent = text.slice(m.startIndex, m.endIndex);
@@ -539,6 +540,39 @@ function renderPred(list) {
     el.onmouseleave = () => focusMark(m, false);
     list.append(el);
   }
+}
+
+// Diagnostic view only: gaps are measured silence, never a pause-foundation score.
+function renderPaceTrace(list, pace) {
+  const points = pace.curve, start = points[0].time, end = points.at(-1).time;
+  if (end <= start) return;
+  const width = 360, height = 160, left = 32, right = 350, top = 12, bottom = 132;
+  const max = Math.ceil(Math.max(2, ...points.map(p => p.articulationRate ?? p.speakingRate)) / 2) * 2;
+  const x = time => left + (time - start) / (end - start) * (right - left);
+  const y = value => bottom - value / max * (bottom - top);
+  const path = key => {
+    let connected = false;
+    return points.map(p => {
+      if (p[key] == null) { connected = false; return ""; }
+      const command = connected ? "L" : "M"; connected = true;
+      return `${command}${x(p.time).toFixed(1)},${y(p[key]).toFixed(1)}`;
+    }).join(" ");
+  };
+  const details = document.createElement("details");
+  details.innerHTML = `<summary>Pace trace · click to seek</summary>
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Syllables per second over time; blue excludes silence, gray includes silence, shaded bands are pauses" style="width:100%;cursor:crosshair">
+      ${pace.pauses.filter(p => p.end > start && p.start < end).map(p => `<rect x="${x(Math.max(start,p.start))}" y="${top}" width="${Math.max(1,x(Math.min(end,p.end))-x(Math.max(start,p.start)))}" height="${bottom-top}" fill="#ddd" opacity=".55"/>`).join("")}
+      ${[0,max/2,max].map(v => `<line x1="${left}" x2="${right}" y1="${y(v)}" y2="${y(v)}" stroke="#ccc"/><text x="2" y="${y(v)+4}" font-size="10">${v}</text>`).join("")}
+      <path d="${path("speakingRate")}" fill="none" stroke="#888" stroke-width="1.5"/>
+      <path d="${path("articulationRate")}" fill="none" stroke="#247591" stroke-width="2"/>
+      <text x="${left}" y="153" font-size="10">${fmt(start)}</text><text x="${right}" y="153" text-anchor="end" font-size="10">${fmt(end)}</text>
+    </svg>
+    <p class="pred-summary">Syllables/s · blue: while speaking · gray: including silence · shaded: silence. Six-second smoothing. Silence is shown separately from slowing down.</p>`;
+  details.querySelector("svg").onclick = event => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    audio.currentTime = start + Math.max(0, Math.min(1, ((event.clientX-rect.left)/rect.width*width-left)/(right-left))) * (end-start);
+  };
+  list.append(details);
 }
 
 function focusMark(m, on) {

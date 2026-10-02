@@ -8,7 +8,7 @@
       "sha256": "583ba15912053954e645d2bd4ba920bc95dedccf1a010baa8d1ca6cec0c1ee00",
       "foundation": "rate",
       "assignment": "user-confirmed",
-      "evidence": "Pace changes between readings (about 138, 190 and 143 words/minute).",
+      "evidence": "The middle reading is faster than the first and final readings.",
       "takes": [
         {
           "id": "rate-01",

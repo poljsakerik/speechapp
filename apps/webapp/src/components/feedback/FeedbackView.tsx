@@ -4,12 +4,13 @@ import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from "lucide-r
 import { Button } from "@micmane/ui/components/button"
 import { Popover, PopoverAnchor, PopoverContent } from "@micmane/ui/components/popover"
 import { FOUNDATION_BY_KEY } from "@/lib/foundations"
-import { formatTime, type Finding, type Take, type Word } from "@/lib/review"
+import { emptyReviewMessage, formatTime, type Assessment, type Finding, type Take, type Word } from "@/lib/review"
 import { cn } from "@micmane/ui/lib/utils"
 
 type FeedbackViewProps = {
   take: Take
   findings: Finding[]
+  assessments: Assessment[]
   audioSrc: string
   /** Shown at the end of the player bar, e.g. a button to upload another take. */
   action?: ReactNode
@@ -20,8 +21,9 @@ type FeedbackViewProps = {
 
 /** What each rule is called in a note, and whether it marks a whole stretch rather than one phrase. */
 const RULES: Record<string, { label: string; stretch?: boolean }> = {
-  RATE_IMPORTANCE_FAST: { label: "Rushed point" },
-  RATE_IMPORTANCE_SLOW: { label: "Dragged passage" },
+  RATE_IMPORTANCE_FAST: { label: "Rushed passage", stretch: true },
+  RATE_IMPORTANCE_SLOW: { label: "Dragged passage", stretch: true },
+  RATE_CONTRAST: { label: "Flat pacing", stretch: true },
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]
@@ -37,7 +39,7 @@ const within = (word: Word, span: [number, number]) => word.start >= span[0] - 0
  * A reviewed take as its transcript: every note is a highlight on the words it
  * is about, and opens above them when clicked. The graphite bar plays the take.
  */
-export function FeedbackView({ take, findings, audioSrc, action, footer, className }: FeedbackViewProps) {
+export function FeedbackView({ take, findings, assessments, audioSrc, action, footer, className }: FeedbackViewProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const stopAt = useRef<number | null>(null)
   const [time, setTime] = useState(0)
@@ -276,7 +278,7 @@ export function FeedbackView({ take, findings, audioSrc, action, footer, classNa
       <div className="px-5 py-12 sm:px-10 sm:py-16">
         <div className="mx-auto max-w-[62ch]">
           {!findings.length && (
-            <p className="mb-6 text-[0.8125rem] text-ink-3">Nothing in this take stood out enough to note.</p>
+            <p className="mb-6 text-[0.8125rem] text-ink-3">{emptyReviewMessage(assessments)}</p>
           )}
           <Transcript paragraphs={paragraphs} now={now} openKey={openKey} onOpenChange={setOpenKey} onPlay={playSpan} />
           {footer && <div className="mt-16">{footer}</div>}

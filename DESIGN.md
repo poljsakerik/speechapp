@@ -245,7 +245,7 @@ A near-white canvas and graphite inks, five pastel foundation hues with paired d
 - **Body** (400, 0.9375rem, 1.625): list and card copy, max 52ch.
 - **Body small** (400, 0.8125rem, 1.55): notes, captions, nav links.
 - **Label** (600, 0.75rem to 0.6875rem, sentence case): lane labels, note headers, badge text (500, 0.6875rem).
-- **Time** (Martian Mono 400, 0.75rem to 0.5625rem, tabular): timecodes, ruler ticks, lane measurements (wpm, seconds).
+- **Time** (Martian Mono 400, 0.75rem to 0.5625rem, tabular): timecodes, ruler ticks, lane measurements (syllables/s, seconds).
 
 ### Named Rules
 **The Mono Means Measured Rule.** Martian Mono is used only for times and measured values. Words are never set in mono.

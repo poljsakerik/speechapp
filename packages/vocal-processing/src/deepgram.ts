@@ -1,4 +1,4 @@
-import type { Word } from "./importance.ts"
+import type { Word } from "./types.ts"
 
 type DeepgramWord = { word: string; punctuated_word?: string; start: number; end: number }
 
@@ -13,8 +13,8 @@ export function wordsFromDeepgram(response: unknown): Word[] {
 }
 
 /**
- * Transcribe an audio file with Deepgram nova-3. Filler words are kept so the
- * importance stage can label them and the rate stage can leave them out.
+ * Transcribe with Deepgram nova-3. Keep fillers and repetitions: deleting
+ * them would change the measured delivery and manufacture silent gaps.
  */
 export async function transcribe(audio: Uint8Array<ArrayBuffer>, apiKey = process.env.DEEPGRAM_API_KEY): Promise<unknown> {
   if (!apiKey) throw new Error("DEEPGRAM_API_KEY is not set")

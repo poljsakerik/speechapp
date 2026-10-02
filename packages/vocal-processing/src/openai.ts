@@ -1,8 +1,15 @@
-import type { JsonCompletion } from "./importance.ts"
+import type { JsonCompletion } from "./types.ts"
 
 const API_URL = "https://api.openai.com/v1/responses"
 
 export type ReasoningEffort = "none" | "low" | "medium" | "high"
+
+/** One model configuration for live reviews, the CLI and evaluation cache keys. */
+export function rateModelSettings(env: NodeJS.ProcessEnv = process.env): { model: string; effort: ReasoningEffort } {
+  const effort = env.RATE_EFFORT ?? "low"
+  if (!["none", "low", "medium", "high"].includes(effort)) throw new Error(`Invalid RATE_EFFORT: ${effort}`)
+  return { model: env.RATE_MODEL ?? "gpt-6-sol", effort: effort as ReasoningEffort }
+}
 
 export type OpenAIOptions = {
   apiKey?: string
@@ -21,12 +28,13 @@ type ResponseBody = {
 /** A JsonCompletion backed by the OpenAI Responses API with strict JSON schema output. */
 export function openaiCompletion(options: OpenAIOptions = {}): JsonCompletion {
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY
-  const model = options.model ?? process.env.IMPORTANCE_MODEL ?? "gpt-6-sol"
-  const effort = options.effort ?? (process.env.IMPORTANCE_EFFORT as ReasoningEffort | undefined) ?? "low"
+  const settings = rateModelSettings()
+  const model = options.model ?? settings.model
+  const effort = options.effort ?? settings.effort
   const attempts = options.attempts ?? 4
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set")
 
   return async ({ system, user, schema, schemaName }) => {
+    if (!apiKey) throw new Error("OPENAI_API_KEY is not set")
     const body = JSON.stringify({
       model,
       instructions: system,

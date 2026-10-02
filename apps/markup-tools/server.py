@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent
-RECORDINGS = Path(os.environ.get("RECORDINGS_DIR", ROOT.parents[1] / "recordings")).resolve()
+RECORDINGS = Path(os.environ.get("RECORDINGS_DIR", ROOT.parents[1] / "recordings-rate-development")).resolve()
 PORT = int(os.environ.get("PORT", "8765"))
 RULES = {
     "rate": {"RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW"},

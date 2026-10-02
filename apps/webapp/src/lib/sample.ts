@@ -29,7 +29,7 @@ export const SAMPLE_REVIEW: Review = {
       at: 1.5,
       span: [1.49, 1.74],
       observation:
-        "The opening line runs at one fast pace, about 280 words a minute. “Night shift” and “clinic downtown” get no more time than the words around them.",
+        "The opening line runs at one fast pace, about 5.4 syllables a second. “Night shift” and “clinic downtown” get no more time than the words around them.",
       why: "This line sets the scene. At this speed the listener catches the facts but has no time to picture them.",
       practice: "Say the first line again and give “night shift” a beat longer than anything else in it.",
     },
