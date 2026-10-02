@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { pauseAssessment, rateReview, segmentWords } from "./review.ts"
+import { measureVolume, pauseAssessment, rateReview, segmentWords, volumeAssessment } from "./review.ts"
 
 test("segments report syllables per second including internal silence", () => {
   const [segment] = segmentWords([
@@ -66,4 +66,37 @@ test("pause findings highlight the stretch, and unmeasured audio leaves pauses u
   assert.deepEqual(assessment.findings.map(f => f.suggestions), [[{ direction: "pause_after", start: 2, end: 2.8, text: "going." }], []], "the pause point sits in the segment that holds its word")
   assert.equal(pauseAssessment(segments, []).verdict, "effective")
   assert.equal(pauseAssessment(segments, undefined).verdict, "uncertain")
+})
+
+test("volume findings carry their own coaching; without measured audio volume stays uncertain", () => {
+  const words = "We start strong. Then it fades away.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
+  const segments = segmentWords(words)
+  const fade = { first: 4, last: 6, start: 4, end: 6.8, text: "it fades away.", rule: "VOLUME_FADE" as const, drop: 15 }
+  const volume = volumeAssessment(segments, [fade])
+  assert.equal(volume.verdict, "mixed")
+  assert.deepEqual(volume.findings.map(f => [f.rule_id, f.start, f.end, f.observation]), [["VOLUME_FADE", 4, 6.8, "Your voice trails off at the end of these sentences."]])
+  assert.equal(volumeAssessment(segments, []).verdict, "effective")
+  assert.equal(volumeAssessment(segments, undefined).verdict, "uncertain")
+})
+
+test("volume is measured on recognizer timing and highlighted on the aligned transcript", () => {
+  // Sentences of eight 0.3 s voiced words; three sentences in a row say their last four words 20 dB down.
+  const rate = 16000, samples: number[] = [], recognized: { text: string; start: number; end: number }[] = []
+  for (let s = 0; s < 23; s++) {
+    for (let w = 0; w < 8; w++) {
+      const start = samples.length / rate, gain = s >= 10 && s < 13 && w >= 4 ? 0.1 : 1
+      for (let i = 0; i < 0.3 * rate; i++) {
+        let x = 0
+        for (let k = 1; k <= 33; k++) x += Math.sin(2 * Math.PI * 150 * k * i / rate) / k
+        samples.push(0.05 * gain * x)
+      }
+      recognized.push({ text: w === 7 ? "day." : "day", start, end: samples.length / rate })
+    }
+    for (let i = 0; i < 0.5 * rate; i++) samples.push(0)
+  }
+  // Alignment trims quiet words as if they were silence; volume must not depend on that.
+  const aligned = recognized.map(w => ({ ...w, end: w.start + 0.05 }))
+  const marks = measureVolume(Float32Array.from(samples), rate, recognized, aligned)!
+  assert.deepEqual(marks.map(m => m.rule), ["VOLUME_FADE", "VOLUME_FADE", "VOLUME_FADE"])
+  assert.deepEqual(marks.map(m => [m.start, m.end]), marks.map(m => [aligned[m.first].start, aligned[m.last].end]))
 })
