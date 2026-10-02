@@ -31,6 +31,9 @@ const RULES: Record<string, { label: string; stretch?: boolean }> = {
   VOLUME_LOW: { label: "Volume drop", stretch: true },
   VOLUME_FADE: { label: "Trailing off" },
   TONE_FLAT: { label: "Flat voice", stretch: true },
+  PITCH_VARIETY: { label: "Monotone stretch", stretch: true },
+  PITCH_HIGH: { label: "Stuck high", stretch: true },
+  PITCH_LOW: { label: "Stuck low", stretch: true },
 }
 
 const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {

@@ -7,7 +7,9 @@ import { detectRate, syllables, RATE_VERSION, type RateMark } from "@micmane/voc
 import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause"
 import { reviewPause } from "@micmane/vocal-processing/pause-review"
 import { detectVolume, VOLUME_VERSION, type VolumeMark } from "@micmane/vocal-processing/volume"
-import { geminiVoice } from "@micmane/vocal-processing/gemini"
+import { geminiJudgment, geminiVoice } from "@micmane/vocal-processing/gemini"
+import { detectPitch, PITCH_VERSION, type PitchMark } from "@micmane/vocal-processing/pitch"
+import { listenForPitch, type Heard } from "@micmane/vocal-processing/pitch-listen"
 import { reviewTonality, tonalityConfig, TONALITY_VERSION, type Emotion, type ToneMark } from "@micmane/vocal-processing/tonality"
 import { decodeAudio } from "./audio.ts"
 
@@ -95,6 +97,27 @@ const volumeCopy = {
     practice: "Take a breath at the pause before, and carry your volume through to the last word.",
   },
 } as const
+// Vinh's pitch lesson: melody is the different notes you hit; anything distracting takes away from the message.
+const pitchCopy = {
+  // 10 s of speaking whose pitch barely moves.
+  PITCH_VARIETY: {
+    observation: "Your voice stays on one note through this stretch.",
+    why_it_matters: "Melody tells listeners what matters and makes it easier to remember; a voice on one note is easy to tune out.",
+    practice: "Say it again and let your voice move: lift the word that matters, then let it fall. To widen your range, read a page while sliding slowly from low to high and back.",
+  },
+  // Far above the speaker's normal pitch in the same take.
+  PITCH_HIGH: {
+    observation: "Your voice sits much higher here than in the rest of your talk.",
+    why_it_matters: "A voice stuck high draws attention to itself and away from your message.",
+    practice: "Say it again in your usual speaking voice, and let it rise only on the words that matter.",
+  },
+  // Far below the speaker's normal pitch in the same take.
+  PITCH_LOW: {
+    observation: "Your voice drops much lower here than in the rest of your talk.",
+    why_it_matters: "Stuck low, your voice loses its energy, and listeners notice the drop more than the message.",
+    practice: "Say it again in your usual speaking voice and let it move: lift the word that matters, then let it fall.",
+  },
+} as const
 
 // Vinh's tonality lesson: the face is the remote control for the emotion in the voice.
 const toneCopy = {
@@ -175,6 +198,23 @@ export function measureVolume(samples: Float32Array, sampleRate: number, recogni
   return volume.reliable ? volume.marks.map(m => ({ ...m, start: transcript[m.first].start, end: transcript[m.last].end })) : undefined
 }
 
+/**
+ * Pitch is measured from the decoded audio; otherwise it is not assessed. A
+ * mark the listening model heard the same way uses its description and fix.
+ */
+export function pitchAssessment(segments: Segment[], marks: PitchMark[] | undefined) {
+  const findings = findingsFor(segments, marks ?? [], pitchCopy).map(f => {
+    const { how, fix } = marks![Number(f.group_id)]
+    return how ? { ...f, observation: how, practice: fix! } : f
+  })
+  return {
+    foundation: "pitch_melody" as const,
+    verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
+    summary: !marks ? "There is not enough voiced speech to judge pitch in this take." : marks.length ? "Your voice stays on one note, or stays too high or low, in a few places." : "Your voice moves between notes; no monotone stretch was detected.",
+    findings,
+  }
+}
+
 /** Tonality is judged only when Gemini and the text model both answered; otherwise it is not assessed. */
 export function tonalityAssessment(segments: Segment[], marks: ToneMark[] | undefined) {
   const findings = findingsFor(segments, marks ?? [], toneCopy).map(f => ({ ...f, observation: flatObservation(marks![Number(f.group_id)].expected) }))
@@ -218,6 +258,16 @@ async function analyzeTonality(words: Word[], decoded: { samples: Float32Array; 
 
 // Refine recognizer timing before measuring speaking time.
 let aligner: Promise<Aligner> | undefined
+/** Pitch problems as Gemini hears them; undefined without the waveform, an API key, or a reply. */
+async function listen(decoded: { samples: Float32Array; sampleRate: number } | undefined, words: Word[]): Promise<Heard[] | undefined> {
+  if (!decoded || !process.env.GEMINI_API_KEY) return undefined
+  try {
+    return await listenForPitch(decoded.samples, decoded.sampleRate, words, geminiJudgment())
+  } catch {
+    return undefined
+  }
+}
+
 async function retime(words: Word[], decoded: { samples: Float32Array; pauses: Pause[] } | undefined): Promise<Word[]> {
   if (process.env.ALIGN_WORDS === "0" || !decoded) return words
   try {
@@ -233,8 +283,8 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const [response, decoded] = await Promise.all([transcribe(new Uint8Array(audio)), measurePauses(audio)])
   const recognized = wordsFromDeepgram(response) as Word[]
   if (recognized.length < 3) return undefined
-  // The pacing prediction reads only the text, so it runs while alignment re-times the words.
-  const [transcript, pacing] = await Promise.all([retime(recognized, decoded), predictPacing(recognized, openaiCompletion()).catch(() => undefined)])
+  // The pacing prediction reads only the text and pitch listening needs only rough word times, so both run while alignment re-times the words.
+  const [transcript, pacing, heard] = await Promise.all([retime(recognized, decoded), predictPacing(recognized, openaiCompletion()).catch(() => undefined), listen(decoded, recognized)])
   const pauses = decoded?.pauses
   const segments = segmentWords(transcript)
   const analysis = detectRate(transcript, {}, pauses, pacing)
@@ -252,7 +302,10 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const pauseMarks = pause?.reliable ? pause.marks : undefined
   const rate = rateReview(segments, marks, "", status)
   const volumeMarks = decoded && measureVolume(decoded.samples, decoded.sampleRate, recognized, transcript)
-  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a.foundation === "tonality" ? tonalityAssessment(segments, toneMarks) : a) }
+  // Pitch movement is measured inside the spoken words; what Gemini heard counts only where the measurement agrees.
+  const melody = decoded && detectPitch(decoded.samples, decoded.sampleRate, transcript, {}, heard)
+  const pitchMarks = melody && melody.reliable ? melody.marks : undefined
+  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a.foundation === "tonality" ? tonalityAssessment(segments, toneMarks) : a.foundation === "pitch_melody" ? pitchAssessment(segments, pitchMarks) : a) }
   return {
     audio: audio.toString("base64"),
     audioType,
@@ -261,6 +314,7 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
     pauseDiagnostics: { version: PAUSE_VERSION, status: pauseMarks ? "reviewed" as const : "uncertain" as const, review: pause?.status, pauses, marks: pauseMarks ?? [] },
     volumeDiagnostics: { version: VOLUME_VERSION, status: volumeMarks ? "reviewed" as const : "uncertain" as const, marks: volumeMarks ?? [] },
     tonalityDiagnostics: { version: TONALITY_VERSION, status: toneMarks ? "reviewed" as const : "uncertain" as const, passages: tone?.passages, marks: toneMarks ?? [] },
+    pitchDiagnostics: { version: PITCH_VERSION, status: pitchMarks ? "reviewed" as const : "uncertain" as const, marks: pitchMarks ?? [], spread: melody ? melody.spread : undefined, heard },
     review,
   }
 }

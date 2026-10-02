@@ -1,6 +1,6 @@
 # MicMane
 
-Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech**, **pauses**, **volume** and **tonality**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
+Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review evaluates all five for uploaded takes: **rate of speech**, **pauses**, **volume**, **tonality** and **pitch & melody**. The landing page shows a hand-written sample review.
 
 ## Workspace
 
@@ -13,7 +13,7 @@ This is a pnpm and Turborepo workspace modeled on the layout of `../leksoro`:
 - `packages/vocal-processing` — transcription, alignment, rate detection, evaluation scripts, and tests.
 - `packages/config-typescript` and `packages/config-eslint` — shared compiler and ESLint flat configs.
 
-Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY`, `OPENAI_API_KEY` and `GEMINI_API_KEY` (for tonality) for live reviews. The keys stay on the backend.
+Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY`, `OPENAI_API_KEY` and `GEMINI_API_KEY` (for tonality and pitch listening) for live reviews. The keys stay on the backend.
 
 ```sh
 pnpm install
@@ -24,7 +24,7 @@ pnpm lint
 pnpm test
 ```
 
-The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Pauses are judged by a model from the measured silences, volume is measured from the same decoded audio, and tonality sends each passage's audio to Gemini. The backend returns the original audio, timed segments, and findings to the editor. Other foundations are marked uncertain.
+The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Pauses are judged by a model from the measured silences, volume is measured from the same decoded audio, tonality sends each passage's audio to Gemini, and pitch is measured from the decoded audio, with Gemini listening for problems the measurement must confirm. The backend returns the original audio, timed segments, and findings to the editor.
 
 Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
@@ -207,6 +207,88 @@ RECORDINGS_DIR=$PWD/recordings-tonality-development pnpm markup-tools
 ```
 
 The importer is shared with rate, pauses and volume (`scripts/import-rate-benchmark.ts --recipe <benchmarks/*.json>`). The report is `recordings-tonality-development/tonality-benchmark.json`.
+
+## Pitch & melody
+
+The course teaches melody as "the different notes that you can hit": a voice that moves is easier to follow and remember, and anything distracting takes away from the message. `pitch.ts` reports a voice that gets stuck, each judged over 10 s of speaking. An audio model can add what measurement can't hear, but only where the measurement agrees.
+
+- Pitch is tracked every 10 ms (McLeod pitch method, `pitchy`), only inside spoken words, so music and noise between words don't count. Values that jump away from their neighbours, such as octave errors, are dropped. Semitones measure pitch relative to the speaker's own voice, so a voice is never judged against anyone else's.
+- **Monotone** (`PITCH_VARIETY`): pitch standard deviation below **2.6 semitones**. The threshold isn't fitted to our recordings. It comes from [Hincks (2005)](https://www.isca-archive.org/interspeech_2005/hincks05_interspeech.pdf): over 10 s of speech, listeners rated a standard deviation below 15% of the mean pitch as monotone, which is 2.6 semitones. Clips with less speech are judged whole, and a talk that is flat throughout is flagged throughout.
+- **Stuck high or low** (`PITCH_HIGH`, `PITCH_LOW`): the stretch's median pitch is **7 semitones** or more from the speaker's normal, their median in the same recording. A squeak needs only **5 s an octave (12 semitones) up**: over 5 s, excited speech reaches 10 semitones up for a moment, a falsetto 19. A stretch stuck high or low isn't also called monotone.
+- A flagged window marks its middle half, so a mark can reach a sentence or so into the speech around it. Under 5 s of speech, under 2 s of voiced pitch, missing word timing or undecodable audio gives an uncertain assessment.
+
+The pitch lesson has no demonstration of a flat or stuck voice by the coach. His deliberate mistakes in other lessons (constant pace, "3 out of 10" volume, the "blank face") keep 3.0–4.4 semitones of movement, but his voice drops to a low register for "3 out of 10" and for the sad-face exercise in the tonality lesson. The user's three readings of one paragraph supply the high and flat examples.
+
+### Monotone
+
+On recordings that played no part in choosing anything, as a share of speaking time flagged:
+
+| Recording | Flagged |
+|---|---|
+| Coach, volume, pitch and tonality lessons (19 min) | 0–4% |
+| 22 untrained practice talks (2.9 h) | 0–48%, median 20% |
+| A good retake of one talk / the original, poorer take | 3% / 14% |
+| Course student before / after coaching (another speaker) | 78% / 50% |
+
+Of the coach's two marks, one is mostly the student's reading in the tonality lesson; the other is his calm closing of the volume lesson (2.37 semitones). Of the user's 14 voice-pack readings of one paragraph, the two marked flat for pitch or tonality are flagged and the two good ones aren't. Seven of the other ten are flagged too: they were recorded for rate, pauses or volume, and pitch was never judged.
+
+The margin on the clean side is thin: the good reading sits at 3.0 semitones and the coach's "3 out of 10" at 3.0. A flat stretch with under 10 s of speaking between moving speech isn't caught: the user's flat reading (8.5 s) is flagged on its own but not between the other two readings.
+
+### Stuck high or low
+
+The largest shift of any 10 s of speaking from the speaker's normal:
+
+| Recording | Shift |
+|---|---|
+| 22 untrained practice talks and the good retake | −2.9 to +3.8 semitones |
+| Coach's normal teaching | −4.1 to +5.0 (+6.5 impersonating a student) |
+| Coach's "3 out of 10" / sad-face exercise | −10.5 / −9.3 |
+| The user's high reading among their three | +17.4 |
+
+So 7 semitones sits in a wide gap. The practice talks, retake and other voice-pack recordings get no register mark at any value from 5 to 10, the coach's normal teaching gets none from 7 up, and his deliberate drops are caught up to 9. His other marks are other speakers (the students in the pitch and tonality lessons) and the siren demonstration (+11.5).
+
+**What it can't see.** The comparison needs normal speech in the same recording. A take that is high or low throughout can't be told from a naturally high or low voice, since men's, women's and children's voices overlap, so it isn't flagged: the high reading alone isn't. The normal is the recording's median, so the more of a take is shifted, the smaller the shift looks; a shifted stretch must be a minority of the take.
+
+### Listening
+
+`pitch-listen.ts` sends the audio to Gemini (`GEMINI_MODEL`, default `gemini-3.5-flash`) in chunks of about 30 s, cut between words. On a whole 5-minute talk it returns nothing. For each stretch where pitch is a problem, it gives an issue (too high, too low, monotone, sing-song), a severity from 1 (badly distracting) to 5 (fine), what the voice does wrong and a fix. Moving pitch on purpose for emphasis is defined as good delivery. Without `GEMINI_API_KEY`, or if a call fails, pitch is measured only. A 5-minute talk takes about 22 s, alongside alignment.
+
+A heard stretch becomes a mark only at severity 1–2 and only when the measured pitch agrees in that stretch:
+- **Monotone:** spread under 2.6 semitones.
+- **Too low:** 7 semitones or more below normal; if it is merely flat, it becomes a monotone mark.
+- **Too high:** an octave above normal, or above 350 Hz. The 350 Hz bar is above everyday speaking for men and women, and is the only way a take high throughout can be flagged.
+
+Marks show the model's description and fix where it heard the same problem over them, at severity 3 or worse; otherwise the standard wording.
+
+Why the measurement must agree, from about 200 calls:
+- **Labelled short clips:** severity 1–2 caught all five of the user's high, flat and quiet readings in two runs, including the falsetto reading alone. That is something measurement can't do.
+- **Words muffled:** the coach's demonstrations were still heard as problems with the words muffled (low-passed), so it hears the voice, not the words.
+- **Everyday speech:** it rates nearly every problem a 3, so a severity cut alone barely fires. Its severity-2 calls on good delivery (the good retake "monotone" for 27 s, the blank-face demonstration, the coach's excited "That was fantastic!", the good tonality reading) all measure as moving or within range, so none becomes a mark.
+- **Run-to-run:** on the original selection-bias take, one run rated nothing badly distracting and another rated two stretches 2. Both measured as moving. The marks were identical in both runs; only the descriptions varied.
+- **What it adds:** on the benchmark, the flat reading between the other two, which a 10 s window misses, so the benchmark scores 4 found, 0 false alarms and 0 misses. On everyday talks it adds descriptions, not marks.
+
+Its voice-quality words aren't verified. It describes "gravelly vocal fry at the end of the phrase" in 12 of 15 notes on the original take, against 5 of 12 on the retake. But measured creak (pitch under 90 Hz and an octave below the speaker's median) is 1.2% of phrase endings there and 3.5% on the retake.
+
+Degraded copies (20 dB quieter, laptop bass cut, telephone band, automatic gain control, pink noise 20 dB down, 32 kbps MP3) never add a mark of either kind. Bass cut and telephone band make the tracker hear more movement and lose monotone detections; noise can make a take uncertain.
+
+### Pitch benchmark
+
+`benchmarks/pitch-development.json` has fourteen takes:
+- **Coach, natural:** seven teaching clips from the pitch lesson, excluding the music, the acted sketch, the student's siren exercise and the siren demonstration.
+- **Coach, other foundations:** his constant-pace and blank-face demonstrations (clean), and "3 out of 10" inside his normal speech (`PITCH_LOW`).
+- **The user's readings** (the voice-pack pitch source, `--speech-dir`): all three together (`PITCH_HIGH` on the first, `PITCH_VARIETY` on the second), and the flat and good readings alone.
+
+Measured only, with forced alignment, it scores 3 found, 0 false alarms and 1 miss: the flat reading between the other two, which is shorter than a window. With listening (`--listen`) it scores 4, 0 and 0. With recognizer timing (`--recognizer-timing`), which stretches words over pauses, measurement alone catches that reading too. The thresholds weren't chosen from these takes, so the benchmark is a sanity check; the held-out results above are the evidence.
+
+```sh
+pnpm import:pitch --videos-dir /path/to/videos --speech-dir /path/to/voice-pack-source --ffmpeg /path/to/ffmpeg
+# Optional: --transcripts-dir /path/to/cache reuses <video stem>.deepgram.json.
+# The voice-pack source directory holds "Recording (40).m4a" and "Recording (40).deepgram.json".
+pnpm eval:pitch
+pnpm eval:pitch --listen   # adds Gemini; replies are cached per chunk next to each take
+```
+
+The report is `recordings-pitch-development/pitch-benchmark.json`; matching works as for rate.
 
 ## Research and evaluation
 

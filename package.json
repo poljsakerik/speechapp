@@ -14,6 +14,7 @@
     "markup-tools": "pnpm --dir apps/markup-tools dev",
     "rate": "pnpm --dir packages/vocal-processing rate",
     "eval:rate": "pnpm --dir packages/vocal-processing eval:rate",
+    "eval:pitch": "pnpm --dir packages/vocal-processing eval:pitch",
     "import:voice-pack": "pnpm --dir packages/vocal-processing import:voice-pack",
     "import:rate": "pnpm --dir packages/vocal-processing import:rate",
     "eval:pause": "pnpm --dir packages/vocal-processing eval:pause",
@@ -21,7 +22,8 @@
     "eval:volume": "pnpm --dir packages/vocal-processing eval:volume",
     "import:volume": "pnpm --dir packages/vocal-processing import:volume",
     "eval:tonality": "pnpm --dir packages/vocal-processing eval:tonality",
-    "import:tonality": "pnpm --dir packages/vocal-processing import:tonality"
+    "import:tonality": "pnpm --dir packages/vocal-processing import:tonality",
+    "import:pitch": "pnpm --dir packages/vocal-processing import:pitch"
   },
   "devDependencies": {
     "turbo": "^2.11.5",
