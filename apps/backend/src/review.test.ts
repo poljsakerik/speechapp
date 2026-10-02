@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { pauseAssessment, rateReview, segmentWords } from "./review.ts"
+import { pauseAssessment, rateReview, segmentWords, volumeAssessment } from "./review.ts"
 
 test("segments report syllables per second including internal silence", () => {
   const [segment] = segmentWords([
@@ -66,4 +66,15 @@ test("pause findings highlight the stretch, and unmeasured audio leaves pauses u
   assert.deepEqual(assessment.findings.map(f => f.suggestions), [[{ direction: "pause_after", start: 2, end: 2.8, text: "going." }], []], "the pause point sits in the segment that holds its word")
   assert.equal(pauseAssessment(segments, []).verdict, "effective")
   assert.equal(pauseAssessment(segments, undefined).verdict, "uncertain")
+})
+
+test("volume findings carry their own coaching; without measured audio volume stays uncertain", () => {
+  const words = "We start strong. Then it fades away.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
+  const segments = segmentWords(words)
+  const fade = { first: 4, last: 6, start: 4, end: 6.8, text: "it fades away.", rule: "VOLUME_FADE" as const, drop: 15 }
+  const volume = volumeAssessment(segments, [fade])
+  assert.equal(volume.verdict, "mixed")
+  assert.deepEqual(volume.findings.map(f => [f.rule_id, f.start, f.end, f.observation]), [["VOLUME_FADE", 4, 6.8, "Your voice trails off at the end of these sentences."]])
+  assert.equal(volumeAssessment(segments, []).verdict, "effective")
+  assert.equal(volumeAssessment(segments, undefined).verdict, "uncertain")
 })

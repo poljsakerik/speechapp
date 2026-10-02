@@ -6,6 +6,7 @@ import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
 import { detectRate, syllables, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
 import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause"
 import { reviewPause } from "@micmane/vocal-processing/pause-review"
+import { detectVolume, VOLUME_VERSION, type VolumeMark } from "@micmane/vocal-processing/volume"
 import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
@@ -78,6 +79,20 @@ const pauseCopy = {
     practice: "Keep the pause, but move on after a beat or two.",
   },
 } as const
+const volumeCopy = {
+  // A stretch whose voice turned softer and duller than the speaker's normal.
+  VOLUME_LOW: {
+    observation: "Your voice drops here and loses its projection.",
+    why_it_matters: "Volume carries confidence and energy; when it drops, listeners have to work to stay with you.",
+    practice: "Keep the volume you use elsewhere through this stretch, about a 6 or 7 out of 10.",
+  },
+  // Phrase endings that repeatedly drop well below the speaker's normal.
+  VOLUME_FADE: {
+    observation: "Your voice trails off at the end of these sentences.",
+    why_it_matters: "The end of a sentence often carries the point; when it fades, it gets lost.",
+    practice: "Take a breath at the pause before, and carry your volume through to the last word.",
+  },
+} as const
 
 /** One finding per segment a mark covers; the shared group ID lets the app rejoin them into one highlight. */
 function findingsFor<R extends string>(segments: Segment[], marks: { start: number; end: number; rule: R; suggestions?: RateMark["suggestions"] }[], text: Record<R, { observation: string; why_it_matters: string; practice: string }>) {
@@ -111,6 +126,19 @@ export function pauseAssessment(segments: Segment[], marks: PauseMark[] | undefi
     verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
     summary: !marks ? "Pauses could not be assessed for this take." : marks.length ? "Some pauses are missing, out of place, too short or too long." : "No pause issue was detected in this take.",
     findings,
+  }
+}
+
+/**
+ * Volume is judged against the speaker's own level in the recording, so it
+ * needs the decoded audio; otherwise it is not assessed.
+ */
+export function volumeAssessment(segments: Segment[], marks: VolumeMark[] | undefined) {
+  return {
+    foundation: "volume" as const,
+    verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
+    summary: !marks ? "There is not enough clear speech to judge volume in this take." : marks.length ? "Your voice drops or trails off in a few places." : "No drop in volume or trailing off was detected in this take.",
+    findings: findingsFor(segments, marks ?? [], volumeCopy),
   }
 }
 
@@ -165,13 +193,16 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const pause = pauses ? await reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : undefined
   const pauseMarks = pause?.reliable ? pause.marks : undefined
   const rate = rateReview(segments, marks, "", status)
-  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a) }
+  const volume = decoded && detectVolume(decoded.samples, decoded.sampleRate, transcript)
+  const volumeMarks = volume && volume.reliable ? volume.marks : undefined
+  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a) }
   return {
     audio: audio.toString("base64"),
     audioType,
     segments,
     rateDiagnostics: { version: RATE_VERSION, status, pace: analysis.pace, articulationRate: analysis.articulationRate, pacing, marks },
     pauseDiagnostics: { version: PAUSE_VERSION, status: pauseMarks ? "reviewed" as const : "uncertain" as const, review: pause?.status, pauses, marks: pauseMarks ?? [] },
+    volumeDiagnostics: { version: VOLUME_VERSION, status: volumeMarks ? "reviewed" as const : "uncertain" as const, marks: volumeMarks ?? [] },
     review,
   }
 }

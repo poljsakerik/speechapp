@@ -6,7 +6,7 @@ test("health and upload contract", async (context) => {
   let received: { audio: Buffer; type: string } | undefined
   const app = buildApp(async (audio, type) => {
     received = { audio, type }
-    return { audio: audio.toString("base64"), audioType: type, segments: [], rateDiagnostics: { version: 9, status: "reviewed" as const, pace: undefined, articulationRate: undefined, pacing: undefined, marks: [] }, pauseDiagnostics: { version: 1, status: "reviewed" as const, review: undefined, pauses: [], marks: [] }, review: { overall: "test", assessments: [] } }
+    return { audio: audio.toString("base64"), audioType: type, segments: [], rateDiagnostics: { version: 9, status: "reviewed" as const, pace: undefined, articulationRate: undefined, pacing: undefined, marks: [] }, pauseDiagnostics: { version: 1, status: "reviewed" as const, review: undefined, pauses: [], marks: [] }, volumeDiagnostics: { version: 1, status: "reviewed" as const, marks: [] }, review: { overall: "test", assessments: [] } }
   })
   context.after(() => app.close())
   await app.ready()

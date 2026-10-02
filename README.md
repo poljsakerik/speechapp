@@ -1,6 +1,6 @@
 # MicMane
 
-Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech** and **pauses**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
+Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech**, **pauses** and **volume**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
 
 ## Workspace
 
@@ -24,7 +24,7 @@ pnpm lint
 pnpm test
 ```
 
-The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. The backend returns the original audio, timed segments, and rate findings to the editor. Other foundations are marked uncertain.
+The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Volume is measured from the same decoded audio. The backend returns the original audio, timed segments, and findings to the editor. Other foundations are marked uncertain.
 
 Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
@@ -134,6 +134,38 @@ pnpm eval:pause --run run-1   # replies cached per take and run label
 ```
 
 A demonstration can rightly get several findings (two places to pause in one run-on), so a finding is correct when it falls inside an annotated span of the same kind. Version 3 finds the annotated mistakes 6/6 in each of three runs, including the uncoached reading ("Pause after 'son,'" or "'Legion,'") and the slow greeting ("Don't stop after 'It's'"). Clean takes report findings per minute instead of pass/fail. A perfect score would be suspicious: skilled speakers hesitate too, and the lessons' edits remove real pauses.
+
+## Volume
+
+Volume problems are what the course's volume lesson demonstrates (dropping to "3 out of 10") and what its pause lesson demonstrates (trailing off at the end of sentences). A recording's level depends on the microphone, its gain and distance as much as on the voice, so `volume.ts` never judges absolute level. A take that is quiet throughout can't be told from a low microphone and is never flagged. Both checks compare the speaker with their own typical word in the body of a phrase, in the same recording. A word's loudness is its loudest part, so loose word timing doesn't lower it. No language model is involved.
+
+- **Trailing off** (`VOLUME_FADE`). Phrases end at a full stop or a 0.3 s silence. A phrase's last second is flagged when it is at least 12 dB below normal and another of the two judged endings on either side is too. One low ending is ordinary falling intonation: everyday speech often has one at 10–14 dB, but never two in three at 10 dB. The coach's demonstration drops 16–17 dB three times running.
+- **Volume drop** (`VOLUME_LOW`). 10 s of phrase bodies (endings excluded) whose level plus brightness (energy above 1 kHz relative to below it) is at least 8 dB below normal. A voice that gets softer with effort also gets duller, whatever the microphone gain. A shorter quiet line can be deliberate. Everyday speech, the coach's or untrained, stays within 5.3 dB. The coach's "3 out of 10" drops 8–10 dB: less in a short clip, where the quiet part pulls "normal" down, and it varies with word timing. This is the narrowest margin in the volume checks.
+- Only frames within 35 dB of the loudest and at least 6 dB above the background count as voice. A trailing-off voice that sinks into the noise can't be judged, so it isn't. Less than 5 s of voice or undecodable audio is uncertain.
+
+Held out (the coach's three other lessons, 22 practice talks and a good retake, about 3.4 h), no everyday speech is flagged, clean or degraded. The one mark is the coach's deliberately monotone demonstration in the rate lesson (1:37–1:45, 8.1 dB). Degrading the recording costs detections, never adds false alarms:
+
+| Recording | "3 out of 10" | Trail-off (3 endings) |
+|---|---|---|
+| Clean, or 20 dB quieter | found | 3 |
+| Laptop microphone (bass cut below 250 Hz) or telephone band | found | 0 |
+| Fast automatic gain control | missed | 2 |
+| Noise at 30 dB / 20 dB below the voice | missed | 3 / 0 |
+
+Mild fades aren't caught: the voice-pack reading `volume-01` ends 9–11 dB down, within everyday intonation. Its `volume-02` is quieter than another take throughout, which one recording can't show.
+
+## Volume benchmark
+
+`benchmarks/volume-development.json` cuts seven clips from the volume and pause lessons: the two demonstrations, each inside a minute of the coach's normal speech, and five clips of normal teaching. The student example is excluded: each of its readings changes level throughout. These clips chose the thresholds, so the gate is a sanity check; the held-out results above are the evidence.
+
+```sh
+pnpm import:volume --videos-dir /path/to/videos --ffmpeg /path/to/ffmpeg
+# Optional: --transcripts-dir /path/to/cache reuses <video stem>.deepgram.json.
+pnpm eval:volume --require-pass
+RECORDINGS_DIR=recordings-volume-development pnpm markup-tools
+```
+
+`import:volume` runs the rate importer with `--recipe benchmarks/volume-development.json`. The report is `recordings-volume-development/volume-benchmark.json`; matching works as for rate.
 
 ## Research and evaluation
 

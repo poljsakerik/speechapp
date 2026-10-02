@@ -28,6 +28,8 @@ const RULES: Record<string, { label: string; stretch?: boolean }> = {
   PAUSE_TOO_SHORT: { label: "Pause too short" },
   PAUSE_UNNECESSARY: { label: "Pause out of place", stretch: true },
   PAUSE_TOO_LONG: { label: "Pause too long" },
+  VOLUME_LOW: { label: "Volume drop", stretch: true },
+  VOLUME_FADE: { label: "Trailing off" },
 }
 
 const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {

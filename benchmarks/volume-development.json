@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "volume-development",
+  "foundation": "volume",
+  "purpose": "Development benchmark for volume: the coach's deliberate volume mistakes, each inside his normal speech, and clips of his normal teaching. Volume is judged against the speaker's own level in the same recording, because microphone gain and distance set the recorded level. Provisional transcript/acoustic annotations; not independently listener-validated.",
+  "segmentation": "Cuts fall in measured silences between words. Takes keep their internal pauses and the audio is not normalized. Cut points were chosen from Deepgram nova-3 word times and pauses measured from the audio; review them by listening.",
+  "sources": [
+    {
+      "file": "03-Volume.mp4",
+      "sha256": "6164d27b9ab42e54797dba8666260cc6cb3831200ece87882a635b6e66fcfbc8",
+      "foundation": "volume",
+      "takes": [
+        { "id": "vinh_volume-01", "start": 6.7, "end": 42.65, "marks": [] },
+        {
+          "id": "vinh_demo-01",
+          "start": 42.65,
+          "end": 109.65,
+          "note": "His normal volume (about 7 out of 10) before and after the demonstration.",
+          "marks": [
+            { "start": 81.16, "end": 99.6, "rule": "VOLUME_LOW", "note": "Deliberate 3 out of 10: \"Hi, everyone\" through \"this default volume?\"" }
+          ]
+        },
+        { "id": "vinh_volume-02", "start": 246.6, "end": 296.6, "marks": [] },
+        { "id": "vinh_volume-03", "start": 296.6, "end": 347.24, "marks": [] },
+        { "id": "vinh_volume-04", "start": 347.24, "end": 383.1, "marks": [] }
+      ],
+      "excluded": [
+        {
+          "start": 109.65,
+          "end": 246.6,
+          "reason": "Introduction of the student example and the student's two readings: another speaker and microphone, and each reading changes level throughout. Within one recording, a take that is quieter throughout can't be told from a lower microphone level."
+        }
+      ]
+    },
+    {
+      "file": "06-Pause.mp4",
+      "sha256": "50f8459a9ba9b1e17f565f58e041e6580cbde13c8741f51bec909d2d7408599a",
+      "foundation": "volume",
+      "takes": [
+        { "id": "vinh_pauses-01", "start": 19.195, "end": 105.313, "marks": [] },
+        {
+          "id": "vinh_demo-02",
+          "start": 157.9,
+          "end": 218.25,
+          "note": "Demonstrates trailing off at the end of sentences, then projecting through them.",
+          "marks": [
+            { "start": 177.71, "end": 179.07, "rule": "VOLUME_FADE", "note": "\"at the end of their sentences.\" trails off." },
+            { "start": 181.47, "end": 182.91, "rule": "VOLUME_FADE", "note": "\"they're just gonna trail off.\" trails off." },
+            { "start": 186.83, "end": 188.75, "rule": "VOLUME_FADE", "note": "\"because they're running out of breath.\" trails off." }
+          ]
+        }
+      ]
+    }
+  ]
+}

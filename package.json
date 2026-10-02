@@ -17,7 +17,9 @@
     "import:voice-pack": "pnpm --dir packages/vocal-processing import:voice-pack",
     "import:rate": "pnpm --dir packages/vocal-processing import:rate",
     "eval:pause": "pnpm --dir packages/vocal-processing eval:pause",
-    "import:pause": "pnpm --dir packages/vocal-processing import:pause"
+    "import:pause": "pnpm --dir packages/vocal-processing import:pause",
+    "eval:volume": "pnpm --dir packages/vocal-processing eval:volume",
+    "import:volume": "pnpm --dir packages/vocal-processing import:volume"
   },
   "devDependencies": {
     "turbo": "^2.11.5",
