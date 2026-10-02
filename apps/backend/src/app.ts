@@ -1,37 +1,44 @@
-import {
-  fastifyTRPCPlugin,
-  type FastifyTRPCPluginOptions,
-} from "@trpc/server/adapters/fastify";
+import { nodeHTTPRequestHandler } from "@trpc/server/adapters/node-http";
 import Fastify from "fastify";
 
 import { reviewAudio } from "./review.ts";
 import { createContextFactory } from "./trpc/context.ts";
-import { appRouter, type AppRouter } from "./trpc/routers/_app.ts";
-import { maxBytes } from "./trpc/routers/review.ts";
+import { appRouter } from "./trpc/routers/_app.ts";
+import { maxBodyBytes } from "./trpc/routers/review.ts";
 
 export function buildApp(review = reviewAudio) {
   const app = Fastify({
     logger: true,
     routerOptions: { maxParamLength: 5000 },
   });
+  const createContext = createContextFactory({ review });
 
-  // tRPC streams multipart bodies without a size limit, so refuse oversized uploads before they are read.
-  app.addHook("onRequest", async (request, reply) => {
-    if (Number(request.headers["content-length"]) > maxBytes + 1024 * 1024) {
-      return reply.code(413).send({ error: "Recording exceeds 25 MB" });
-    }
-  });
+  // tRPC's Fastify plugin reads bodies without a size limit, so requests go
+  // through its node-http handler, which stops reading at maxBodyBytes whether
+  // or not the request declares a Content-Length.
+  app.register(async (trpc) => {
+    // Leave the body on the socket for tRPC to read.
+    trpc.removeAllContentTypeParsers();
+    trpc.addContentTypeParser("*", (_request, _payload, done) => done(null));
 
-  app.register(fastifyTRPCPlugin, {
-    prefix: "/trpc",
-    trpcOptions: {
-      router: appRouter,
-      createContext: createContextFactory({ review }),
-      onError({ path, error }) {
-        if (error.code === "INTERNAL_SERVER_ERROR")
-          app.log.error({ path, error }, "tRPC handler failed");
+    trpc.all<{ Params: { path: string } }>(
+      "/trpc/:path",
+      async (request, reply) => {
+        reply.hijack();
+        await nodeHTTPRequestHandler({
+          router: appRouter,
+          req: request.raw,
+          res: reply.raw,
+          path: request.params.path,
+          maxBodySize: maxBodyBytes,
+          createContext: () => createContext({ req: request, res: reply }),
+          onError({ path, error }) {
+            if (error.code === "INTERNAL_SERVER_ERROR")
+              request.log.error({ path, error }, "tRPC handler failed");
+          },
+        });
       },
-    } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
+    );
   });
 
   return app;

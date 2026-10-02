@@ -3,7 +3,7 @@ import * as v from "valibot";
 
 import { publicProcedure, router } from "../trpc.ts";
 
-const allowed = new Set([
+const audioTypes = [
   "audio/wav",
   "audio/x-wav",
   "audio/mpeg",
@@ -12,34 +12,56 @@ const allowed = new Set([
   "audio/x-m4a",
   "audio/webm",
   "video/mp4",
-]);
+] as const;
 export const maxBytes = 25 * 1024 * 1024;
+/** The whole request body: the recording plus room for multipart framing. */
+export const maxBodyBytes = maxBytes + 64 * 1024;
+
+const uploadSchema = v.pipe(
+  v.instance(FormData, "A multipart audio file is required"),
+  v.check(
+    (form) => [...form.keys()].length === 1,
+    "Send the recording as the only field",
+  ),
+  v.transform((form) => form.get("file")),
+  v.instance(File, "A file is required"),
+);
+
+const recordingSchema = v.pipe(
+  v.file(),
+  // Recorders label takes with codec parameters, e.g. "audio/webm;codecs=opus".
+  v.transform(
+    (file) =>
+      new File([file], file.name, {
+        type: file.type.split(";")[0].trim().toLowerCase(),
+      }),
+  ),
+  v.mimeType(audioTypes, "Unsupported audio format"),
+  v.minSize(1, "Empty recording"),
+  v.maxSize(maxBytes, "Recording exceeds 25 MB"),
+);
+
+const issueCodes: Record<string, TRPCError["code"]> = {
+  mime_type: "UNSUPPORTED_MEDIA_TYPE",
+  min_size: "UNPROCESSABLE_CONTENT",
+  max_size: "PAYLOAD_TOO_LARGE",
+};
 
 export const reviewRouter = router({
   create: publicProcedure
-    .input(v.instance(FormData, "A multipart audio file is required"))
+    .input(uploadSchema)
     .mutation(async ({ input, ctx }) => {
-      const upload = input.get("file");
-      if (!(upload instanceof File))
+      const recording = v.safeParse(recordingSchema, input, {
+        abortPipeEarly: true,
+      });
+      if (!recording.success) {
+        const [issue] = recording.issues;
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "A file is required",
+          code: issueCodes[issue.type] ?? "BAD_REQUEST",
+          message: issue.message,
         });
-      if (!allowed.has(upload.type))
-        throw new TRPCError({
-          code: "UNSUPPORTED_MEDIA_TYPE",
-          message: "Unsupported audio format",
-        });
-      if (upload.size > maxBytes)
-        throw new TRPCError({
-          code: "PAYLOAD_TOO_LARGE",
-          message: "Recording exceeds 25 MB",
-        });
-      if (!upload.size)
-        throw new TRPCError({
-          code: "UNPROCESSABLE_CONTENT",
-          message: "Empty recording",
-        });
+      }
+      const upload = recording.output;
       let result;
       try {
         result = await ctx.review(Buffer.from(await upload.arrayBuffer()));

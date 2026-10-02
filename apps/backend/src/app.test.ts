@@ -62,16 +62,49 @@ test("health and upload contract", async (context) => {
   assert.equal((await upload("file", "text/plain")).status, 415);
   assert.equal((await upload("file", "audio/mpeg", "")).status, 422);
 
-  const tooLarge = await app.inject({
+  const extraField = new FormData();
+  extraField.append("file", new Blob(["abc"], { type: "audio/mpeg" }), "a.mp3");
+  extraField.append("note", "hello");
+  const extra = await fetch(`${base}/trpc/review.create`, {
     method: "POST",
-    url: "/trpc/review.create",
-    headers: {
-      "content-type": "multipart/form-data; boundary=x",
-      "content-length": String(30 * 1024 * 1024),
-    },
-    payload: "",
+    body: extraField,
   });
-  assert.equal(tooLarge.statusCode, 413);
+  assert.equal(extra.status, 400);
+
+  // Recorders add codec parameters; the review service gets the bare type.
+  for (const [type, bare] of [
+    ["audio/webm;codecs=opus", "audio/webm"],
+    ["audio/mp4; codecs=mp4a.40.2", "audio/mp4"],
+  ]) {
+    received = undefined;
+    assert.equal((await upload("file", type)).status, 200);
+    assert.deepEqual(received, { audio: Buffer.from("abc"), type: bare });
+  }
+
+  // A chunked body has no Content-Length, so the limit must hold while reading.
+  received = undefined;
+  const boundary = "micmane-boundary";
+  const part = (name: string, type: string) =>
+    `--${boundary}\r\nContent-Disposition: form-data; name="${name}"; filename="${name}.mp3"\r\nContent-Type: ${type}\r\n\r\n`;
+  const chunks = [
+    part("file", "audio/mpeg") + "abc\r\n" + part("extra", "audio/mpeg"),
+    ...Array.from({ length: 28 }, () => "x".repeat(1024 * 1024)),
+    `\r\n--${boundary}--\r\n`,
+  ];
+  const chunked = await fetch(`${base}/trpc/review.create`, {
+    method: "POST",
+    headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+    body: new ReadableStream({
+      pull(controller) {
+        const chunk = chunks.shift();
+        if (chunk === undefined) controller.close();
+        else controller.enqueue(new TextEncoder().encode(chunk));
+      },
+    }),
+    duplex: "half",
+  } as RequestInit);
+  assert.equal(chunked.status, 413);
+  assert.equal(received, undefined);
 
   const review = await upload("file", "audio/mpeg");
   assert.equal(review.status, 200);
