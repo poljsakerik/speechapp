@@ -3,14 +3,25 @@ import {
   FileAudioIcon,
   MicIcon,
   MicOffIcon,
+  PauseIcon,
+  PlayIcon,
   SquareIcon,
   UploadIcon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { toast } from "sonner";
 
+import { useTakePlayer } from "@/components/liner/useTakePlayer";
 import {
+  measureTake,
   recordingErrorMessage,
   reviewErrorMessage,
   toReviewResult,
@@ -25,12 +36,15 @@ import {
   AlertTitle,
 } from "@micmane/ui/components/alert";
 import { Button } from "@micmane/ui/components/button";
-import { Progress } from "@micmane/ui/components/progress";
 import { cn } from "@micmane/ui/lib/utils";
 
 const MAX_SECONDS = 60;
 const ACCEPT =
   "audio/wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,video/mp4,video/webm,video/quicktime,.m4a,.mp3,.wav,.webm,.mp4,.mov";
+/** The live review assesses these foundations; the others are not analyzed yet. */
+const LIVE = new Set(["rate", "pauses"]);
+/** Level samples per second while recording. */
+const RATE_HZ = 14;
 
 type State =
   | { name: "idle" }
@@ -38,8 +52,20 @@ type State =
   | { name: "denied" }
   | { name: "recording"; started: number }
   | { name: "ready"; blob: Blob; label: string; url: string }
-  | { name: "reviewing"; blob: Blob; label: string; started: number }
-  | { name: "error"; message: string; blob?: Blob; label?: string };
+  | {
+      name: "reviewing";
+      blob: Blob;
+      label: string;
+      url: string;
+      started: number;
+    }
+  | {
+      name: "error";
+      message: string;
+      blob?: Blob;
+      label?: string;
+      url?: string;
+    };
 
 type TryReviewProps = {
   uploadFirst?: boolean;
@@ -47,34 +73,75 @@ type TryReviewProps = {
   onReviewed: (result: ReviewResult) => void;
 };
 
+/**
+ * Record or upload a take. The page carries a minute of tape: it fills with
+ * your level as you speak, and holds the take while the coach listens.
+ */
 export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
   const [state, setState] = useState<State>({ name: "idle" });
   const [now, setNow] = useState(() => performance.now());
-  const [levels, setLevels] = useState<number[]>(() => Array(28).fill(0));
+  const [history, setHistory] = useState<number[]>([]);
+  const [drawn, setDrawn] = useState<{
+    blob: Blob;
+    duration: number;
+    level: number[];
+  }>();
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const meter = useRef<{ context: AudioContext; frame: number } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
   const { mutateAsync: createReview } = useMutation(
     trpc.review.create.mutationOptions(),
   );
+  const [dragging, setDragging] = useState(false);
 
   const live = state.name === "recording" || state.name === "reviewing";
-  const promptUpload = uploadFirst && state.name === "idle";
-
-  const audioUrl = state.name === "ready" ? state.url : undefined;
-  useEffect(() => {
-    return () => {
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-    };
-  }, [audioUrl]);
+  const url =
+    state.name === "ready" ||
+    state.name === "reviewing" ||
+    state.name === "error"
+      ? state.url
+      : undefined;
+  const blob =
+    state.name === "ready" ||
+    state.name === "reviewing" ||
+    state.name === "error"
+      ? state.blob
+      : undefined;
+  const measured = drawn && drawn.blob === blob ? drawn : undefined;
+  const player = useTakePlayer(measured?.duration ?? MAX_SECONDS);
 
   useEffect(() => {
     if (!live) return;
     const id = window.setInterval(() => setNow(performance.now()), 100);
     return () => window.clearInterval(id);
   }, [live]);
+
+  // Draw the chosen take on the tape from its own audio.
+  useEffect(() => {
+    if (!blob) return;
+    let cancelled = false;
+    measureTake(blob, [], 240)
+      .then(
+        (take) =>
+          !cancelled &&
+          setDrawn({
+            blob,
+            duration: take.duration,
+            level: take.volume ?? take.peaks,
+          }),
+      )
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [blob]);
+
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
 
   const stopMeter = () => {
     if (meter.current) {
@@ -84,7 +151,6 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
     }
     stream.current?.getTracks().forEach((t) => t.stop());
     stream.current = null;
-    setLevels(Array(28).fill(0));
   };
 
   useEffect(() => stopMeter, []);
@@ -127,16 +193,16 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
     analyser.fftSize = 256;
     context.createMediaStreamSource(stream.current).connect(analyser);
     const buffer = new Uint8Array(analyser.fftSize);
-    const history: number[] = Array(28).fill(0);
+    const levels: number[] = [];
     let last = 0;
+    setHistory([]);
     const loop = (t: number) => {
       analyser.getByteTimeDomainData(buffer);
-      if (t - last > 70) {
+      if (t - last > 1000 / RATE_HZ) {
         let sum = 0;
         for (const v of buffer) sum += ((v - 128) / 128) ** 2;
-        history.push(Math.min(1, Math.sqrt(sum / buffer.length) * 4));
-        history.shift();
-        setLevels([...history]);
+        levels.push(Math.min(1, Math.sqrt(sum / buffer.length) * 4));
+        setHistory([...levels]);
         last = t;
       }
       if (meter.current) meter.current.frame = requestAnimationFrame(loop);
@@ -171,14 +237,20 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
     });
   };
 
-  const send = async (blob: Blob, label: string) => {
+  const send = async (blob: Blob, label: string, url: string) => {
     // The same checks the backend runs, so a take it would refuse isn't uploaded.
     const invalid = recordingErrorMessage(blob);
     if (invalid) {
-      setState({ name: "error", message: invalid });
+      setState({ name: "error", message: invalid, blob, label, url });
       return;
     }
-    setState({ name: "reviewing", blob, label, started: performance.now() });
+    setState({
+      name: "reviewing",
+      blob,
+      label,
+      url,
+      started: performance.now(),
+    });
     try {
       const ext = blob.type.includes("mp4")
         ? "m4a"
@@ -192,18 +264,11 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
       const result = await toReviewResult(await createReview(body), blob);
       setState({ name: "idle" });
       onReviewed(result);
-      const strengths = result.review.findings.filter(
-          (f) => f.kind === "strength",
-        ).length,
-        notes = result.review.findings.length - strengths;
-      const counts = [
-        notes && `${notes} note${notes > 1 ? "s" : ""} to work on`,
-        strengths && `${strengths} strength${strengths > 1 ? "s" : ""}`,
-      ].filter(Boolean);
+      const count = result.review.findings.length;
       toast.success("Your review is ready", {
-        description: counts.length
-          ? `${counts.join(" and ")}.`
-          : "No notes on this take.",
+        description: count
+          ? `${count} note${count > 1 ? "s" : ""} on your pace and pauses.`
+          : "No pace or pause notes on this take.",
       });
     } catch (error) {
       setState({
@@ -211,132 +276,102 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
         message: reviewErrorMessage(error),
         blob,
         label,
+        url,
       });
     }
   };
 
   const reset = () => setState({ name: "idle" });
 
-  const elapsed = state.name === "recording" ? (now - state.started) / 1000 : 0;
-  const reviewingFor =
+  const elapsed =
+    state.name === "recording"
+      ? Math.min(MAX_SECONDS, (now - state.started) / 1000)
+      : 0;
+  const listening =
     state.name === "reviewing" ? (now - state.started) / 1000 : 0;
 
-  return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-xl bg-graphite text-[oklch(0.95_0.002_80)] shadow-[inset_0_1px_0_oklch(1_0_0/0.1),0_1px_2px_oklch(0.2_0.005_60/0.3),0_40px_80px_-40px_oklch(0.25_0.005_60/0.6)]",
-        dragging && "ring-2 ring-glass ring-offset-4 ring-offset-paper",
-      )}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        if (!live) choose(e.dataTransfer.files[0]);
-      }}
-    >
-      <div className="relative grid gap-8 p-6 sm:p-8 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-12 md:p-10 lg:grid-cols-[auto_minmax(0,1fr)_17rem]">
-        {/* The orange glass: lit from inside only while it is working */}
-        <div className="flex flex-col items-center gap-4">
-          <button
-            type="button"
-            onClick={() =>
-              promptUpload
-                ? fileInput.current?.click()
-                : state.name === "recording"
-                  ? stop()
-                  : void record()
-            }
-            disabled={state.name === "asking" || state.name === "reviewing"}
-            aria-label={
-              promptUpload
-                ? "Choose an audio recording"
-                : state.name === "recording"
-                  ? "Stop recording"
-                  : "Start recording"
-            }
-            className={cn(
-              "relative grid size-36 place-items-center rounded-full transition-[filter,transform] duration-300 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-glass-hot active:scale-[0.98] disabled:cursor-progress sm:size-44",
-              live ? "glass-lit" : "glass-dim hover:brightness-110",
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className={cn(
-                "absolute inset-3 rounded-full border transition-opacity duration-500",
-                live
-                  ? "border-[oklch(1_0_0/0.4)] opacity-100"
-                  : "border-[oklch(1_0_0/0.14)] opacity-100",
-              )}
-            />
-            {promptUpload ? (
-              <UploadIcon
-                className="size-9 text-[oklch(0.9_0.004_70)]"
-                strokeWidth={1.75}
-              />
-            ) : state.name === "recording" ? (
-              <SquareIcon className="size-8 fill-current text-[oklch(0.19_0.008_55)]" />
-            ) : (
-              <MicIcon
-                className={cn(
-                  "size-9",
-                  live
-                    ? "text-[oklch(0.19_0.008_55)]"
-                    : "text-[oklch(0.9_0.004_70)]",
-                )}
-                strokeWidth={1.75}
-              />
-            )}
-          </button>
-          {/* Live level: the iridescent film only appears while recording */}
-          <div className="flex h-7 items-center gap-[3px]" aria-hidden="true">
-            {levels.map((v, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "w-[3px] rounded-full transition-[height] duration-75",
-                  state.name === "recording" ? "film" : "bg-graphite-line",
-                )}
-                style={{
-                  height: `${4 + v * 24}px`,
-                  backgroundSize: "3000% 100%",
-                  backgroundPosition: `${(i / 27) * 100}% 0`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
+  // What the tape shows: the voice as it arrives, then the take itself.
+  const tape =
+    state.name === "recording"
+      ? { level: history, length: elapsed }
+      : measured &&
+          (state.name === "ready" ||
+            state.name === "reviewing" ||
+            state.name === "error")
+        ? {
+            level: measured.level,
+            length: Math.min(measured.duration, MAX_SECONDS),
+          }
+        : { level: [], length: 0 };
+  const head =
+    state.name === "recording"
+      ? elapsed
+      : player.started && state.name === "ready"
+        ? player.time
+        : undefined;
 
-        <div className="min-w-0" aria-live="polite">
+  return (
+    <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-10">
+      <div className="lg:col-span-5">
+        <h1 className="font-wide text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance">
+          Record a take.
+        </h1>
+        <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
+          Speak for up to a minute: tell a story, pitch an idea, or introduce
+          yourself. You get notes on your own words, each with one thing to try
+          on the next take.
+        </p>
+      </div>
+
+      <div
+        className={cn(
+          "booklet-page relative self-start px-4 py-6 transition-shadow duration-200 sm:px-8 sm:py-8 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 xl:px-12 xl:py-10",
+          dragging && "ring-2 ring-glass ring-offset-4 ring-offset-paper",
+        )}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!live) setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          if (!live) choose(e.dataTransfer.files[0]);
+        }}
+      >
+        <Tape
+          level={tape.level}
+          length={tape.length}
+          head={head}
+          live={state.name === "recording" || player.playing}
+          scanning={state.name === "reviewing"}
+        />
+
+        <div className="mt-10 min-h-[15rem] min-w-0" aria-live="polite">
           {state.name === "idle" && (
             <>
-              <p className="font-wide text-2xl font-bold tracking-[-0.015em] text-[oklch(0.97_0.002_80)]">
+              <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em] text-balance">
                 {uploadFirst
-                  ? "Drop your recording here."
-                  : "Press the glass and talk."}
+                  ? "Drop a recording here, or record one now."
+                  : "Press record and talk."}
               </p>
-              <p className="mt-3 max-w-[52ch] text-[0.9375rem] leading-relaxed text-[oklch(0.85_0.004_70)]">
-                {uploadFirst
-                  ? "Choose an audio file or drag it here. Up to a minute, in English, one speaker. WAV, MP3, M4A, MP4 or WebM, up to 25 MB."
-                  : "Tell a short story, pitch an idea, or introduce yourself. Up to a minute, in English, one speaker. You can also drop a recording here."}
+              <p className="mt-4 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
+                The tape above holds one minute. It fills with your voice as you
+                speak and stops by itself at the end.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Button
-                  variant="glass"
                   size="lg"
                   onClick={() =>
                     uploadFirst ? fileInput.current?.click() : void record()
                   }
                 >
                   {uploadFirst ? <UploadIcon /> : <MicIcon />}
-                  {uploadFirst ? "Choose a recording" : "Start recording"}
+                  {uploadFirst ? "Choose a recording" : "Record"}
                 </Button>
                 <Button
+                  variant="outline"
                   size="lg"
-                  className="bg-[oklch(0.97_0.002_80)] text-graphite-deep hover:bg-white"
                   onClick={() =>
                     uploadFirst ? void record() : fileInput.current?.click()
                   }
@@ -349,29 +384,26 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
           )}
 
           {state.name === "asking" && (
-            <p className="font-wide text-xl font-bold">
-              Allow microphone access in your browser to start.
+            <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em] text-balance">
+              Allow the microphone in your browser to start.
             </p>
           )}
 
           {state.name === "denied" && (
-            <Alert
-              variant="graphite"
-              className="border-graphite-line bg-graphite-deep"
-            >
+            <Alert variant="destructive" className="max-w-xl">
               <MicOffIcon />
-              <AlertTitle>Microphone access is blocked</AlertTitle>
+              <AlertTitle>The microphone is blocked</AlertTitle>
               <AlertDescription>
                 Allow the microphone for this site in your browser's settings,
-                then press the glass again. Or upload a recording instead.
+                then try again. Or upload a recording instead.
               </AlertDescription>
-              <div className="col-start-2 mt-3 flex gap-2">
-                <Button variant="glass" size="sm" onClick={() => void record()}>
+              <div className="col-start-2 mt-3 flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => void record()}>
                   Try again
                 </Button>
                 <Button
+                  variant="outline"
                   size="sm"
-                  className="bg-[oklch(0.97_0.002_80)] text-graphite-deep hover:bg-white"
                   onClick={() => fileInput.current?.click()}
                 >
                   Upload a file
@@ -382,185 +414,306 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
 
           {state.name === "recording" && (
             <>
-              <p className="flex items-baseline gap-3">
-                <span className="font-mono text-4xl font-light text-[oklch(0.97_0.002_80)] tabular">
+              <p className="flex flex-wrap items-baseline gap-x-3">
+                <span className="font-mono text-[clamp(2.5rem,5vw,3.5rem)] leading-none font-light text-ink tabular">
                   {formatTime(elapsed)}
                 </span>
-                <span className="text-sm text-[oklch(0.8_0.004_70)]">
+                <span className="font-mono text-[0.75rem] text-ink-3 tabular">
                   of {formatTime(MAX_SECONDS, false)}
                 </span>
               </p>
-              <p className="mt-3 max-w-[48ch] text-[0.9375rem] text-[oklch(0.85_0.004_70)]">
-                Recording. Press the glass to stop. It stops by itself at one
-                minute.
+              <p className="mt-6 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
+                Recording. Speak as you would to a room. It stops by itself at
+                one minute.
               </p>
-              <Button variant="glass" size="lg" className="mt-6" onClick={stop}>
+              <Button variant="glass" size="lg" className="mt-8" onClick={stop}>
                 <SquareIcon className="fill-current" />
                 Stop recording
               </Button>
             </>
           )}
 
-          {state.name === "ready" && (
+          {(state.name === "ready" || state.name === "error") && state.url && (
             <>
-              <p className="flex items-center gap-2 text-sm text-[oklch(0.85_0.004_70)]">
-                <FileAudioIcon className="size-4" />
-                <span className="truncate">{state.label}</span>
+              <audio src={state.url} {...player.audioProps} />
+              <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em]">
+                Your take
               </p>
-              <audio
-                controls
-                src={state.url}
-                className="mt-4 h-10 w-full max-w-md rounded-md"
-              />
-              <div className="mt-6 flex flex-wrap gap-3">
+              <p className="mt-2 flex min-w-0 items-center gap-2 text-[0.8125rem] leading-5 text-ink-3">
+                <FileAudioIcon className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{state.label}</span>
+                {measured && (
+                  <span className="shrink-0 font-mono text-[0.75rem] tabular">
+                    · {formatTime(measured.duration, false)}
+                  </span>
+                )}
+              </p>
+              <div className="mt-6 flex items-center gap-3">
                 <Button
                   variant="glass"
-                  size="lg"
-                  onClick={() => void send(state.blob, state.label)}
+                  size="icon-lg"
+                  className="rounded-full"
+                  onClick={() => void player.toggle()}
+                  aria-label={
+                    player.playing ? "Pause your take" : "Play your take"
+                  }
                 >
-                  Review this take
+                  {player.playing ? (
+                    <PauseIcon className="fill-current" />
+                  ) : (
+                    <PlayIcon className="translate-x-px fill-current" />
+                  )}
+                </Button>
+                <span className="font-mono text-[0.75rem] text-ink-3 tabular">
+                  <span
+                    className={player.playing ? "text-glass-ink" : "text-ink"}
+                  >
+                    {formatTime(player.time)}
+                  </span>
+                  {measured && <> / {formatTime(measured.duration, false)}</>}
+                </span>
+              </div>
+              {measured && measured.duration > MAX_SECONDS && (
+                <p className="mt-4 max-w-[44ch] text-[0.8125rem] leading-5 text-ink-2">
+                  This take is longer than a minute. The coach reviews one
+                  minute of it.
+                </p>
+              )}
+              {state.name === "error" && (
+                <Alert variant="destructive" className="mt-6 max-w-xl">
+                  <MicOffIcon />
+                  <AlertTitle>That didn't work</AlertTitle>
+                  <AlertDescription>{state.message}</AlertDescription>
+                </Alert>
+              )}
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button
+                  size="lg"
+                  onClick={() =>
+                    void send(state.blob!, state.label ?? "take", state.url!)
+                  }
+                >
+                  {state.name === "error"
+                    ? "Send it again"
+                    : "Review this take"}
                 </Button>
                 <Button
                   variant="ghost"
                   size="lg"
-                  className="text-[oklch(0.88_0.004_70)] hover:bg-graphite-line/40 hover:text-white"
+                  className="max-sm:-ml-5"
                   onClick={reset}
                 >
                   <XIcon />
-                  Discard
+                  {state.name === "error" ? "Start over" : "Discard"}
                 </Button>
               </div>
             </>
           )}
 
-          {state.name === "reviewing" && (
-            <>
-              <p className="font-wide text-2xl font-bold tracking-[-0.015em] text-[oklch(0.97_0.002_80)]">
-                Listening to your take…
-              </p>
-              <p className="mt-2 text-[0.9375rem] text-[oklch(0.85_0.004_70)]">
-                The coach transcribes your take and checks how your pace
-                supports the message. This can take a minute.
-              </p>
-              <ul className="mt-6 grid max-w-md gap-2.5 lg:hidden">
-                {FOUNDATIONS.filter((f) => f.key === "rate").map((f, i) => {
-                  const lit = reviewingFor > 1.2 + i * 2.4;
-                  return (
-                    <li key={f.key} className="flex items-center gap-3 text-sm">
-                      <span
-                        className="size-2.5 rounded-[2px] transition-[background-color,box-shadow] duration-700"
-                        style={{
-                          background: lit ? f.fill : "var(--graphite-line)",
-                        }}
-                      />
-                      <span
-                        className={cn(
-                          "transition-colors duration-700",
-                          lit
-                            ? "text-[oklch(0.97_0.002_80)]"
-                            : "text-[oklch(0.7_0.004_70)]",
-                        )}
-                      >
-                        {f.label}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-              <Progress
-                value={Math.min(92, (1 - Math.exp(-reviewingFor / 22)) * 100)}
-                className="mt-6 max-w-md bg-graphite-deep shadow-none"
-                aria-label="Review in progress"
-              />
-            </>
-          )}
-
-          {state.name === "error" && (
-            <Alert
-              variant="graphite"
-              className="border-graphite-line bg-graphite-deep"
-            >
+          {state.name === "error" && !state.url && (
+            <Alert variant="destructive" className="max-w-xl">
               <MicOffIcon />
               <AlertTitle>That didn't work</AlertTitle>
               <AlertDescription>{state.message}</AlertDescription>
-              <div className="col-start-2 mt-3 flex flex-wrap gap-2">
-                {state.blob && (
-                  <Button
-                    variant="glass"
-                    size="sm"
-                    onClick={() =>
-                      void send(state.blob!, state.label ?? "take")
-                    }
-                  >
-                    Send it again
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  className="bg-[oklch(0.97_0.002_80)] text-graphite-deep hover:bg-white"
-                  onClick={reset}
-                >
+              <div className="col-start-2 mt-3 flex gap-2">
+                <Button size="sm" onClick={() => fileInput.current?.click()}>
+                  Upload a file
+                </Button>
+                <Button variant="outline" size="sm" onClick={reset}>
                   Start over
                 </Button>
               </div>
             </Alert>
           )}
+
+          {state.name === "reviewing" && (
+            <>
+              <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em]">
+                Listening to your take…
+              </p>
+              <p className="mt-4 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
+                The coach transcribes it, then checks your rate of speech and
+                your pauses. This can take a minute.
+              </p>
+              <p className="mt-6 font-mono text-[0.75rem] text-ink-3 tabular">
+                {formatTime(listening, false)}
+              </p>
+            </>
+          )}
         </div>
 
-        {/* The live review currently evaluates rate of speech. */}
-        <div className="hidden self-stretch rounded-lg bg-graphite-deep p-6 lg:block">
-          <p className="text-[0.75rem] font-semibold text-[oklch(0.8_0.004_70)]">
-            Listening for
-          </p>
-          <ul className="mt-4 grid gap-1">
-            {FOUNDATIONS.filter((f) => f.key === "rate").map((f, i) => {
-              const lit =
-                state.name === "reviewing" && reviewingFor > 1.2 + i * 2.4;
-              return (
-                <li
-                  key={f.key}
-                  className="flex items-center gap-3 py-2 text-sm"
-                >
-                  <span
-                    className="size-2.5 rounded-[2px] transition-colors duration-700"
-                    style={{
-                      background: lit ? f.fill : "transparent",
-                      boxShadow: `inset 0 0 0 1px ${lit ? f.fill : "var(--graphite-line)"}`,
-                    }}
-                  />
-                  <span
-                    className={cn(
-                      "transition-colors duration-700",
-                      lit
-                        ? "text-[oklch(0.97_0.002_80)]"
-                        : "text-[oklch(0.8_0.004_70)]",
-                    )}
-                  >
-                    {f.label}
-                  </span>
-                  {lit && (
-                    <span className="ml-auto text-xs text-on-graphite-muted">
-                      listening
-                    </span>
+        <input
+          ref={fileInput}
+          type="file"
+          accept={ACCEPT}
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          onChange={(e) => {
+            choose(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      <div className="lg:col-span-5 lg:row-start-2">
+        <h2 className="text-[0.75rem] leading-5 font-semibold text-ink-3">
+          The coach listens for
+        </h2>
+        <ul className="mt-3 grid max-w-[24rem] gap-2">
+          {FOUNDATIONS.map((f) => {
+            const on = LIVE.has(f.key);
+            const lit =
+              state.name === "reviewing" &&
+              on &&
+              listening > (f.key === "rate" ? 3 : 8);
+            return (
+              <li
+                key={f.key}
+                className="grid grid-cols-[0.625rem_minmax(0,1fr)_auto] items-center gap-x-3 text-[0.875rem] leading-6"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "size-2.5 rounded-[2px]",
+                    !on && "border border-dashed border-line-strong",
                   )}
-                </li>
-              );
-            })}
-          </ul>
+                  style={
+                    on
+                      ? {
+                          background: f.fill,
+                          boxShadow: `inset 0 0 0 1px ${f.ink}`,
+                        }
+                      : undefined
+                  }
+                />
+                <span className={on ? "font-semibold text-ink" : "text-ink-3"}>
+                  {f.label}
+                </span>
+                <span
+                  className={cn(
+                    "text-[0.75rem]",
+                    lit ? "text-glass-ink" : "text-ink-3",
+                  )}
+                >
+                  {on ? (lit ? "Listening" : "") : "Coming later"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-8 max-w-[46ch] text-[0.8125rem] leading-5 text-ink-3">
+          Up to a minute, in English, one speaker. WAV, MP3, M4A, MP4 or WebM,
+          up to 25 MB.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One minute of tape, left to right. What has been recorded is drawn as its
+ * level; what is left is a bare line, waiting.
+ */
+export function Tape({
+  level,
+  length,
+  head,
+  live,
+  scanning,
+}: {
+  level: number[];
+  length: number;
+  head?: number;
+  live: boolean;
+  scanning: boolean;
+}) {
+  const end = (Math.min(length, MAX_SECONDS) / MAX_SECONDS) * 100;
+  const shape = useMemo(() => {
+    if (!level.length || end <= 0) return "";
+    // About one point per stretch of tape, each the average of its stretch, so the level reads smoothly.
+    const N = Math.max(2, Math.min(level.length, Math.round(end * 0.8) + 2));
+    const averages = Array.from({ length: N }, (_, i) => {
+      const a = Math.floor((i / N) * level.length);
+      const stretch = level.slice(
+        a,
+        Math.max(a + 1, Math.floor(((i + 1) / N) * level.length)),
+      );
+      return stretch.reduce((sum, x) => sum + x, 0) / stretch.length;
+    });
+    const peak = Math.max(...averages, 0.05);
+    const points = averages.map(
+      (v, i) => [(i / (N - 1)) * end, 50 - 4 - (v / peak) * 40] as const,
+    );
+    const upper = points
+      .map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`)
+      .join(" L");
+    const lower = [...points]
+      .reverse()
+      .map(([x, y]) => `${x.toFixed(2)},${(100 - y).toFixed(2)}`)
+      .join(" L");
+    return `M${upper} L${lower} Z`;
+  }, [level, end]);
+  const at =
+    head !== undefined
+      ? (Math.min(head, MAX_SECONDS) / MAX_SECONDS) * 100
+      : undefined;
+
+  return (
+    <div aria-hidden="true">
+      <div className="relative h-14 rounded-[4px] bg-paper shadow-[inset_0_0_0_1px_var(--line)]">
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="absolute inset-x-3 inset-y-0 h-full w-[calc(100%-1.5rem)] overflow-visible"
+        >
+          <line
+            x1={end}
+            y1="50"
+            x2="100"
+            y2="50"
+            stroke="var(--line-strong)"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+          {shape && <path d={shape} fill="var(--ink)" />}
+        </svg>
+        <div className="absolute inset-x-3 inset-y-0">
+          {scanning && end > 0 && (
+            <span
+              className="tape-scan absolute -inset-y-1.5 w-0.5 rounded-full bg-glass"
+              style={{ "--tape-end": `${end}%` } as CSSProperties}
+            />
+          )}
+          {at !== undefined && (
+            <span
+              className={cn(
+                "absolute -inset-y-1.5 w-0.5 -translate-x-1/2 rounded-full",
+                live ? "bg-glass" : "bg-ink",
+              )}
+              style={{ left: `${at}%` }}
+            />
+          )}
         </div>
       </div>
-      <input
-        ref={fileInput}
-        type="file"
-        accept={ACCEPT}
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden="true"
-        onChange={(e) => {
-          choose(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
+      <div className="relative mx-3 mt-2 h-4">
+        {[0, 15, 30, 45, 60].map((s) => (
+          <span
+            key={s}
+            className={cn(
+              "absolute top-0 font-mono text-[0.625rem] leading-4 text-ink-3 tabular",
+              s === 0
+                ? ""
+                : s === 60
+                  ? "-translate-x-full"
+                  : "-translate-x-1/2",
+            )}
+            style={{ left: `${(s / 60) * 100}%` }}
+          >
+            {formatTime(s, false)}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

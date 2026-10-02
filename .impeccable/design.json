@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-28T15:48:28.837804+00:00",
+  "generatedAt": "2026-10-02T12:57:34+00:00",
   "title": "Design System: MicMane",
   "extensions": {
     "colorMeta": {
@@ -413,53 +413,96 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Single page headline, wide 125."
+        "purpose": "The single page headline, wide 125."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Section headings, wide 125."
+        "purpose": "Section titles in the spread's left columns."
+      },
+      "cover-title": {
+        "displayName": "Cover Title",
+        "purpose": "A take's name on clean graphite below the cover horizon."
+      },
+      "lyric": {
+        "displayName": "Lyric",
+        "purpose": "Each spoken line on the lyric sheet, max 34ch."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Foundation names, promise titles, retake steps, recorder prompts."
+        "purpose": "Lesson names in the track list."
       },
-      "monitor": {
-        "displayName": "Monitor",
-        "purpose": "The transcript line in the editor monitor."
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "Booklet page headers and take labels."
       },
       "body-lead": {
         "displayName": "Body Lead",
-        "purpose": "Section intro paragraphs in ink-2, max 46ch."
+        "purpose": "Section leads in ink-2, max 46ch."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "List and card copy, max 52ch."
+        "purpose": "Lesson descriptions and the overall note, max 52ch."
       },
       "body-sm": {
-        "displayName": "Body Sm",
-        "purpose": "Notes, captions, nav links."
+        "displayName": "Body Small",
+        "purpose": "Lyric-sheet margin notes, why and practice lines in the review, captions, nav links."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Lane labels, note headers; sentence case."
+        "purpose": "Sentence-case semibold note headers, verdict tags, list headings."
       },
       "time": {
         "displayName": "Time",
-        "purpose": "Timecodes and measured values only."
+        "purpose": "Line timecodes and running time, tabular."
+      },
+      "track-number": {
+        "displayName": "Track Number",
+        "purpose": "Two-digit lesson numbers in the track list."
+      },
+      "catalog": {
+        "displayName": "Catalog",
+        "purpose": "Release numbers on covers and in the footer (MMV 001)."
+      },
+      "lyric-tape": {
+        "displayName": "Lyric on Tape",
+        "purpose": "Each spoken line on the review page, max 36ch, beside the margin column."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "State headings inside the recorder booklet page."
+      },
+      "measure": {
+        "displayName": "Measure",
+        "purpose": "Silence leaders (0.7 s), syl/s readings and recorder tape ticks, tabular."
       }
     },
     "gradients": [
       {
         "name": "film",
         "value": "linear-gradient(100deg, var(--f-rate) 0%, var(--f-volume) 26%, var(--f-pitch) 50%, var(--f-tonality) 74%, var(--f-pauses) 100%)",
-        "purpose": "Iridescent film; live input-level bars while recording only."
+        "purpose": "Iridescent film; carried token for live input-level bars while recording. Not used on booklet surfaces."
+      },
+      {
+        "name": "highlighter",
+        "value": "linear-gradient(transparent 14%, <fill> 14%, <fill> 92%, transparent 92%) on the lyric sheet; 12%/94% on the review page; mix-blend-mode: multiply",
+        "purpose": "Foundation fill behind noted words. On the review page, stretch rules lay on at color-mix(<fill> 55%, transparent) until their note is in focus."
       }
     ],
     "shadows": [
       {
-        "name": "contact",
-        "value": "0 1px 2px oklch(0.2 0.01 55 / 0.05)",
-        "purpose": "Cards; 0.08 alpha with a line-strong ring for active tabs and toggles."
+        "name": "sleeve",
+        "value": "0 1px 2px oklch(0.2 0.005 60 / 0.12), 0 36px 70px -36px oklch(0.2 0.005 60 / 0.55)",
+        "purpose": "Album covers only (cover-shadow utility)."
+      },
+      {
+        "name": "booklet-page",
+        "value": "0 0 0 1px var(--line), 0 1px 2px oklch(0.2 0.01 55 / 0.05), 0 24px 60px -36px oklch(0.25 0.005 60 / 0.3)",
+        "purpose": "White booklet pages (shared booklet-page utility: 10px radius, white, this shadow; no texture): lyric sheet, lesson page, review, recorder, showcase specimens. First layer is the page edge."
+      },
+      {
+        "name": "well",
+        "value": "inset 0 0 0 1px var(--line)",
+        "purpose": "Lane strips in the lesson track list and the recorder tape's 56px lane."
       },
       {
         "name": "ink-button",
@@ -467,61 +510,61 @@
         "purpose": "Primary and graphite buttons."
       },
       {
-        "name": "scroll-cue",
-        "value": "inset 0 10px 10px -10px oklch(0.2 0.01 55 / 0.25)",
-        "purpose": "Top of the rail's note list once scrolled."
-      },
-      {
-        "name": "note-lift",
-        "value": "0 0 0 1px var(--line), 0 4px 14px -8px oklch(0.2 0.005 60 / 0.25)",
-        "purpose": "Active rail note: a white block lifted off paper."
-      },
-      {
         "name": "glass-lit",
         "value": "0 1px 2px oklch(0.3 0.005 60 / 0.25), 0 8px 20px -10px oklch(0.55 0.17 45 / 0.7)",
-        "purpose": "Any lit orange glass."
-      },
-      {
-        "name": "glass-dim",
-        "value": "0 1px 2px oklch(0.2 0.005 60 / 0.3)",
-        "purpose": "Unlit glass on graphite."
-      },
-      {
-        "name": "instrument",
-        "value": "0 1px 2px oklch(0.2 0.01 55 / 0.06), 0 30px 80px -40px oklch(0.25 0.005 60 / 0.35)",
-        "purpose": "The editor frame."
-      },
-      {
-        "name": "instrument-dark",
-        "value": "inset 0 1px 0 oklch(1 0 0 / 0.1), 0 1px 2px oklch(0.2 0.005 60 / 0.3), 0 40px 80px -40px oklch(0.25 0.005 60 / 0.6)",
-        "purpose": "The graphite recorder."
-      },
-      {
-        "name": "focus-halo",
-        "value": "0 0 0 3px color-mix(in oklch, var(--glass) 22%, transparent)",
-        "purpose": "Input focus."
+        "purpose": "Any orange glass surface: play buttons (at rest and playing), Stop recording, live marks."
       }
     ],
     "motion": [
       {
         "name": "ease-out",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "The single house easing."
+        "purpose": "The house easing for every transition and the ridge rise."
       },
       {
         "name": "control",
         "value": "200ms",
-        "purpose": "Buttons, inputs, tabs, toggles."
+        "purpose": "Button and control state transitions."
       },
       {
-        "name": "lane-reveal",
-        "value": "1100ms clip-path, 150ms stagger per lane, once on first view; off under reduced motion",
-        "purpose": "Editor lanes wake left to right."
+        "name": "ridge-rise",
+        "value": "1100ms ease-out, scaleY 0.04 to 1 from the baseline, 180ms start, 140ms stagger per ridge",
+        "purpose": "Cover ridges rise once on load. Off under reduced motion."
       },
       {
-        "name": "foundation-light",
-        "value": "700ms",
-        "purpose": "Foundation swatches lighting in sequence while a review runs."
+        "name": "ridge-dim",
+        "value": "500ms opacity to 0.42",
+        "purpose": "Non-current ridges dim while a take plays."
+      },
+      {
+        "name": "word-fill",
+        "value": "150ms color",
+        "purpose": "Spoken words fill to ink as the playhead passes: from 35% ink on the lyric sheet, from ink-3 on the review page."
+      },
+      {
+        "name": "ghost-drift",
+        "value": "3.6s linear infinite, stroke-dashoffset to -36",
+        "purpose": "Dashed ridge outlines of an unpressed sleeve drift. Off under reduced motion."
+      },
+      {
+        "name": "nav-scroll",
+        "value": "300ms background-color, border-color",
+        "purpose": "Nav turns translucent with a bottom edge after 8px of scroll."
+      },
+      {
+        "name": "follow-playhead",
+        "value": "per frame, scroll by 12% of the distance between the playhead and 42% of the viewport height",
+        "purpose": "The review page follows the playhead; wheel, touch or scroll keys release it, Follow restores it. Under reduced motion it jumps line by line."
+      },
+      {
+        "name": "tape-scan",
+        "value": "2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate, left 0% to --tape-end",
+        "purpose": "A glass head sweeps the recorded tape left to right and back while the coach listens. Rests at the start under reduced motion."
+      },
+      {
+        "name": "slice-focus",
+        "value": "200ms opacity 0.45 to 1; 200ms highlighter background",
+        "purpose": "Scrubber note slices and review highlighter runs come to full strength for the note in focus."
       }
     ],
     "breakpoints": [
@@ -548,118 +591,151 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Graphite ink primary action on white chrome.",
+      "description": "Ink action key; every 'Try a free review' is primary.",
       "html": "<button class=\"ds-btn-primary\">Try a free review</button>",
-      "css": ".ds-btn-primary{background:var(--ink);color:var(--paper);height:36px;padding:0 14px;border:1px solid transparent;border-radius:4.8px;font:500 14px 'Archivo Variable',sans-serif;box-shadow:inset 0 1px 0 oklch(1 0 0/.14),0 1px 2px oklch(.2 .01 55/.3);transition:background-color .2s cubic-bezier(.16,1,.3,1),transform .2s;cursor:pointer}.ds-btn-primary:hover{background:color-mix(in oklch,var(--ink),var(--graphite) 45%)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--glass)}.ds-btn-primary:active{transform:translateY(1px)}"
+      "css": ".ds-btn-primary{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;background:var(--ink);color:var(--paper);height:44px;padding:0 20px;border:1px solid transparent;border-radius:4.8px;font-size:15px;font-weight:500;box-shadow:inset 0 1px 0 oklch(1 0 0 / .14),0 1px 2px oklch(0.2 0.01 55 / .3);cursor:pointer;transition:background-color .2s cubic-bezier(.16,1,.3,1),transform .2s cubic-bezier(.16,1,.3,1)}.ds-btn-primary:hover{background:color-mix(in oklch,var(--ink),var(--graphite) 45%)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--glass)}.ds-btn-primary:active{transform:translateY(1px)}"
     },
     {
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "Hairline on white.",
-      "html": "<button class=\"ds-btn-outline\">Record another take</button>",
-      "css": ".ds-btn-outline{background:var(--surface);color:var(--ink);height:36px;padding:0 14px;border:1px solid var(--line-strong);border-radius:4.8px;font:500 14px 'Archivo Variable',sans-serif;transition:background-color .2s,border-color .2s;cursor:pointer}.ds-btn-outline:hover{border-color:var(--ink-3);background:var(--sunken)}.ds-btn-outline:focus-visible{outline:none;box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--glass)}"
+      "description": "White key with a line-strong edge; 'See an example' leads with a filled glass play icon, carries its duration in mono ink-3, scrolls the sheet into view and plays.",
+      "html": "<button class=\"ds-btn-outline\"><svg class=\"ds-btn-play\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"6 3 20 12 6 21 6 3\"/></svg>See an example<span class=\"ds-btn-dur\">0:15</span></button>",
+      "css": ".ds-btn-outline{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:inline-flex;align-items:center;gap:8px;background:var(--surface);color:var(--ink);height:44px;padding:0 20px;border:1px solid var(--line-strong);border-radius:4.8px;font-size:15px;font-weight:500;cursor:pointer;transition:background-color .2s,border-color .2s}.ds-btn-outline:hover{background:var(--sunken);border-color:var(--ink-3)}.ds-btn-outline:focus-visible{outline:2px solid var(--glass);outline-offset:2px}.ds-btn-dur{font-family:'Martian Mono Variable',ui-monospace,monospace;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}.ds-btn-play{color:var(--glass)}"
     },
     {
       "name": "Glass Button",
       "kind": "button",
       "refersTo": "button-glass",
-      "description": "Lit orange glass; recording and live playback only.",
-      "html": "<button class=\"ds-btn-glass\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2M12 19v3\"/></svg>Start recording</button>",
-      "css": ".ds-btn-glass{display:inline-flex;align-items:center;gap:8px;background:var(--glass);color:var(--ink);height:44px;padding:0 20px;border:1px solid transparent;border-radius:4.8px;font:500 15px 'Archivo Variable',sans-serif;box-shadow:0 1px 2px oklch(.3 .005 60/.25),0 8px 20px -10px oklch(.55 .17 45/.7);transition:background-color .2s cubic-bezier(.16,1,.3,1);cursor:pointer}.ds-btn-glass:hover{background:var(--glass-hot)}.ds-btn-glass:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+      "description": "Orange glass with ink text, for play controls (glass at rest and while playing) and recording only.",
+      "html": "<button class=\"ds-btn-glass\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><polygon points=\"7 4 20 12 7 20 7 4\"/></svg>Play your take</button>",
+      "css": ".ds-btn-glass{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;background:var(--glass);color:var(--ink);height:44px;padding:0 20px;border:0;border-radius:4.8px;font-size:15px;font-weight:500;box-shadow:0 1px 2px oklch(0.3 0.005 60 / .25),0 8px 20px -10px oklch(0.55 0.17 45 / .7);display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background-color .2s}.ds-btn-glass:hover{background:var(--glass-hot)}.ds-btn-glass:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
     },
     {
-      "name": "Graphite Button",
-      "kind": "button",
-      "refersTo": "button-graphite",
-      "description": "The recorder's body color as a button.",
-      "html": "<button class=\"ds-btn-graphite\">Upload a file</button>",
-      "css": ".ds-btn-graphite{background:var(--graphite);color:oklch(.96 .002 80);height:36px;padding:0 14px;border:1px solid transparent;border-radius:4.8px;font:500 14px 'Archivo Variable',sans-serif;box-shadow:inset 0 1px 0 oklch(1 0 0/.12),0 1px 2px oklch(.2 .005 60/.35);cursor:pointer}.ds-btn-graphite:hover{background:color-mix(in oklch,var(--graphite),white 8%)}.ds-btn-graphite:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
-    },
-    {
-      "name": "Foundation Badges",
+      "name": "Badges",
       "kind": "chip",
-      "refersTo": "badge-foundation-volume",
-      "description": "Square-shouldered tags: pastel field, deep ink text; sample is dashed.",
-      "html": "<span class=\"ds-badge\" style=\"background:var(--f-rate);color:var(--f-rate-ink)\">Rate of speech</span> <span class=\"ds-badge\" style=\"background:var(--f-volume);color:var(--f-volume-ink)\">Volume</span> <span class=\"ds-badge\" style=\"background:var(--f-pitch);color:var(--f-pitch-ink)\">Pitch &amp; melody</span> <span class=\"ds-badge\" style=\"background:var(--f-tonality);color:var(--f-tonality-ink)\">Tonality</span> <span class=\"ds-badge\" style=\"background:var(--f-pauses);color:var(--f-pauses-ink)\">Pauses</span> <span class=\"ds-badge ds-badge-sample\">Sample · synthetic voice</span>",
-      "css": ".ds-badge{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid transparent;border-radius:3px;font:500 11px/1 'Archivo Variable',sans-serif;white-space:nowrap}.ds-badge-sample{background:var(--surface);color:var(--ink-3);border:1px dashed var(--line-strong)}"
-    },
-    {
-      "name": "Input",
-      "kind": "input",
-      "refersTo": "input",
-      "description": "White field, glass-ink focus with a soft glass halo.",
-      "html": "<input class=\"ds-input\" placeholder=\"you@example.com\">",
-      "css": ".ds-input{height:40px;width:280px;padding:4px 12px;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:4.8px;font:400 14px 'Archivo Variable',sans-serif;box-shadow:inset 0 1px 1px oklch(.2 .01 55/.05);transition:border-color .2s,box-shadow .2s;outline:none}.ds-input::placeholder{color:var(--ink-3)}.ds-input:hover{border-color:var(--ink-3)}.ds-input:focus-visible{border-color:var(--glass-ink);box-shadow:0 0 0 3px color-mix(in oklch,var(--glass) 22%,transparent)}"
-    },
-    {
-      "name": "Card",
-      "kind": "card",
-      "refersTo": "card",
-      "description": "White container with a one-pixel edge; the paper footer is a pane split by a line.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-body\"><div class=\"ds-card-title\">Night shift</div><div class=\"ds-card-desc\">Recorded today · 15.6 s · six notes</div></div><div class=\"ds-card-foot\"><button class=\"ds-btn-primary\">Open review</button></div></div>",
-      "css": ".ds-card{width:320px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 1px 2px oklch(.2 .01 55/.05);font-family:'Archivo Variable',sans-serif}.ds-card-body{padding:20px}.ds-card-title{font-weight:600;font-size:16px}.ds-card-desc{font-size:14px;color:var(--ink-2);margin-top:4px}.ds-card-foot{padding:20px;background:var(--paper);border-top:1px solid var(--line)}.ds-btn-primary{background:var(--ink);color:var(--paper);height:32px;padding:0 12px;border:0;border-radius:4.8px;font:500 13px 'Archivo Variable',sans-serif;cursor:pointer}.ds-btn-primary:hover{background:color-mix(in oklch,var(--ink),var(--graphite) 45%)}"
+      "refersTo": "badge-sample",
+      "description": "Square-shouldered tags: the dashed sample badge for illustrated data, and foundation fill/ink pairs.",
+      "html": "<span class=\"ds-badge ds-badge-sample\">Illustration</span> <span class=\"ds-badge ds-badge-volume\">Volume</span> <span class=\"ds-badge ds-badge-pauses\">Pauses</span>",
+      "css": ".ds-badge{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:3px;font-size:11px;font-weight:500;line-height:1;border:1px solid transparent}.ds-badge-sample{background:var(--surface);color:var(--ink-3);border:1px dashed var(--line-strong)}.ds-badge-volume{background:var(--f-volume);color:var(--f-volume-ink)}.ds-badge-pauses{background:var(--f-pauses);color:var(--f-pauses-ink)}"
     },
     {
       "name": "Navigation",
       "kind": "nav",
       "refersTo": "",
-      "description": "Slim 56px sticky nav; once scrolled, translucent paper with a one-pixel line bottom border as the scroll edge.",
-      "html": "<nav class=\"ds-nav\"><span class=\"ds-wm\">MicMane</span><a href=\"#\">Foundations</a><a href=\"#\">The retake</a><a href=\"#\">Promises</a><button class=\"ds-nav-cta\">Try a free review</button></nav>",
-      "css": ".ds-nav{display:flex;align-items:center;gap:24px;height:56px;padding:0 24px;background:oklch(0.985 0.003 80 / 0.84);border-bottom:1px solid var(--line);backdrop-filter:blur(12px);font-family:'Archivo Variable',sans-serif}.ds-wm{font-weight:800;font-size:17px;letter-spacing:-.02em;font-variation-settings:'wdth' 125;color:var(--ink);margin-right:8px}.ds-nav a{font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:none;transition:color .2s}.ds-nav a:hover{color:var(--ink)}.ds-nav-cta{margin-left:auto;background:var(--ink);color:var(--paper);height:32px;padding:0 12px;border:0;border-radius:4.8px;font:500 13px 'Archivo Variable',sans-serif;cursor:pointer}.ds-nav-cta:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+      "description": "56px sticky nav; the section in view goes ink with a 2px glass tick; scrolled, translucent paper with a line bottom edge.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-wm\">MicMane</span><a href=\"#\" aria-current=\"location\">The example</a><a href=\"#\">Lessons</a><a href=\"#\">The retake</a><a href=\"#\">Promises</a><button class=\"ds-nav-cta\">Try a free review</button></nav>",
+      "css": ".ds-nav{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:flex;align-items:center;gap:24px;height:56px;padding:0 24px;background:oklch(0.985 0.003 80 / .84);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.ds-wm{font-weight:800;font-size:17px;letter-spacing:-.02em;font-variation-settings:'wdth' 125;color:var(--ink);margin-right:8px}.ds-nav a{position:relative;padding:4px 0;font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:none;transition:color .2s}.ds-nav a:hover{color:var(--ink)}.ds-nav a[aria-current]{color:var(--ink)}.ds-nav a[aria-current]::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;border-radius:9999px;background:var(--glass)}.ds-nav a:focus-visible{outline:2px solid var(--glass);outline-offset:2px}.ds-nav-cta{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;margin-left:auto;background:var(--ink);color:var(--paper);height:32px;padding:0 12px;border:0;border-radius:4.8px;font-size:13px;font-weight:500;cursor:pointer}.ds-nav-cta:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+    },
+    {
+      "name": "Booklet Page",
+      "kind": "card",
+      "refersTo": "booklet-page",
+      "description": "Plain white page, 10px corner, edge ring and soft lift. No texture.",
+      "html": "<article class=\"ds-page\"><header class=\"ds-page-h\"><p class=\"ds-page-t\">Notes on “Night shift”</p><span class=\"ds-page-time\">0:04 / 0:18</span></header><div class=\"ds-page-track\"><div class=\"ds-page-prog\"></div></div><p class=\"ds-page-b\">Each spoken line with its timecode, notes written in the margin.</p></article>",
+      "css": ".ds-page{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;max-width:560px;padding:32px;border-radius:10px;background-color:var(--surface);box-shadow:0 0 0 1px var(--line),0 1px 2px oklch(0.2 0.01 55 / .05),0 24px 60px -36px oklch(0.25 0.005 60 / .3);color:var(--ink)}.ds-page-h{display:flex;align-items:center;gap:16px}.ds-page-t{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;font-variation-settings:'wdth' 125}.ds-page-time{margin-left:auto;font-family:'Martian Mono Variable',ui-monospace,monospace;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}.ds-page-track{position:relative;margin-top:16px;height:1px;background:var(--line)}.ds-page-prog{position:absolute;left:0;top:-.5px;height:2px;width:28%;background:var(--glass)}.ds-page-b{margin:24px 0 0;font-size:15px;line-height:24px;color:var(--ink-2);max-width:52ch}"
+    },
+    {
+      "name": "Album Cover",
+      "kind": "custom",
+      "refersTo": "album-cover",
+      "description": "Square graphite sleeve drawn from the take: one ridge per line that showed a strength, filled with that foundation and stacked from the bottom on full-cover slots, clipped at a horizon, title and mono take line on clean graphite below, glass play button, glass bead on the current crest.",
+      "html": "<figure class=\"ds-cover\"><svg viewBox=\"0 0 600 600\" aria-hidden=\"true\"><clipPath id=\"ds-h\"><rect width=\"600\" height=\"452\"/></clipPath><g clip-path=\"url(#ds-h)\" stroke-width=\"5\" stroke-linejoin=\"round\"><path d=\"M44,318 C150,270 220,220 300,240 S470,280 556,318 L556,468 L44,468 Z\" fill=\"var(--f-volume)\" stroke=\"var(--graphite)\"/><path d=\"M44,392 C150,360 220,330 300,345 S470,370 556,392 L556,542 L44,542 Z\" fill=\"var(--f-pauses)\" stroke=\"var(--graphite)\" opacity=\".42\"/></g><circle cx=\"300\" cy=\"240\" r=\"15\" fill=\"var(--glass)\" opacity=\".28\"/><circle cx=\"300\" cy=\"240\" r=\"7.5\" fill=\"var(--glass)\" stroke=\"var(--graphite)\" stroke-width=\"2.5\"/></svg><div class=\"ds-cover-top\"><span class=\"ds-cover-mark\">MicMane</span><span class=\"ds-cover-cat\">MMV 001</span></div><figcaption class=\"ds-cover-bot\"><span><span class=\"ds-cover-title\">Night shift</span><span class=\"ds-cover-sub\">Take 1 · 0:15</span></span><button class=\"ds-cover-play\" aria-label=\"Play the example take\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><polygon points=\"7 4 20 12 7 20 7 4\"/></svg></button></figcaption></figure>",
+      "css": ".ds-cover{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;position:relative;margin:0;width:320px;aspect-ratio:1;overflow:hidden;border-radius:10px;background:var(--graphite);color:var(--on-graphite);box-shadow:0 1px 2px oklch(0.2 0.005 60 / .12),0 36px 70px -36px oklch(0.2 0.005 60 / .55)}.ds-cover svg{position:absolute;inset:0;width:100%;height:100%}.ds-cover-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:20px}.ds-cover-mark{font-size:15px;font-weight:800;letter-spacing:-.02em;font-variation-settings:'wdth' 125}.ds-cover-cat{font-family:'Martian Mono Variable',ui-monospace,monospace;font-size:11px;color:var(--on-graphite-muted);font-variant-numeric:tabular-nums}.ds-cover-bot{position:absolute;left:0;right:0;bottom:0;padding:20px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}.ds-cover-title{display:block;font-size:28px;line-height:1;font-weight:800;letter-spacing:-.03em;font-variation-settings:'wdth' 125}.ds-cover-sub{display:block;margin-top:8px;font-family:'Martian Mono Variable',ui-monospace,monospace;font-size:12px;color:var(--on-graphite-muted);font-variant-numeric:tabular-nums}.ds-cover-play{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:9999px;background:var(--glass);color:var(--ink);box-shadow:0 1px 2px oklch(0.3 0.005 60 / .25),0 8px 20px -10px oklch(0.55 0.17 45 / .7);cursor:pointer;transition:background-color .2s}.ds-cover-play:hover{background:var(--glass-hot)}.ds-cover-play:focus-visible{outline:2px solid var(--glass);outline-offset:2px}"
+    },
+    {
+      "name": "Lyric Line",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "A spoken line on the lyric sheet: mono timecode gutter, multiplied foundation highlighter on noted words, glass underline on the current word, a margin note below headed by its rule label.",
+      "html": "<div class=\"ds-lyric\"><button class=\"ds-lyric-tc\">0:10</button><p class=\"ds-lyric-l\"><span>So</span> <span>tonight,</span> <span class=\"ds-now\">I</span> <span class=\"ds-wait\">want</span> <span class=\"ds-wait ds-hl\">to</span> <span class=\"ds-wait ds-hl\">talk</span></p><div class=\"ds-note\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\"><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--f-rate-ink)\" stroke-width=\"2\" stroke-dasharray=\"4.28 2.79\"/></svg><span><span class=\"ds-note-h\"><b>Rate</b> Rushed passage · tentative</span><span class=\"ds-note-o\">The middle of the line hurries past the key word.</span></span></div></div>",
+      "css": ".ds-lyric{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:grid;grid-template-columns:4.5rem minmax(0,1fr);column-gap:24px;row-gap:16px;max-width:640px;color:var(--ink)}.ds-lyric-tc{align-self:start;padding-top:12px;background:none;border:0;font-family:'Martian Mono Variable',ui-monospace,monospace;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;cursor:pointer;text-align:left;transition:color .2s}.ds-lyric-tc:hover{color:var(--glass-ink)}.ds-lyric-tc:focus-visible{outline:2px solid var(--glass);outline-offset:2px}.ds-lyric-l{margin:0;font-size:28px;line-height:1.3;font-weight:600;letter-spacing:-.015em;font-variation-settings:'wdth' 125;max-width:34ch}.ds-lyric-l span{transition:color .15s}.ds-wait{color:color-mix(in oklch,var(--ink) 35%,transparent)}.ds-now{text-decoration:underline;text-decoration-color:var(--glass);text-decoration-thickness:3px;text-underline-offset:.22em}.ds-hl{background:linear-gradient(transparent 14%,var(--f-rate) 14%,var(--f-rate) 92%,transparent 92%);mix-blend-mode:multiply;border-radius:.18em}.ds-note{grid-column:2;display:grid;grid-template-columns:1.25rem minmax(0,1fr);column-gap:8px}.ds-note-h{display:block;font-size:12px;line-height:20px;color:var(--ink-3)}.ds-note-h b{color:var(--f-rate-ink);font-weight:600;margin-right:8px}.ds-note-o{display:block;margin-top:4px;font-size:13px;line-height:20px;color:var(--ink-2)}"
     },
     {
       "name": "Note Pins",
       "kind": "custom",
       "refersTo": "",
-      "description": "State by stroke: filled strength, open-ring improvement, dashed when tentative.",
-      "html": "<div class=\"ds-pins\"><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"5\" fill=\"var(--f-volume-ink)\" stroke=\"var(--f-volume-ink)\" stroke-width=\"1.5\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"5\" fill=\"var(--surface)\" stroke=\"var(--f-pitch-ink)\" stroke-width=\"2\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"5\" fill=\"var(--surface)\" stroke=\"var(--f-rate-ink)\" stroke-width=\"2\" stroke-dasharray=\"2.2 1.6\"/></svg><span class=\"ds-time\">00:13.5</span></div>",
-      "css": ".ds-pins{display:flex;align-items:center;gap:12px}.ds-time{font:400 12px 'Martian Mono Variable',monospace;font-variant-numeric:tabular-nums;color:var(--ink-3)}"
+      "description": "State by stroke: filled strength, open improvement, dashed tentative; centred on the note's 20px label line.",
+      "html": "<div class=\"ds-pins\"><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--f-volume-ink)\" stroke=\"var(--f-volume-ink)\" stroke-width=\"1.5\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--f-pitch-ink)\" stroke-width=\"2\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--f-rate-ink)\" stroke-width=\"2\" stroke-dasharray=\"4.28 2.79\"/></svg><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"9\" fill=\"none\" stroke=\"var(--f-pauses-ink)\" stroke-opacity=\".35\"/><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--f-pauses-ink)\" stroke-width=\"2\"/></svg></div>",
+      "css": ".ds-pins{display:flex;gap:12px;padding:8px;background:var(--surface)}"
     },
     {
-      "name": "Scrubber",
+      "name": "Unpressed Sleeve",
       "kind": "custom",
-      "refersTo": "",
-      "description": "One-pixel track, ink range, lit-glass thumb: the playhead in miniature.",
-      "html": "<div class=\"ds-scrub\"><div class=\"ds-track\"><div class=\"ds-range\"></div></div><div class=\"ds-thumb\" tabindex=\"0\"></div></div>",
-      "css": ".ds-scrub{position:relative;width:280px;height:20px}.ds-track{position:absolute;top:10px;left:0;right:0;height:1px;background:var(--line-strong)}.ds-range{width:55%;height:1px;background:var(--ink)}.ds-thumb{position:absolute;top:0;left:55%;width:10px;height:20px;margin-left:-5px;border-radius:3px;background:var(--glass);box-shadow:0 1px 2px oklch(.3 .005 60/.25),0 8px 20px -10px oklch(.55 .17 45/.7);transition:transform .2s cubic-bezier(.16,1,.3,1)}.ds-thumb:hover{transform:scaleY(1.1)}.ds-thumb:focus-visible{outline:2px solid var(--glass);outline-offset:3px}"
+      "refersTo": "album-cover",
+      "description": "The visitor's cover before recording: dashed graphite-line ridge outlines drifting.",
+      "html": "<figure class=\"ds-sleeve\"><svg viewBox=\"0 0 600 600\" aria-hidden=\"true\"><path class=\"ds-ghost\" d=\"M44,168 C140,128 220,78 300,98 S470,138 556,168\"/><path class=\"ds-ghost\" d=\"M44,243 C140,197 220,163 300,173 S470,205 556,243\" style=\"animation-delay:-1.2s\"/><path class=\"ds-ghost\" d=\"M44,318 C140,266 220,248 300,248 S470,272 556,318\" style=\"animation-delay:-2.4s\"/></svg><figcaption><span class=\"ds-sleeve-t\">Your take</span><span class=\"ds-sleeve-s\">Thirty seconds is enough to start.</span></figcaption></figure>",
+      "css": ".ds-sleeve{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;position:relative;margin:0;width:320px;aspect-ratio:1;overflow:hidden;border-radius:10px;background:var(--graphite);color:var(--on-graphite);box-shadow:0 1px 2px oklch(0.2 0.005 60 / .12),0 36px 70px -36px oklch(0.2 0.005 60 / .55)}.ds-sleeve svg{position:absolute;inset:0;width:100%;height:100%}.ds-ghost{fill:none;stroke:var(--graphite-line);stroke-width:3;stroke-dasharray:8 10;stroke-linecap:round;animation:ds-drift 3.6s linear infinite}@keyframes ds-drift{to{stroke-dashoffset:-36}}@media (prefers-reduced-motion:reduce){.ds-ghost{animation:none}}.ds-sleeve figcaption{position:absolute;left:0;right:0;bottom:0;padding:20px}.ds-sleeve-t{display:block;font-size:28px;line-height:1;font-weight:800;letter-spacing:-.03em;font-variation-settings:'wdth' 125}.ds-sleeve-s{display:block;margin-top:8px;font-size:13px;color:var(--on-graphite-muted)}"
     },
     {
-      "name": "Separator",
-      "kind": "custom",
-      "refersTo": "",
-      "description": "Free-standing separator outside any container; fades to transparent at both ends.",
-      "html": "<div class=\"ds-sep-demo\"><p>Rate of speech</p><div class=\"ds-sep\"></div><p>Volume</p></div>",
-      "css": ".ds-sep-demo{width:280px;font:400 14px 'Archivo Variable',sans-serif;color:var(--ink)}.ds-sep-demo p{margin:12px 0}.ds-sep{height:1px;width:100%;background:linear-gradient(to right,transparent,var(--line-strong),transparent)}"
+      "name": "Transport",
+      "kind": "nav",
+      "refersTo": "transport",
+      "description": "Sticky graphite strip and the take's only timeline: round glass play (at rest and playing), mono time, scrubber with foundation note slices and glass playhead, speed group, note stepper, Follow, action.",
+      "html": "<div class=\"ds-tr\"><button class=\"ds-tr-play is-on\" aria-label=\"Pause\">&#10074;&#10074;</button><p class=\"ds-tr-time\"><b>00:06.0</b> / 00:15</p><div class=\"ds-tr-scrub\"><i class=\"ds-tr-track\"></i><i class=\"ds-tr-played\"></i><i class=\"ds-tr-slice\" style=\"left:2%;width:12%;background:var(--f-rate)\"></i><i class=\"ds-tr-slice is-on\" style=\"left:24%;width:13%;background:var(--f-pauses)\"></i><i class=\"ds-tr-slice\" style=\"left:67%;width:13%;background:var(--f-pauses)\"></i><i class=\"ds-tr-head\"></i></div><div class=\"ds-tr-speed\"><button>0.75×</button><button aria-pressed=\"true\">1×</button><button>1.25×</button></div><span class=\"ds-tr-step\"><b>2</b> of <span>4</span></span><button class=\"ds-tr-follow\">Following</button><button class=\"ds-tr-act\">Another take</button></div>",
+      "css": ".ds-tr{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:flex;align-items:center;gap:16px;padding:12px 24px;background:var(--graphite);color:var(--on-graphite)}.ds-tr-play{width:40px;height:40px;border-radius:9999px;border:0;background:var(--glass);color:var(--graphite-deep);font-size:11px;box-shadow:0 1px 2px oklch(0.3 0.005 60 / .25),0 8px 20px -10px oklch(0.55 0.17 45 / .7);transition:background-color .2s,transform .2s}.ds-tr-play:hover{background:var(--glass-hot)}.ds-tr-play:active{transform:scale(.95)}.ds-tr-time{margin:0;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;color:var(--on-graphite-muted)}.ds-tr-time b{font-weight:400;color:var(--on-graphite)}.ds-tr-scrub{position:relative;flex:1;height:32px;min-width:160px}.ds-tr-track,.ds-tr-played{position:absolute;top:15px;left:0;height:2px;border-radius:9999px}.ds-tr-track{right:0;background:var(--graphite-line)}.ds-tr-played{width:31%;background:var(--on-graphite-muted)}.ds-tr-slice{position:absolute;top:6px;height:20px;border-radius:2px;opacity:.45}.ds-tr-slice.is-on{opacity:1}.ds-tr-head{position:absolute;top:4px;left:31%;width:2px;height:24px;border-radius:9999px;background:var(--glass)}.ds-tr-speed{display:flex;gap:2px}.ds-tr-speed button{height:24px;padding:0 6px;border:0;border-radius:3px;background:none;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:11px;color:var(--on-graphite-muted)}.ds-tr-speed button[aria-pressed=true]{background:var(--graphite-line);color:var(--on-graphite)}.ds-tr-step{font-size:12px;color:var(--on-graphite-muted)}.ds-tr-step b,.ds-tr-step span{font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-weight:400}.ds-tr-step b{color:var(--on-graphite)}.ds-tr-follow{border:0;background:none;font-size:12px;font-weight:500;color:var(--on-graphite-muted)}.ds-tr-act{height:32px;padding:0 12px;border:0;border-radius:4.8px;background:var(--on-graphite);color:var(--graphite-deep);font-size:13px;font-weight:500}"
     },
     {
-      "name": "Rail Note",
+      "name": "Foundation Rows",
+      "kind": "custom",
+      "refersTo": "foundation-lane",
+      "description": "Reviewed foundations with fill swatch, verdict in foundation ink, summary and a lane of where notes fall; unreviewed ones dashed and \"Not reviewed yet\".",
+      "html": "<ul class=\"ds-fr\"><li><i class=\"ds-sw\" style=\"background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i><b>Rate of speech</b><p><span style=\"color:var(--f-rate-ink)\">Mixed</span> · Two passages move quickly.</p><span class=\"ds-lane\"><i style=\"left:2%;width:12%;background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i><i style=\"left:80%;width:14%;background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i></span></li><li class=\"is-off\"><i class=\"ds-sw ds-sw-off\"></i><b>Volume</b><p>Not reviewed yet</p></li></ul>",
+      "css": ".ds-fr{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;list-style:none;margin:0;padding:0;display:grid;gap:20px;max-width:640px;color:var(--ink)}.ds-fr li{display:grid;grid-template-columns:10px 9.5rem minmax(0,1fr) 10rem;column-gap:16px;align-items:start}.ds-sw{margin-top:5px;width:10px;height:10px;border-radius:2px}.ds-sw-off{border:1px dashed var(--line-strong);box-sizing:border-box}.ds-fr b{font-size:14px;line-height:20px;font-weight:600}.ds-fr p{margin:0;font-size:13px;line-height:20px;color:var(--ink-2)}.ds-fr p span{font-weight:600}.ds-fr .is-off b,.ds-fr .is-off p{color:var(--ink-3)}.ds-lane{position:relative;margin-top:5px;height:10px;border-radius:2px;background:var(--sunken)}.ds-lane i{position:absolute;top:0;bottom:0;min-width:3px;border-radius:2px}"
+    },
+    {
+      "name": "Review Line",
       "kind": "custom",
       "refersTo": "",
-      "description": "Rounded note blocks on paper; the active note lifts as a white block.",
-      "html": "<ul class=\"ds-rail\"><li class=\"ds-note\"><span class=\"ds-t\">00:04.7</span><span class=\"ds-f\" style=\"color:var(--f-rate-ink)\">Rate</span> Opening rushes</li><li class=\"ds-note ds-note-active\"><span class=\"ds-t\">00:13.5</span><span class=\"ds-f\" style=\"color:var(--f-volume-ink)\">Volume</span> The ending drops away</li></ul>",
-      "css": ".ds-rail{list-style:none;margin:0;padding:8px 0;width:320px;background:var(--paper);font:400 13px 'Archivo Variable',sans-serif;color:var(--ink-2)}.ds-note{margin:0 8px;padding:12px 16px;border-radius:4.8px;display:flex;gap:12px;align-items:baseline;transition:background-color .2s,box-shadow .2s;cursor:pointer}.ds-note:hover{background:var(--sunken)}.ds-note-active,.ds-note-active:hover{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 4px 14px -8px oklch(0.2 0.005 60 / 0.25)}.ds-t{font:400 11px 'Martian Mono Variable',monospace;font-variant-numeric:tabular-nums;color:var(--ink-3)}.ds-f{font-weight:600;font-size:12px}"
+      "description": "A review row: mono timecode and syl/s, the line in lyric-on-tape type with highlighter runs, karaoke and a measured pause bar, and a silence row with its mono leader below. No ribbon; the transport scrubber is the only timeline.",
+      "html": "<div class=\"ds-tl\"><div class=\"ds-tl-tc\"><button>00:03.2</button><p>4.1 syl/s</p></div><p class=\"ds-tl-l\">And the thing <span class=\"ds-run\">nobody tells <span class=\"ds-now\">you</span> <i class=\"ds-pz\"></i> is that</span> <span class=\"ds-wait\">the hardest part isn’t the work.</span></p></div><div class=\"ds-tl ds-gap\"><span class=\"ds-lead\"><i></i>0.7 s</span></div>",
+      "css": ".ds-tl{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:grid;grid-template-columns:4.5rem minmax(0,1fr);column-gap:24px;max-width:720px;color:var(--ink)}.ds-tl-tc{padding-top:8px}.ds-tl-tc button{border:0;padding:0;background:none;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;color:var(--glass-ink)}.ds-tl-tc p{margin:4px 0 0;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:10px;line-height:20px;color:var(--ink-3)}.ds-tl-l{margin:0;padding:8px 0 24px;max-width:36ch;font-size:26px;line-height:1.35;font-weight:600;letter-spacing:-.015em;font-variation-settings:'wdth' 125}.ds-run{background:linear-gradient(transparent 12%,var(--f-pauses) 12%,var(--f-pauses) 94%,transparent 94%);mix-blend-mode:multiply;border-radius:.14em;box-decoration-break:clone;-webkit-box-decoration-break:clone}.ds-now{text-decoration:underline;text-decoration-color:var(--glass);text-decoration-thickness:3px;text-underline-offset:.22em}.ds-wait{color:var(--ink-3)}.ds-pz{display:inline-block;width:1.4em;height:.36em;border-radius:2px;vertical-align:middle;background:var(--f-pauses-ink)}.ds-gap{height:64px}.ds-lead{display:flex;align-items:center;gap:8px;align-self:center;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:10px;color:var(--ink-3)}.ds-lead i{width:12px;height:1px;background:var(--line-strong)}"
+    },
+    {
+      "name": "Margin Note",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "A review note: pin centred on the 20px label line, foundation short name in ink, rule label and tentative, glass play triangle with mono time, observation, why, practice with corner-down-right, suggestion buttons with glass play triangles.",
+      "html": "<div class=\"ds-mn\"><span class=\"ds-mn-pin\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\"><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--surface)\" stroke=\"var(--f-rate-ink)\" stroke-width=\"2\" stroke-dasharray=\"4.28 2.79\"/></svg></span><div><p class=\"ds-mn-h\"><b>Rate</b><span>Rushed passage · tentative</span><em><i class=\"ds-mn-tri\">&#9654;</i> 00:00</em></p><p class=\"ds-mn-o\">This passage moves quickly.</p><p class=\"ds-mn-w\">A little more time can make this passage easier to follow.</p><p class=\"ds-mn-p\"><i>↳</i>Give this phrase a little more time, then resume your natural pace.</p><p class=\"ds-mn-s\"><i class=\"ds-mn-tri\">&#9654;</i> <span>Slow down on</span> <b>“night shift”</b></p></div></div>",
+      "css": ".ds-mn{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:grid;grid-template-columns:1.25rem minmax(0,1fr);column-gap:8px;max-width:420px;color:var(--ink)}.ds-mn-pin{display:flex;height:20px;align-items:center;justify-content:center}.ds-mn p{margin:0}.ds-mn-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;font-size:12px;line-height:20px;color:var(--ink-3)}.ds-mn-h b{font-weight:600;color:var(--f-rate-ink)}.ds-mn-h em{margin-left:auto;font-style:normal;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:11px}.ds-mn-o{margin-top:4px!important;font-size:15px;line-height:24px;font-weight:500;color:var(--ink-2)}.ds-mn-w{margin-top:4px!important;font-size:13px;line-height:20px;color:var(--ink-3)}.ds-mn-p{display:flex;gap:8px;margin-top:12px!important;font-size:13px;line-height:20px;font-weight:500}.ds-mn-p i{font-style:normal;color:var(--f-rate-ink)}.ds-mn-tri{font-style:normal;font-size:9px;color:var(--glass)}.ds-mn-s{margin-top:8px!important;padding-left:24px;font-size:13px;line-height:20px;color:var(--ink-3)}.ds-mn-s span{color:var(--ink-2)}.ds-mn-s b{font-weight:600;color:var(--ink)}"
+    },
+    {
+      "name": "Recorder Tape",
+      "kind": "custom",
+      "refersTo": "recorder-lane",
+      "description": "One minute of tape left to right across the top of the recorder page: a 56px paper lane well with a line ring, the recorded level as a mirrored smoothed ink area, a bare line-strong hairline for the rest, mono ticks below, glass head while recording or playing.",
+      "html": "<div class=\"ds-rt\"><div class=\"ds-rt-lane\"><svg viewBox=\"0 0 100 100\" preserveAspectRatio=\"none\"><line x1=\"38\" y1=\"50\" x2=\"100\" y2=\"50\" stroke=\"var(--line-strong)\" stroke-width=\"1\" vector-effect=\"non-scaling-stroke\"/><path d=\"M0,46 L5,30 L10,22 L15,34 L20,18 L25,28 L30,24 L35,38 L38,46 L38,54 L35,62 L30,76 L25,72 L20,82 L15,66 L10,78 L5,70 L0,54 Z\" fill=\"var(--ink)\"/></svg><i style=\"left:38%\"></i></div><div class=\"ds-rt-ticks\"><span style=\"left:0\">00:00</span><span style=\"left:25%;transform:translateX(-50%)\">00:15</span><span style=\"left:50%;transform:translateX(-50%)\">00:30</span><span style=\"left:75%;transform:translateX(-50%)\">00:45</span><span style=\"left:100%;transform:translateX(-100%)\">01:00</span></div></div>",
+      "css": ".ds-rt{max-width:560px;padding:32px;border-radius:10px;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 1px 2px oklch(0.2 0.01 55 / .05),0 24px 60px -36px oklch(0.25 0.005 60 / .3)}.ds-rt-lane{position:relative;height:56px;border-radius:4px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--line)}.ds-rt-lane svg{position:absolute;top:0;bottom:0;left:12px;width:calc(100% - 24px);height:100%;overflow:visible}.ds-rt-lane i{position:absolute;top:-6px;bottom:-6px;width:2px;margin-left:12px;transform:translateX(-50%);border-radius:9999px;background:var(--glass)}.ds-rt-ticks{position:relative;height:16px;margin:8px 12px 0}.ds-rt-ticks span{position:absolute;top:0;font-family:'Martian Mono Variable',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:10px;line-height:16px;color:var(--ink-3)}"
     }
   ],
   "narrative": {
-    "northStar": "The Daylight Braindance Editor",
-    "overview": "MicMane is built like a professional editing suite that a Night City company would sell for the human voice: white chrome, gray and black structure, and a timeline you can scrub. Everything reads as an instrument. Headlines are set in a wide, heavy Archivo that feels stamped onto the product; times and measurements run in Martian Mono with tabular figures; body copy stays at a normal width and a calm gray.\n\nColor is rationed. The canvas is a nearly achromatic white. Five pastel foundation hues (rate, volume, pitch, tonality, pauses) appear only where a foundation is actually present: a lane, a swatch, a badge, a highlighted word. Dark surfaces are neutral graphite, never brown. The single warm color in the system is orange glass: the playhead, the recorder's glass, the slider thumb, the progress fill, the focus ring. When nothing is live, the glass is unlit graphite.\n\nState is carried by stroke rather than by extra color: a solid leader is a clear note, a dashed one is tentative; a filled pin is a strength, an open ring an improvement; sample content wears a dashed badge edge. Depth is almost flat. Lines mark structure, not lists: a one-pixel rule appears only where a fixed region meets scrolling content or where two panes share one container. Rows and sections separate by spacing on a shared grid. The only large soft shadows sit under the two instruments (the editor frame and the graphite recorder).",
+    "northStar": "The Liner Booklet",
+    "overview": "**Creative North Star: \"The Liner Booklet\"**\n\nEach lesson unfolds like the liner booklet of an album from a Night City label. The take is the track, its transcript is the lyric sheet, and the review is written in its margins. Every section is a booklet spread: graphite album covers and titles on the left, white pages of reading on the right. The cover is not an illustration; it is drawn from the take itself: one ridge for each spoken line that showed a strength, raised by that line's recorded level and filled with the foundation of that strength. Ridges stack up from the bottom, so a take with few strengths is a low stack and covers fill up as you practise. The one exception is the promotional sleeve, which shows every foundation at once.\n\nThe notebook is an undertone, not the personality, and it lives in structure only: notes written in the margin beside their line, one endless page per take, and the 8px rhythm. It has no material of its own; booklet pages are plain white, and dotted surfaces read cheap rather than chic. Everything else is the label's: wide extra-bold Archivo that names things, Martian Mono for timecodes, measurements, catalog numbers and track numbers, neutral graphite sleeves, and orange glass as the one warm light. Color is rationed. Foundation hues appear only where a foundation is in the data, laid on words as multiplied highlighter and on ridges as fill. Small orange details tie the pages together: glass marks every play control and whatever is happening now.\n\nThe voice sells the outcome, not the instrument: unlocking your voice, confidence, potential, learning and getting better. Covers are brand texture and are never named as a feature in copy. The first view stays sparse, so nothing competes with listening to the example.\n\nThe page has one rhythm. A single twelve-column spread runs top to bottom; sections separate by space and by ground (paper, white surface, graphite), never by rules. One shared playhead drives everything that follows a take: the lyric sheet fills in word by word, the cover's other ridges dim while a glass bead rides the current crest, and a glass hairline tracks progress.\n\nWhere the landing reads a take as a lyric sheet, the review reads it line by line under its timeline. The review is one long white booklet page under a sticky graphite transport whose scrubber is the take's only timeline: the glass playhead runs along the top and the notes sit on the bar as foundation slices. On the page, each spoken line sits beside its timecode, silences open real space, and every note hangs in a margin column at the height of its words. The recorder is a horizontal tape: one minute, left to right, filling with your level as you speak. Covers do not appear on the upload and review screens.",
     "keyCharacteristics": [
-      "White editor chrome; one-pixel lines mark scroll edges and pane splits, never rows or sections.",
-      "Five foundation hues, each a pastel field plus a deep ink, shown only where that foundation is active.",
-      "Neutral graphite for dark surfaces; orange glass as the only warm color, lit only while something is live.",
-      "Wide, extra-bold Archivo display type against mono timecodes.",
-      "State by stroke: solid or dashed, filled or open."
+      "Booklet spreads on a 12-column grid: covers and titles in the left five columns (sticky on large screens), reading in the right seven.",
+      "Album covers drawn from the take: graphite ground, one filled ridge per line that showed a strength, stacked from the bottom and clipped at a horizon, title on clean graphite below; covers fill up as you practise.",
+      "Plain white booklet pages with a 10px corner; the notebook lives in structure (margin notes, one endless page per take, the 8px rhythm), never in a printed texture.",
+      "Foundation fills as multiplied highlighter on words; pins filled or open, solid or dashed.",
+      "Orange glass for play controls and whatever is live: the play buttons, the current word, the bead, the playheads, recording, the section you are in.",
+      "Wide Archivo names things; Martian Mono numbers them.",
+      "One timeline per take: the transport scrubber with foundation note slices and a glass playhead, which the review page follows.",
+      "The recorder tape: one minute left to right, the recorded level as a mirrored ink area.",
+      "Foundations the review did not assess are drawn dashed, never filled."
     ],
     "rules": [
       {
         "name": "The Active-Only Rule",
-        "body": "A foundation color appears only where that foundation is present in the data: its lane, its swatch, its badge, its note. Never as decoration, section tint, or brand accent.",
+        "body": "A foundation color appears only where that foundation is present in the data: a ridge whose line showed it as its first strength, a highlighted word, a lane, a pin, a swatch. Never as section tint or brand accent. The single exception is a promotional cover (the hero sleeve): the take is cut into five even slices, one per foundation fill in course order, every ridge filled. No other surface borrows the five fills as decoration.",
         "section": "colors"
       },
       {
         "name": "The One Warm Light Rule",
-        "body": "Orange glass marks the single live or draggable thing: the playhead, recording, playback in progress, focus. Unlit glass is graphite-line. If two unrelated things are orange, one of them is wrong.",
+        "body": "Orange glass marks two things only: play controls, and whatever is live. Play controls are glass at rest as well as while playing, as small orange details that tie the pages together. Live means the playhead and everything it drives (the current word, the cover's bead, the progress hairline), recording, and the section in view. When nothing plays, the cover shows no bead and the sheet shows no underline. No orange on anything else.",
+        "section": "colors"
+      },
+      {
+        "name": "The Not Reviewed Rule",
+        "body": "A foundation the review did not assess is drawn with a dashed line-strong swatch, its name in ink-3, and \"Not reviewed yet\" (on the recorder, \"Coming later\"); it gets no verdict, no lane and no fill. Only assessed foundations carry their pair. Not reviewed must never read as passed.",
         "section": "colors"
       },
       {
@@ -673,44 +749,65 @@
         "section": "colors"
       },
       {
-        "name": "The Mono Means Measured Rule",
-        "body": "Martian Mono is used only for times and measured values. Words are never set in mono.",
+        "name": "The Mono Numbers Rule",
+        "body": "Martian Mono sets numbers that belong to the take or the label: timecodes, measured values, catalog numbers, track numbers. Words are never set in mono; a unit that belongs to a number (\"s\", \"syl/s\", \"×\") travels with it, but counted nouns do not (\"4 notes\" sets only the 4 in mono).",
         "section": "typography"
       },
       {
         "name": "The Sentence-Case Rule",
-        "body": "Labels are small, semibold and sentence case. The build has no uppercase tracked labels.",
+        "body": "Labels are small, semibold and sentence case. The build has no uppercase tracked labels and no eyebrows above headings.",
         "section": "typography"
       },
       {
-        "name": "The Lines Mark Structure, Not Lists Rule",
-        "body": "A one-pixel line rule is used in exactly two cases. Scroll edge: a fixed region sits over content that scrolls (the scrolled nav's bottom border, the rail summary above the note list, the phone notes sheet header). Pane split: two panes share one container (editor toolbar and viewer, viewer and timeline, label column, notes rail, figure caption and takes, card and dialog footers, phone note pane and all-notes bar, the tabs line rail the active indicator rides on). Rows and section breaks get no line: foundation rows, lanes, rail notes, promises, accordion items, the \"Listening for\" list and page sections separate by spacing and sit on the shared grid. Data lines are exempt (ruler baseline, retake timeline, waveform, leaders).",
+        "name": "The 4px Leading Rule",
+        "body": "Line heights for text that sits beside other rows land on whole 4px steps (20, 24, 28, 40px), so text rows sit on the page's cadence.",
+        "section": "typography"
+      },
+      {
+        "name": "The Margin Rule",
+        "body": "On large screens a line's notes start level with their own line in the 5fr margin, out of flow, so a line's height stays its words and the space after it stays its silence. Only when a line's notes would run into the next line's notes does that line grow, by the overlap plus 32px; the page grows to hold the last block. On phones and tablets the notes sit inline under the line, 24px apart.",
+        "section": "layout"
+      },
+      {
+        "name": "The Lines Are Edges or Data Rule",
+        "body": "A one-pixel line is either the edge of an object (a page's ring, a lane well, the scrolled nav's bottom border) or a piece of data (the progress track, the retake spine, the pause leader, a dashed empty slot, the scrubber track, the silence leader's dash, the recorder tape's bare remainder). Rows, notes, list items and page sections never get a divider; they separate by space on the grid.",
         "section": "elevation"
       },
       {
-        "name": "The Fading Separator Rule",
-        "body": "A free-standing separator, outside any container, fades to transparent at both ends (line-strong at its midpoint).",
+        "name": "The Two Drops Rule",
+        "body": "Large soft shadows belong to covers (sleeve) and booklet pages. Nothing else on the page lifts. The sticky transport is flat graphite with no shadow or rule.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do keep the canvas paper, surface and graphite; let color enter only through an active foundation or live glass.",
-      "Do pair every foundation fill with its ink, and set foundation text in the ink.",
-      "Do separate rows and sections by spacing on the shared heading/lead grid (lg: minmax(0, 1.35fr) and minmax(0, 1fr), 64px gap).",
-      "Do draw a one-pixel line where a fixed region meets scrolling content, or where two panes share one container.",
-      "Do express state by stroke: solid for clear, dashed for tentative or sample, filled for strength, open ring for improvement.",
-      "Do set times and measured values in Martian Mono with tabular figures.",
-      "Do use the glass focus ring (2px, offset 2px) on every interactive element."
+      "**Do** build every section as a spread on the 12-column grid: cover or title in the left five columns, reading in the right seven.",
+      "**Do** draw a take's cover from the take: one ridge per line that showed a strength, from its level, filled with that foundation, stacked from the bottom on full-cover slots, clipped at the horizon, title on clean graphite below. Only a promotional sleeve fills every ridge.",
+      "**Do** put reading on plain white booklet pages with the 10px corner.",
+      "**Do** mark noted words with the foundation fill as multiplied highlighter, and set foundation text in its ink.",
+      "**Do** drive the sheet, the cover and the progress hairline from one playhead, with glass only on play controls and what is current.",
+      "**Do** set timecodes, measurements, catalog numbers and track numbers in Martian Mono with tabular figures.",
+      "**Do** keep layout spacing on 8px steps and text line heights on whole 4px steps.",
+      "**Do** keep honesty about the example in the footer and on illustrated data (the dashed \"Illustration\" badge), and leave a dashed empty slot where a take does not exist yet.",
+      "**Do** sell the outcome in copy: unlocking your voice, confidence, potential, learning and getting better.",
+      "**Do** keep the first view sparse: headline, one outcome line, \"Try a free review\" and \"See an example\", the cover, then the example.",
+      "**Do** turn off ridge-rise, ghost-drift and the tape scan under reduced motion, and let a following page jump line by line instead of easing.",
+      "**Do** lay the review out as one long page under the transport: timecode, line and margin per row, silences as space, notes level with their line in the margin, the scrubber as the only timeline.",
+      "**Do** draw foundations that were not reviewed with a dashed swatch and \"Not reviewed yet\" or \"Coming later\", never filled.",
+      "**Do** release the page from the playhead the moment the reader scrolls, and offer Follow to bring it back."
     ],
     "donts": [
-      "Don't use a foundation hue for decoration, section backgrounds, or emphasis unrelated to that foundation.",
-      "Don't light glass when nothing is live, or use it for a second, unrelated highlight on the same screen.",
-      "Don't round badges, tags or lane tiles into pills; keep them at 3px or less.",
-      "Don't put large drop shadows on anything other than the editor frame and the recorder.",
-      "Don't set words or labels in mono, or in uppercase with tracking.",
-      "Don't draw lines between list rows, lanes, notes, accordion items or page sections.",
-      "Don't use the iridescent film as a background, border or button fill.",
-      "Don't use brown or walnut tones for surfaces, text or shadows; dark means neutral graphite."
+      "**Don't** use a foundation hue for decoration, section backgrounds, or emphasis unrelated to that foundation; the promotional sleeve is the only exception.",
+      "**Don't** present covers as a feature in copy; they are brand texture.",
+      "**Don't** put credits, verdict tables, badges or explanatory captions near the hero cover, or anything else that competes with listening to the example.",
+      "**Don't** use glass on anything that is neither a play control nor live.",
+      "**Don't** draw lines between list rows, notes, takes or page sections; lines are object edges or data.",
+      "**Don't** stretch a review line to fit its notes, or label the room grown for notes as time.",
+      "**Don't** add a ribbon, tape gutter or second timeline beside the review's lines; the transport scrubber is the only one.",
+      "**Don't** put large shadows on anything other than covers and booklet pages.",
+      "**Don't** set words in mono, or labels in uppercase with tracking; no eyebrows above headings.",
+      "**Don't** let the notebook become literal: no dot grids or dotted surfaces, ruled lines, binder rings, washi or sticky tape, handwriting fonts or stationery props. The notebook lives in structure only: margin notes, one endless page per take, the 8px rhythm. (The recorder tape is the recorded take, an audio tape, and is native to the world.)",
+      "**Don't** round badges, tags or swatches into pills; keep them at 3px or less.",
+      "**Don't** use brown or walnut tones for surfaces, text or shadows; dark means neutral graphite."
     ]
   }
 }

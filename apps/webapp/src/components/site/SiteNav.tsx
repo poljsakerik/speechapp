@@ -16,13 +16,39 @@ import {
 import { cn } from "@micmane/ui/lib/utils";
 
 const LINKS = [
-  { hash: "foundations", label: "Foundations" },
+  { hash: "sample", label: "The example" },
+  { hash: "lessons", label: "Lessons" },
   { hash: "retake", label: "The retake" },
   { hash: "promises", label: "Promises" },
 ];
 
+/** The section under the reading line, so the nav can light where you are. */
+function useCurrentSection() {
+  const [current, setCurrent] = useState<string | null>(null);
+  useEffect(() => {
+    const update = () => {
+      const line = window.innerHeight * 0.35;
+      let found: string | null = null;
+      for (const { hash } of LINKS) {
+        const el = document.getElementById(hash);
+        if (el && el.getBoundingClientRect().top <= line) found = hash;
+      }
+      setCurrent(found);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+  return current;
+}
+
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
+  const current = useCurrentSection();
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -40,7 +66,7 @@ export function SiteNav() {
       )}
     >
       <nav
-        className="mx-auto flex h-14 max-w-[1320px] items-center gap-8 px-4 sm:px-6 lg:px-10"
+        className="mx-auto flex h-14 max-w-[1440px] items-center gap-8 px-4 sm:px-6 lg:px-10"
         aria-label="Main"
       >
         <Link to="/" className="rounded-sm" aria-label="MicMane home">
@@ -52,7 +78,12 @@ export function SiteNav() {
               <Link
                 to="/"
                 hash={l.hash}
-                className="transition-colors hover:text-ink"
+                aria-current={current === l.hash ? "location" : undefined}
+                className={cn(
+                  "relative py-1 transition-colors hover:text-ink",
+                  current === l.hash &&
+                    "text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-glass",
+                )}
               >
                 {l.label}
               </Link>
@@ -78,7 +109,7 @@ export function SiteNav() {
               <SheetHeader>
                 <SheetTitle>MicMane</SheetTitle>
                 <SheetDescription>
-                  Hear yourself the way they hear you.
+                  Unlock the full potential of your voice.
                 </SheetDescription>
               </SheetHeader>
               <ul className="grid gap-1 px-4 text-base font-medium">

@@ -605,20 +605,27 @@ export function Pin({
         fill={kind === "strength" ? color : "var(--surface)"}
         stroke={color}
         strokeWidth={kind === "strength" ? 1.5 : 2}
-        strokeDasharray={tentative ? "2.2 1.6" : undefined}
+        strokeDasharray={
+          tentative
+            ? `${(r * 0.95).toFixed(2)} ${(r * 0.62).toFixed(2)}`
+            : undefined
+        }
       />
     </svg>
   );
 }
 
+/** Readings print inside the lane; pass `labels={false}` where the lane is too narrow to hold them. */
 export function LaneSignal({
   foundationKey,
   take,
   pct,
+  labels = true,
 }: {
   foundationKey: FoundationKey;
   take: Take;
   pct: (t: number) => string;
+  labels?: boolean;
 }) {
   const f = FOUNDATION_BY_KEY[foundationKey];
   const H = LANE_H;
@@ -650,7 +657,7 @@ export function LaneSignal({
                 background: f.fill,
               }}
             >
-              {s.end - s.start > 1.6 && (
+              {labels && s.end - s.start > 1.6 && (
                 <span
                   className="absolute top-1/2 right-1.5 hidden -translate-y-1/2 font-mono text-[0.5625rem] whitespace-nowrap tabular lg:block"
                   style={{ color: f.ink }}
@@ -747,7 +754,7 @@ export function LaneSignal({
               className="absolute top-1.5 bottom-1.5 rounded-[2px]"
               style={{ left: pct(p.start), width: pct(d), background: f.fill }}
             >
-              {d >= 0.6 && (
+              {labels && d >= 0.6 && (
                 <span
                   className="absolute top-1/2 right-1 hidden -translate-y-1/2 font-mono text-[0.5625rem] whitespace-nowrap tabular xl:block"
                   style={{ color: f.ink }}
@@ -776,7 +783,7 @@ export function LaneSignal({
           }}
         />
       ))}
-      {foundationKey === "tonality" && (
+      {labels && foundationKey === "tonality" && (
         <span className="absolute top-1/2 right-2 hidden -translate-y-1/2 rounded-[2px] bg-surface px-1 text-[0.5625rem] text-ink-3 lg:block">
           heard, not measured
         </span>

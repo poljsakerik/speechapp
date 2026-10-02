@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "text-ink-2 hover:bg-sunken hover:text-ink aria-expanded:bg-sunken aria-expanded:text-ink",
         // Orange glass: reserved for recording and the playhead's own controls.
         glass: "glass-lit text-[oklch(0.19_0.008_55)] hover:bg-glass-hot",
-        // Unlit glass: a playback control at rest. It lights only while playing.
+        // Unlit glass: a quieter playback control, outlined with glass-ink text.
         glassOff:
           "border-line-strong bg-surface text-glass-ink hover:border-glass-ink",
         // Graphite: the recorder's body.
