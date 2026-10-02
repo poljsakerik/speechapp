@@ -561,7 +561,7 @@ export function Components() {
                   <TabsTrigger value="lesson">Lesson</TabsTrigger>
                 </TabsList>
                 <TabsContent value="notes" className="pt-3 text-ink-2">
-                  Four notes on pace and pauses.
+                  Six notes across five foundations.
                 </TabsContent>
                 <TabsContent value="transcript" className="pt-3 text-ink-2">
                   For three years, I ran the night shift…
@@ -663,12 +663,12 @@ export function Components() {
               <CardHeader>
                 <CardTitle>Night shift</CardTitle>
                 <CardDescription>
-                  Recorded today · 0:15 · 4 notes
+                  Recorded today · 0:15 · 6 notes
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-ink-2">
-                Rate of speech and pauses reviewed: two notes on pace, two on
-                pauses.
+                All five foundations reviewed: two notes on pace, two on pauses,
+                one on volume, one on tonality.
               </CardContent>
               <CardFooter className="gap-2">
                 <Button size="sm">Open review</Button>
@@ -754,7 +754,7 @@ export function Components() {
                   <SheetHeader>
                     <SheetTitle>Notes</SheetTitle>
                     <SheetDescription>
-                      Four notes on pace and pauses.
+                      Six notes across five foundations.
                     </SheetDescription>
                   </SheetHeader>
                   <p className="px-4 pb-6 text-ink-2">
@@ -860,7 +860,7 @@ export function Components() {
                 variant="outline"
                 onClick={() =>
                   toast.success("Your review is ready", {
-                    description: "4 notes on your pace and pauses.",
+                    description: "6 notes on your take.",
                   })
                 }
               >

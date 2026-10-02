@@ -286,7 +286,7 @@ A near-white canvas and graphite inks, five pastel foundation pairs, neutral gra
 
 - **Orange Glass** (glass): the one warm light, for play controls and what is live. Play controls, at rest and while playing: the hero cover's round play button, the review transport's play button, the recorder's round play button, the filled play icon in "See an example", and the small play triangles on margin notes and suggestion buttons. Live state: the current word's 3px underline, the bead riding the cover's current crest (with a 28% halo), the 2px progress hairline over the sheet's line, the nav tick under the section in view, the scrubber's playhead while playing, the recorder's head while recording or playing, the `tape-scan` head while the coach listens, the "Stop recording" button, the drop-target ring, focus rings and `accent-color`.
 - **Hot Glass** (glass-hot): glass hover and the selection tint (mixed 38% into white).
-- **Glass Ink** (glass-ink): orange for text on white: the running timecode while playing, the current line's timecode, timecode and play-control hover, "Listening" beside a live foundation while the coach listens, the caret.
+- **Glass Ink** (glass-ink): orange for text on white: the running timecode while playing, the current line's timecode, timecode and play-control hover, "Listening" beside every foundation while the coach listens, the caret.
 
 ### Tertiary
 
@@ -307,7 +307,7 @@ A near-white canvas and graphite inks, five pastel foundation pairs, neutral gra
 - **Line** (line): the one-pixel ring around pages, lane wells and the recorder lane, the progress track, the scrolled nav's bottom edge.
 - **Line Strong** (line-strong): the retake spine and its open nodes, the dashed empty slot ("Take 3 is yours"), the dashed sample badge, the pause leader between lines, unnoted pause marks, outline-button borders, the 12px dash before a silence's "x.x s" leader, the bare one-pixel hairline along the unrecorded remainder of the recorder tape, and the dashed swatch of a foundation not reviewed.
 - **Ink 2** (ink-2): lead paragraphs, margin-note observations, footer text, nav links.
-- **Ink 3** (ink-3): captions, timecodes at rest, the duration inside "See an example", track numbers, measure lines, the words of the current review line not yet spoken, "Not reviewed yet" and "Coming later".
+- **Ink 3** (ink-3): captions, timecodes at rest, the duration inside "See an example", track numbers, measure lines, the words of the current review line not yet spoken, a foundation's "not judged" reason.
 - **Graphite** (graphite): album covers, the Promises band, the sticky transport strip, and the 5px stroke that separates stacked ridges on a cover. **Graphite Line** (graphite-line): the dashed ridge outlines of the unpressed sleeve; on the transport, the scrubber track and the pressed fill of a speed or Follow control. **Graphite Deep** (graphite-deep): icon and text color on controls that sit on graphite (the transport's glass play button, "Another take").
 - **Light on Graphite** (on-graphite) and **Muted on Graphite** (on-graphite-muted): titles and secondary text on covers and the Promises band; muted also sets the cover's catalog number and its mono take line, the transport's total time, the played part of the scrubber, and resting transport controls. Light on graphite is also the scrubber's playhead while paused.
 - **Destructive** (destructive): errors, on an 88% white tint, never as a solid fill.
@@ -318,7 +318,7 @@ A near-white canvas and graphite inks, five pastel foundation pairs, neutral gra
 
 **The One Warm Light Rule.** Orange glass marks two things only: play controls, and whatever is live. Play controls are glass at rest as well as while playing, as small orange details that tie the pages together. Live means the playhead and everything it drives (the current word, the cover's bead, the progress hairline), recording, and the section in view. When nothing plays, the cover shows no bead and the sheet shows no underline. No orange on anything else.
 
-**The Not Reviewed Rule.** A foundation the review did not assess is drawn with a dashed line-strong swatch, its name in ink-3, and "Not reviewed yet" (on the recorder, "Coming later"); it gets no verdict, no lane and no fill. Only assessed foundations carry their pair. Not reviewed must never read as passed.
+**The Not Judged Rule.** All five foundations are reviewed, but a foundation the review returns as uncertain (not enough evidence on this take) is drawn with a dashed line-strong swatch, its name in ink-3, and the backend's own reason ("There is not enough clear speech to judge volume in this take."), falling back to "Not enough evidence to judge on this take"; it gets no verdict, no lane and no fill. Only judged foundations carry their pair. Not judged must never read as passed.
 
 **The No Brown Rule.** Dark surfaces are neutral graphite (chroma 0.004 or less), and nothing dark exceeds the chroma of ink itself (0.008). No brown or walnut surfaces, text or shadows; shadows tint neutral. Orange glass is the only warm color. This is a founder decision recorded in PRODUCT.md.
 
@@ -456,7 +456,7 @@ A sticky graphite strip at the top of the review with 12px vertical padding, on 
 
 ### Foundation Rows (review)
 
-The five foundations in course order, 20px apart, beside the review's headline. A reviewed foundation: a 10px fill swatch outlined in its ink, its name in 0.875rem semibold ink, the verdict in its ink (semibold) followed by " · " and the summary in ink-2, and a 10px foundation lane on sunken (2px corners) showing where that foundation's notes fall as fill slices outlined in ink, with a 2px playhead (glass while playing, ink-3 paused) once played. A foundation not reviewed follows the Not Reviewed Rule: dashed swatch, name and "Not reviewed yet" (or its own reason) in ink-3, no lane. On phones the unreviewed foundations share one row ("Volume, Pitch & melody, Tonality").
+The five foundations in course order, 20px apart, beside the review's headline. A reviewed foundation: a 10px fill swatch outlined in its ink, its name in 0.875rem semibold ink, the verdict in its ink (semibold) followed by " · " and the summary in ink-2, and a 10px foundation lane on sunken (2px corners) showing where that foundation's notes fall as fill slices outlined in ink, with a 2px playhead (glass while playing, ink-3 paused) once played. A foundation that could not be judged follows the Not Judged Rule: dashed swatch, name and its own reason in ink-3, no lane. On phones, when more than one could not be judged, they share one row.
 
 ### Review Page (signature)
 
@@ -473,7 +473,7 @@ On a 1.25rem pin column: the 12px pin, centred on the 20px label line (no negati
 
 ### Recorder Tape (upload)
 
-The recorder is a booklet page with the tape across its top and the state content 40px below it (min 15rem tall). The tape is one minute, left to right, in a 56px paper lane well (4px corners, one-pixel line ring, 12px inset): what is recorded or chosen drawn as a mirrored, smoothed ink area; the rest a bare one-pixel line-strong hairline along the center (no dashes); mono ticks 00:00, 00:15, 00:30, 00:45 and 01:00 in ink-3 below, the first and last aligned to the ends. A 2px head standing 6px proud of the lane rides it in glass while recording or playing, ink when paused. While the coach listens, a glass `tape-scan` head sweeps the recorded length left to right and back. The recorder's round 44px play button is glass at rest and while playing. Dragging a file over the page lights a 2px glass ring. Beside the page, "The coach listens for" lists the five foundations: rate of speech and pauses with fill swatches and semibold ink names (with "Listening" in glass-ink while the coach works on them), the other three with dashed swatches, ink-3 names and "Coming later".
+The recorder is a booklet page with the tape across its top and the state content 40px below it (min 15rem tall). The tape is one minute, left to right, in a 56px paper lane well (4px corners, one-pixel line ring, 12px inset): what is recorded or chosen drawn as a mirrored, smoothed ink area; the rest a bare one-pixel line-strong hairline along the center (no dashes); mono ticks 00:00, 00:15, 00:30, 00:45 and 01:00 in ink-3 below, the first and last aligned to the ends. A 2px head standing 6px proud of the lane rides it in glass while recording or playing, ink when paused. While the coach listens, a glass `tape-scan` head sweeps the recorded length left to right and back. The recorder's round 44px play button is glass at rest and while playing. Dragging a file over the page lights a 2px glass ring. Beside the page, "The coach listens for" lists all five foundations with fill swatches and semibold ink names; while the coach works, every one shows "Listening" in glass-ink at once, since they are judged together.
 
 ### Note Pins
 
@@ -511,7 +511,7 @@ Wordmark, four 13px medium ink-2 section links (The example, Lessons, The retake
 - **Do** keep the first view sparse: headline, one outcome line, "Try a free review" and "See an example", the cover, then the example.
 - **Do** turn off ridge-rise, ghost-drift and the tape scan under reduced motion, and let a following page jump line by line instead of easing.
 - **Do** lay the review out as one long page under the transport: timecode, line and margin per row, silences as space, notes level with their line in the margin, the scrubber as the only timeline.
-- **Do** draw foundations that were not reviewed with a dashed swatch and "Not reviewed yet" or "Coming later", never filled.
+- **Do** draw foundations that could not be judged with a dashed swatch and their own reason, never filled.
 - **Do** release the page from the playhead the moment the reader scrolls, and offer Follow to bring it back.
 
 ### Don't:

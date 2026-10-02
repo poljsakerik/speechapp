@@ -41,8 +41,6 @@ import { cn } from "@micmane/ui/lib/utils";
 const MAX_SECONDS = 60;
 const ACCEPT =
   "audio/wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,video/mp4,video/webm,video/quicktime,.m4a,.mp3,.wav,.webm,.mp4,.mov";
-/** The live review assesses these foundations; the others are not analyzed yet. */
-const LIVE = new Set(["rate", "pauses"]);
 /** Level samples per second while recording. */
 const RATE_HZ = 14;
 
@@ -267,8 +265,8 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
       const count = result.review.findings.length;
       toast.success("Your review is ready", {
         description: count
-          ? `${count} note${count > 1 ? "s" : ""} on your pace and pauses.`
-          : "No pace or pause notes on this take.",
+          ? `${count} note${count > 1 ? "s" : ""} on your take.`
+          : "No notes on this take.",
       });
     } catch (error) {
       setState({
@@ -532,8 +530,9 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                 Listening to your take…
               </p>
               <p className="mt-4 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
-                The coach transcribes it, then checks your rate of speech and
-                your pauses. This can take a minute.
+                The coach transcribes it, then listens for all five foundations:
+                rate, volume, pitch and melody, tonality and pauses. This can
+                take a minute.
               </p>
               <p className="mt-6 font-mono text-[0.75rem] text-ink-3 tabular">
                 {formatTime(listening, false)}
@@ -562,11 +561,8 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
         </h2>
         <ul className="mt-3 grid max-w-[24rem] gap-2">
           {FOUNDATIONS.map((f) => {
-            const on = LIVE.has(f.key);
-            const lit =
-              state.name === "reviewing" &&
-              on &&
-              listening > (f.key === "rate" ? 3 : 8);
+            // Every foundation is listened for at once, so all light together.
+            const lit = state.name === "reviewing";
             return (
               <li
                 key={f.key}
@@ -574,29 +570,20 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
               >
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    "size-2.5 rounded-[2px]",
-                    !on && "border border-dashed border-line-strong",
-                  )}
-                  style={
-                    on
-                      ? {
-                          background: f.fill,
-                          boxShadow: `inset 0 0 0 1px ${f.ink}`,
-                        }
-                      : undefined
-                  }
+                  className="size-2.5 rounded-[2px]"
+                  style={{
+                    background: f.fill,
+                    boxShadow: `inset 0 0 0 1px ${f.ink}`,
+                  }}
                 />
-                <span className={on ? "font-semibold text-ink" : "text-ink-3"}>
-                  {f.label}
-                </span>
+                <span className="font-semibold text-ink">{f.label}</span>
                 <span
                   className={cn(
                     "text-[0.75rem]",
                     lit ? "text-glass-ink" : "text-ink-3",
                   )}
                 >
-                  {on ? (lit ? "Listening" : "") : "Coming later"}
+                  {lit ? "Listening" : ""}
                 </span>
               </li>
             );

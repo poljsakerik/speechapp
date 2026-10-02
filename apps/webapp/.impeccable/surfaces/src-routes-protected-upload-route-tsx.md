@@ -11,7 +11,7 @@ Mode: Operate. Visitor: someone who just recorded or uploaded a take and wants t
 
 Founder answers (2026-10-02): this round is about data display, not the retake flow; no take covers on these screens (covers belong on a future takes list page); the /components showcase is redesigned too.
 
-Product truth to keep: the live review assesses rate of speech and pauses; volume, pitch & melody and tonality come back "not analyzed yet" and must read as not reviewed, never as passed. Notes are improvements; rate notes are tentative. Every note can be played. Space toggles playback, J/K step notes, Arrow keys scrub.
+Product truth to keep (updated 2026-10-02 after rebasing on main): the live review assesses all five foundations. A foundation the backend returns as uncertain shows its own reason with a dashed swatch and must never read as passed. Rate notes are tentative, pause notes clear. Every note can be played. Space toggles playback, J/K step notes, Arrow keys scrub.
 
 Founder changes after the build (2026-10-02):
 - No dot grid on any page: dotted surfaces read cheap and decorative. Pages are plain white.

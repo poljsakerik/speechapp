@@ -3,19 +3,12 @@ import type { ReviewResult } from "@/lib/api";
 import { normalizeReview, type Take } from "@/lib/review";
 
 /*
- * The landing page's sample take with a review in the shape the backend returns
- * (rate and pauses assessed, the rest not analyzed), so the review screen can be
- * designed without the review service: /upload?fixture in development, and the
- * specimens on /components.
+ * The landing page's sample take with a review in the shape the backend returns,
+ * worded with the backend's own copy for all five foundations, so the review
+ * screen can be designed without the review service: /upload?fixture in
+ * development, and the specimens on /components.
  */
 const take = sampleTake as Take;
-
-const notAnalyzed = (foundation: string) => ({
-  foundation,
-  verdict: "uncertain",
-  summary: "This foundation has not been analyzed yet.",
-  findings: [],
-});
 
 const raw = {
   overall: "Review your rate of speech.",
@@ -72,9 +65,57 @@ const raw = {
         },
       ],
     },
-    notAnalyzed("volume"),
-    notAnalyzed("pitch_melody"),
-    notAnalyzed("tonality"),
+    {
+      foundation: "volume",
+      verdict: "mixed",
+      summary: "Your voice drops or trails off in a few places.",
+      findings: [
+        {
+          segment_id: "s4",
+          group_id: "0",
+          rule_id: "VOLUME_FADE",
+          kind: "improvement",
+          uncertainty: "tentative",
+          observation: "Your voice trails off at the end of these sentences.",
+          why_it_matters:
+            "The end of a sentence often carries the point; when it fades, it gets lost.",
+          practice:
+            "Take a breath at the pause before, and carry your volume through to the last word.",
+          start: 13.49,
+          end: 14.65,
+        },
+      ],
+    },
+    {
+      foundation: "pitch_melody",
+      verdict: "effective",
+      summary:
+        "Your voice moves between notes; no monotone stretch was detected.",
+      findings: [],
+    },
+    {
+      foundation: "tonality",
+      verdict: "mixed",
+      summary:
+        "Your voice sounds flat in places; a little more feeling would help the words land.",
+      findings: [
+        {
+          segment_id: "s3",
+          group_id: "0",
+          rule_id: "TONE_FLAT",
+          kind: "improvement",
+          uncertainty: "tentative",
+          observation:
+            "Your voice sounds flat here, while the words call for conviction.",
+          why_it_matters:
+            "Listeners connect with the feeling in your voice, not only with the words.",
+          practice:
+            "Decide what this passage should feel like, let your face show it, and say it again.",
+          start: 8.26,
+          end: 9.24,
+        },
+      ],
+    },
     {
       foundation: "pauses",
       verdict: "mixed",

@@ -679,8 +679,8 @@
       "name": "Foundation Rows",
       "kind": "custom",
       "refersTo": "foundation-lane",
-      "description": "Reviewed foundations with fill swatch, verdict in foundation ink, summary and a lane of where notes fall; unreviewed ones dashed and \"Not reviewed yet\".",
-      "html": "<ul class=\"ds-fr\"><li><i class=\"ds-sw\" style=\"background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i><b>Rate of speech</b><p><span style=\"color:var(--f-rate-ink)\">Mixed</span> · Two passages move quickly.</p><span class=\"ds-lane\"><i style=\"left:2%;width:12%;background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i><i style=\"left:80%;width:14%;background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i></span></li><li class=\"is-off\"><i class=\"ds-sw ds-sw-off\"></i><b>Volume</b><p>Not reviewed yet</p></li></ul>",
+      "description": "Reviewed foundations with fill swatch, verdict in foundation ink, summary and a lane of where notes fall; ones that could not be judged dashed, with their own reason.",
+      "html": "<ul class=\"ds-fr\"><li><i class=\"ds-sw\" style=\"background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i><b>Rate of speech</b><p><span style=\"color:var(--f-rate-ink)\">Mixed</span> · Two passages move quickly.</p><span class=\"ds-lane\"><i style=\"left:2%;width:12%;background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i><i style=\"left:80%;width:14%;background:var(--f-rate);box-shadow:inset 0 0 0 1px var(--f-rate-ink)\"></i></span></li><li class=\"is-off\"><i class=\"ds-sw ds-sw-off\"></i><b>Volume</b><p>Not enough evidence to judge on this take</p></li></ul>",
       "css": ".ds-fr{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;list-style:none;margin:0;padding:0;display:grid;gap:20px;max-width:640px;color:var(--ink)}.ds-fr li{display:grid;grid-template-columns:10px 9.5rem minmax(0,1fr) 10rem;column-gap:16px;align-items:start}.ds-sw{margin-top:5px;width:10px;height:10px;border-radius:2px}.ds-sw-off{border:1px dashed var(--line-strong);box-sizing:border-box}.ds-fr b{font-size:14px;line-height:20px;font-weight:600}.ds-fr p{margin:0;font-size:13px;line-height:20px;color:var(--ink-2)}.ds-fr p span{font-weight:600}.ds-fr .is-off b,.ds-fr .is-off p{color:var(--ink-3)}.ds-lane{position:relative;margin-top:5px;height:10px;border-radius:2px;background:var(--sunken)}.ds-lane i{position:absolute;top:0;bottom:0;min-width:3px;border-radius:2px}"
     },
     {
@@ -734,8 +734,8 @@
         "section": "colors"
       },
       {
-        "name": "The Not Reviewed Rule",
-        "body": "A foundation the review did not assess is drawn with a dashed line-strong swatch, its name in ink-3, and \"Not reviewed yet\" (on the recorder, \"Coming later\"); it gets no verdict, no lane and no fill. Only assessed foundations carry their pair. Not reviewed must never read as passed.",
+        "name": "The Not Judged Rule",
+        "body": "All five foundations are reviewed, but one the review returns as uncertain is drawn with a dashed line-strong swatch, its name in ink-3, and its own reason; it gets no verdict, no lane and no fill. Only judged foundations carry their pair. Not judged must never read as passed.",
         "section": "colors"
       },
       {
@@ -792,7 +792,7 @@
       "**Do** keep the first view sparse: headline, one outcome line, \"Try a free review\" and \"See an example\", the cover, then the example.",
       "**Do** turn off ridge-rise, ghost-drift and the tape scan under reduced motion, and let a following page jump line by line instead of easing.",
       "**Do** lay the review out as one long page under the transport: timecode, line and margin per row, silences as space, notes level with their line in the margin, the scrubber as the only timeline.",
-      "**Do** draw foundations that were not reviewed with a dashed swatch and \"Not reviewed yet\" or \"Coming later\", never filled.",
+      "**Do** draw foundations that could not be judged with a dashed swatch and their own reason, never filled.",
       "**Do** release the page from the playhead the moment the reader scrolls, and offer Follow to bring it back."
     ],
     "donts": [

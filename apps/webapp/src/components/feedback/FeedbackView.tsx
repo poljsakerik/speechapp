@@ -664,7 +664,7 @@ export function FeedbackView({
                 </li>
               );
             })}
-            {/* On phones the foundations not reviewed yet share one row, so the tape starts sooner. */}
+            {/* On phones the foundations that couldn't be judged share one row, so the page starts sooner. */}
             {unreviewed.length > 1 && (
               <li className="grid grid-cols-[0.625rem_minmax(0,1fr)] gap-x-3 sm:hidden">
                 <Swatch reviewed={false} />
@@ -672,7 +672,7 @@ export function FeedbackView({
                   {unreviewed.map((f) => f.label).join(", ")}
                 </p>
                 <p className="col-start-2 text-[0.8125rem] leading-5 text-ink-3">
-                  Not reviewed yet
+                  Not enough evidence to judge on this take
                 </p>
               </li>
             )}
@@ -748,11 +748,11 @@ export function FeedbackView({
   );
 }
 
-/** A foundation's own reason it could not be judged, or plainly that it was not reviewed. */
+/** A foundation's own reason it could not be judged on this take, or a plain one. */
 const notReviewed = (summary?: string) =>
   summary && !/not been analy[sz]ed/.test(summary)
     ? summary
-    : "Not reviewed yet";
+    : "Not enough evidence to judge on this take";
 
 function Swatch({
   foundation,
