@@ -142,6 +142,17 @@ export function volumeAssessment(segments: Segment[], marks: VolumeMark[] | unde
   }
 }
 
+/**
+ * Volume uses the recognizer's word timing, as its benchmark does: forced
+ * alignment refines words against measured pauses and trims a fading voice
+ * as if it were silence. Alignment keeps the same words in the same order, so
+ * the marks are moved onto the aligned transcript the segments are built from.
+ */
+export function measureVolume(samples: Float32Array, sampleRate: number, recognized: Word[], transcript: Word[]): VolumeMark[] | undefined {
+  const volume = detectVolume(samples, sampleRate, recognized)
+  return volume.reliable ? volume.marks.map(m => ({ ...m, start: transcript[m.first].start, end: transcript[m.last].end })) : undefined
+}
+
 export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {
   const findings = findingsFor(segments, marks, copy)
   return {
@@ -193,8 +204,7 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const pause = pauses ? await reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : undefined
   const pauseMarks = pause?.reliable ? pause.marks : undefined
   const rate = rateReview(segments, marks, "", status)
-  const volume = decoded && detectVolume(decoded.samples, decoded.sampleRate, transcript)
-  const volumeMarks = volume && volume.reliable ? volume.marks : undefined
+  const volumeMarks = decoded && measureVolume(decoded.samples, decoded.sampleRate, recognized, transcript)
   const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a) }
   return {
     audio: audio.toString("base64"),

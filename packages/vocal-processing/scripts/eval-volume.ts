@@ -29,7 +29,7 @@ for (const take of takes) {
     if (review?.status === "excluded") { rows.push({ id: take.id, status: "excluded", notes: review.notes }); continue }
     selected++
     if (review?.status !== "reviewed") { rows.push({ id: take.id, status: "unreviewed" }); continue }
-    // Word loudness is each word's loudest part, so recognizer timing is enough.
+    // Recognizer timing, as live uploads use for volume: forced alignment trims a fading voice as silence.
     const words = wordsFromDeepgram(JSON.parse(readFileSync(`${base}.json`, "utf8")))
     const text = readFileSync(`${base}.txt`, "utf8")
     const wav = decodeWav(readFileSync(`${base}.${take.audioExtension}`))

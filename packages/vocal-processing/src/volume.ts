@@ -20,7 +20,9 @@
  *   demonstration drops 8-10 dB, depending on how much normal speech
  *   surrounds it and on word timing.
  * A word's loudness is its loudest part, so word timing that stretches over
- * silence or a decaying ending doesn't lower it.
+ * silence or a decaying ending doesn't lower it. Pass recognizer timing, not
+ * forced alignment: alignment's pause refinement trims a fading voice as if it
+ * were silence, and the trailing-off demonstration then loses its last ending.
  */
 import type { Span } from "./rate.ts"
 import { syllables } from "./syllables.ts"
