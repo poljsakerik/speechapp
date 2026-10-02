@@ -1,5 +1,11 @@
-import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import {
+  CircleCheckIcon,
+  InfoIcon,
+  Loader2Icon,
+  OctagonXIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
+import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -24,13 +30,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast shadow-[0_1px_2px_oklch(0.2_0.01_55/0.08),0_12px_32px_-12px_oklch(0.2_0.01_55/0.28)]!",
+          toast:
+            "cn-toast shadow-[0_1px_2px_oklch(0.2_0.01_55/0.08),0_12px_32px_-12px_oklch(0.2_0.01_55/0.28)]!",
           description: "text-ink-2!",
         },
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

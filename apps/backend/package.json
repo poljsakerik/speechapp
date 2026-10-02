@@ -12,10 +12,11 @@
     "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
-    "@fastify/multipart": "^10.1.2",
     "@micmane/vocal-processing": "workspace:*",
+    "@trpc/server": "^11.19.0",
     "fastify": "^5.12.5",
-    "ffmpeg-static": "^5.3.0"
+    "ffmpeg-static": "^5.3.0",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",
@@ -24,5 +25,8 @@
     "tsup": "^8.5.0",
     "tsx": "^4.20.6",
     "typescript": "^6.0.3"
+  },
+  "exports": {
+    ".": "./src/index.ts"
   }
 }

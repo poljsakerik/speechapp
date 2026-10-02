@@ -1,6 +1,6 @@
-import * as React from "react"
-import { cn } from "@micmane/ui/lib/utils"
-import { Separator as SeparatorPrimitive } from "radix-ui"
+import { cn } from "@micmane/ui/lib/utils";
+import { Separator as SeparatorPrimitive } from "radix-ui";
+import * as React from "react";
 
 function Separator({
   className,
@@ -15,11 +15,11 @@ function Separator({
       orientation={orientation}
       className={cn(
         "shrink-0 from-transparent via-line-strong to-transparent data-horizontal:h-px data-horizontal:w-full data-horizontal:bg-linear-to-r data-vertical:w-px data-vertical:self-stretch data-vertical:bg-linear-to-b",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Separator }
+export { Separator };
