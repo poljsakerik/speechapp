@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "id": "tonality-development",
+  "foundation": "tonality",
+  "purpose": "Development benchmark for tonality: Vinh's Tonality lesson (natural teaching as clean controls, his three bad-tonality demonstrations) plus the speaker's own flat and expressive readings of one paragraph. Provisional annotations; not independently listener-validated.",
+  "segmentation": "Cuts fall in measured silences between words. Takes keep their internal pauses and the audio is not normalized. Cut points were chosen from Deepgram nova-3 word times and pauses measured from the audio; review them by listening.",
+  "sources": [
+    {
+      "file": "05-Tonality.mp4",
+      "sha256": "0b9cebc1d5f4e2314c0463de1508e3ce8ef6b733c48d5fd0c2aaf0490bd9e0d7",
+      "foundation": "tonality",
+      "takes": [
+        {
+          "id": "vinh_tone-01",
+          "start": 6.7,
+          "end": 52.8,
+          "marks": []
+        },
+        {
+          "id": "vinh_tone-02",
+          "start": 52.8,
+          "end": 77.8,
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-01",
+          "start": 77.8,
+          "end": 79.65,
+          "marks": [
+            {
+              "start": 77.8,
+              "end": 79.65,
+              "rule": "TONE_FLAT",
+              "note": "\"Good morning, everyone\" said with a sad face: subdued and flat, the wrong emotion for a greeting."
+            }
+          ],
+          "tonality": {
+            "status": "excluded",
+            "notes": "A single 1.5 s phrase. Tonality is judged over 10-30 s passages, because one short line is too little speech to judge a voice by."
+          }
+        },
+        {
+          "id": "vinh_tone-03",
+          "start": 79.65,
+          "end": 98.05,
+          "note": "Includes his acted disgust (\"oh\") while setting up the next exercise; that is expressive, not flat.",
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-02",
+          "start": 98.05,
+          "end": 100.2,
+          "marks": [
+            {
+              "start": 98.05,
+              "end": 100.2,
+              "rule": "TONE_FLAT",
+              "note": "\"Good morning, everyone\" said with a disgusted face: the wrong emotion for a greeting."
+            }
+          ],
+          "tonality": {
+            "status": "excluded",
+            "notes": "A single 1.7 s phrase, too short to assess. It is also a wrong emotion rather than a flat voice; the detector does not judge which emotion a voice carries, because the emotion labels proved unreliable on natural speech."
+          }
+        },
+        {
+          "id": "vinh_tone-04",
+          "start": 100.2,
+          "end": 149.9,
+          "marks": []
+        },
+        {
+          "id": "vinh_demo-03",
+          "start": 149.9,
+          "end": 175.5,
+          "marks": [
+            {
+              "start": 149.9,
+              "end": 175.5,
+              "rule": "TONE_FLAT",
+              "note": "\"Blank face Vinh\": a deliberately emotionless delivery, the course's main tonality problem."
+            }
+          ],
+          "tonality": {
+            "status": "excluded",
+            "notes": "The blank face is mostly visible, not audible. Its voice stays inside his normal teaching range on every measure tried: 11.2 semitones of pitch movement (teaching 10.7-14.8), the same loudness range and voice quality, audEERING arousal of 0.69 (teaching 0.51-0.79), and emotion2vec+ hears emotion in it as it does in his teaching. An audio language model rated it flat only while it could understand the words (\"I don't have much emotion\"); with the words filtered out it rated it like his teaching. Re-score it if a detector learns to hear it."
+          }
+        },
+        {
+          "id": "vinh_tone-05",
+          "start": 175.5,
+          "end": 218.0,
+          "marks": []
+        },
+        {
+          "id": "vinh_tone-06",
+          "start": 289.45,
+          "end": 329.6,
+          "marks": []
+        }
+      ],
+      "excluded": [
+        {
+          "start": 0,
+          "end": 6.7,
+          "reason": "Title before the lesson starts."
+        },
+        {
+          "start": 218.0,
+          "end": 289.45,
+          "reason": "A student's romantic passage, then a second take with Vinh calling out emotions over it, then applause. Another speaker, and the prompted emotions do not have to fit the words."
+        }
+      ]
+    },
+    {
+      "kind": "practice",
+      "file": "Recording (39).m4a",
+      "sha256": "be57363c664fd793a5b988c3aee1cc48285ae66d86bc209842f24a8cb34d3cf0",
+      "foundation": "tonality",
+      "takes": [
+        {
+          "id": "tonality-01",
+          "start": 0,
+          "end": 11.963,
+          "note": "Speaker-confirmed contrast with tonality-02: two readings of the same paragraph, this one the flat one.",
+          "marks": [
+            {
+              "start": 0,
+              "end": 11.963,
+              "rule": "TONE_FLAT",
+              "note": "The whole reading stays on nearly one note; tonality-02 brings out the contrast between what employees know and the claim that few have delusions."
+            }
+          ]
+        },
+        {
+          "id": "tonality-02",
+          "start": 11.963,
+          "end": 26.730667,
+          "note": "Speaker-designated good tonality reference.",
+          "marks": []
+        }
+      ],
+      "excluded": []
+    }
+  ]
+}

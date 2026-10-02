@@ -6,12 +6,14 @@
   "exports": {
     "./align": "./src/align.ts",
     "./deepgram": "./src/deepgram.ts",
+    "./gemini": "./src/gemini.ts",
     "./openai": "./src/openai.ts",
     "./pacing": "./src/pacing.ts",
     "./pause": "./src/pause.ts",
     "./pause-review": "./src/pause-review.ts",
     "./pauses": "./src/pauses.ts",
     "./rate": "./src/rate.ts",
+    "./tonality": "./src/tonality.ts",
     "./volume": "./src/volume.ts"
   },
   "scripts": {
@@ -25,7 +27,9 @@
     "import:rate": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts",
     "import:pause": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/pause-development.json",
     "eval:volume": "node --env-file-if-exists=../../.env scripts/eval-volume.ts",
-    "import:volume": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/volume-development.json"
+    "import:volume": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/volume-development.json",
+    "import:tonality": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/tonality-development.json",
+    "eval:tonality": "node --env-file-if-exists=../../.env scripts/eval-tonality.ts"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",

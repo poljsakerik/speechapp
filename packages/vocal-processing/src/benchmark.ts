@@ -3,18 +3,20 @@ import { isAbsolute, relative, resolve } from "node:path"
 import { alignMarks, type GoldenMark } from "./golden.ts"
 import type { Word } from "./types.ts"
 import type { SpeedRule } from "./rate.ts"
+import type { ToneRule } from "./tonality.ts"
 import type { VolumeRule } from "./volume.ts"
 
 /** The rules gold marks can carry; the contrast check is reported, not scored. */
 export const RATE_RULES: SpeedRule[] = ["RATE_IMPORTANCE_FAST", "RATE_IMPORTANCE_SLOW"]
 export const VOLUME_RULES: VolumeRule[] = ["VOLUME_LOW", "VOLUME_FADE"]
+export const TONE_RULES: ToneRule[] = ["TONE_FLAT"]
 export type Review = { status: "pending" | "reviewed" | "excluded"; notes: string }
 export type Annotation = { schemaVersion: 2; marks: GoldenMark[]; reviews: Record<string, Review> }
 export type Take = { id: string; foundation: string; take: number; base: string; audioExtension: string; duration: number; source: string; sourceStart: number; sourceEnd: number; assignment: string; evidence: string }
 export type Corpus = { schemaVersion: 1; id: string; takes: Take[]; referenceTakes?: Record<string, string> }
 export function loadCorpus(root: string): Corpus {
   const corpus = JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8")) as Corpus
-  if (corpus.schemaVersion !== 1 || !Array.isArray(corpus.takes) || !corpus.takes.length) throw new Error("Invalid corpus manifest; import a corpus with pnpm import:rate or pnpm import:volume --videos-dir <videos>")
+  if (corpus.schemaVersion !== 1 || !Array.isArray(corpus.takes) || !corpus.takes.length) throw new Error("Invalid corpus manifest; import a corpus with pnpm import:rate, import:volume or import:tonality --videos-dir <videos>")
   const ids = new Set<string>()
   for (const take of corpus.takes) {
     const path = relative(resolve(root), resolve(root, take.base))

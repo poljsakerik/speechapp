@@ -1,12 +1,14 @@
 import { transcribe, wordsFromDeepgram } from "@micmane/vocal-processing/deepgram"
 import { alignWords, loadAligner, type Aligner } from "@micmane/vocal-processing/align"
-import { openaiCompletion } from "@micmane/vocal-processing/openai"
+import { openaiCompletion, tonalitySettings } from "@micmane/vocal-processing/openai"
 import { predictPacing } from "@micmane/vocal-processing/pacing"
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
 import { detectRate, syllables, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
 import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause"
 import { reviewPause } from "@micmane/vocal-processing/pause-review"
 import { detectVolume, VOLUME_VERSION, type VolumeMark } from "@micmane/vocal-processing/volume"
+import { geminiVoice } from "@micmane/vocal-processing/gemini"
+import { reviewTonality, tonalityConfig, TONALITY_VERSION, type Emotion, type ToneMark } from "@micmane/vocal-processing/tonality"
 import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
@@ -94,6 +96,26 @@ const volumeCopy = {
   },
 } as const
 
+// Vinh's tonality lesson: the face is the remote control for the emotion in the voice.
+const toneCopy = {
+  TONE_FLAT: {
+    observation: "Your voice sounds flat here.",
+    why_it_matters: "Listeners connect with the feeling in your voice, not only with the words.",
+    practice: "Decide what this passage should feel like, let your face show it, and say it again.",
+  },
+} as const
+
+/** How a tonality note names the feeling the words call for. */
+const FEELING: Record<Emotion, string> = {
+  happy: "warmth or enthusiasm", sad: "concern", angry: "conviction", surprised: "curiosity",
+  fearful: "urgency", disgusted: "disapproval", neutral: "a calm voice",
+}
+
+export function flatObservation(expected: Emotion[]): string {
+  const feelings = expected.filter(e => e !== "neutral").slice(0, 2).map(e => FEELING[e])
+  return feelings.length ? `Your voice sounds flat here, while the words call for ${feelings.join(" and ")}.` : toneCopy.TONE_FLAT.observation
+}
+
 /** One finding per segment a mark covers; the shared group ID lets the app rejoin them into one highlight. */
 function findingsFor<R extends string>(segments: Segment[], marks: { start: number; end: number; rule: R; suggestions?: RateMark["suggestions"] }[], text: Record<R, { observation: string; why_it_matters: string; practice: string }>) {
   return marks.flatMap((mark, markIndex) => segments.flatMap(segment => {
@@ -153,6 +175,17 @@ export function measureVolume(samples: Float32Array, sampleRate: number, recogni
   return volume.reliable ? volume.marks.map(m => ({ ...m, start: transcript[m.first].start, end: transcript[m.last].end })) : undefined
 }
 
+/** Tonality is judged only when Gemini and the text model both answered; otherwise it is not assessed. */
+export function tonalityAssessment(segments: Segment[], marks: ToneMark[] | undefined) {
+  const findings = findingsFor(segments, marks ?? [], toneCopy).map(f => ({ ...f, observation: flatObservation(marks![Number(f.group_id)].expected) }))
+  return {
+    foundation: "tonality" as const,
+    verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
+    summary: !marks ? "Tonality could not be assessed for this take." : marks.length ? "Your voice sounds flat in places; a little more feeling would help the words land." : "No flat stretch was detected; your voice carries some expression.",
+    findings,
+  }
+}
+
 export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {
   const findings = findingsFor(segments, marks, copy)
   return {
@@ -169,6 +202,15 @@ async function measurePauses(audio: Uint8Array): Promise<{ samples: Float32Array
   try {
     const { samples, sampleRate } = await decodeAudio(audio)
     return { samples, sampleRate, pauses: findPauses(samples, sampleRate) }
+  } catch {
+    return undefined
+  }
+}
+
+// How expressive the voice sounds per passage, compared with the feeling the words call for.
+async function analyzeTonality(words: Word[], decoded: { samples: Float32Array; sampleRate: number }) {
+  try {
+    return await reviewTonality(words, decoded.samples, decoded.sampleRate, geminiVoice(), openaiCompletion(tonalitySettings()), tonalityConfig())
   } catch {
     return undefined
   }
@@ -201,11 +243,16 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const status = measured && analysis.contrast ? "reviewed" as const : "uncertain" as const
   const marks = measured ? analysis.marks : []
   // Timing measures every pause; a model judges each one and every stretch without one.
-  const pause = pauses ? await reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : undefined
+  // Tonality runs alongside: Gemini hears each passage while a text model reads the words.
+  const [pause, tone] = await Promise.all([
+    pauses ? reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : undefined,
+    decoded ? analyzeTonality(transcript, decoded) : undefined,
+  ])
+  const toneMarks = tone?.reliable ? tone.marks : undefined
   const pauseMarks = pause?.reliable ? pause.marks : undefined
   const rate = rateReview(segments, marks, "", status)
   const volumeMarks = decoded && measureVolume(decoded.samples, decoded.sampleRate, recognized, transcript)
-  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a) }
+  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a.foundation === "tonality" ? tonalityAssessment(segments, toneMarks) : a) }
   return {
     audio: audio.toString("base64"),
     audioType,
@@ -213,6 +260,7 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
     rateDiagnostics: { version: RATE_VERSION, status, pace: analysis.pace, articulationRate: analysis.articulationRate, pacing, marks },
     pauseDiagnostics: { version: PAUSE_VERSION, status: pauseMarks ? "reviewed" as const : "uncertain" as const, review: pause?.status, pauses, marks: pauseMarks ?? [] },
     volumeDiagnostics: { version: VOLUME_VERSION, status: volumeMarks ? "reviewed" as const : "uncertain" as const, marks: volumeMarks ?? [] },
+    tonalityDiagnostics: { version: TONALITY_VERSION, status: toneMarks ? "reviewed" as const : "uncertain" as const, passages: tone?.passages, marks: toneMarks ?? [] },
     review,
   }
 }

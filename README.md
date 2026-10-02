@@ -1,6 +1,6 @@
 # MicMane
 
-Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech**, **pauses** and **volume**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
+Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech**, **pauses**, **volume** and **tonality**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
 
 ## Workspace
 
@@ -13,7 +13,7 @@ This is a pnpm and Turborepo workspace modeled on the layout of `../leksoro`:
 - `packages/vocal-processing` — transcription, alignment, rate detection, evaluation scripts, and tests.
 - `packages/config-typescript` and `packages/config-eslint` — shared compiler and ESLint flat configs.
 
-Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY` and `OPENAI_API_KEY` for live reviews. The keys stay on the backend.
+Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM_API_KEY`, `OPENAI_API_KEY` and `GEMINI_API_KEY` (for tonality) for live reviews. The keys stay on the backend.
 
 ```sh
 pnpm install
@@ -24,7 +24,7 @@ pnpm lint
 pnpm test
 ```
 
-The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Volume is measured from the same decoded audio. The backend returns the original audio, timed segments, and findings to the editor. Other foundations are marked uncertain.
+The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Pauses are judged by a model from the measured silences, volume is measured from the same decoded audio, and tonality sends each passage's audio to Gemini. The backend returns the original audio, timed segments, and findings to the editor. Other foundations are marked uncertain.
 
 Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
@@ -167,10 +167,52 @@ RECORDINGS_DIR=recordings-volume-development pnpm markup-tools
 
 `import:volume` runs the rate importer with `--recipe benchmarks/volume-development.json`. The report is `recordings-volume-development/volume-benchmark.json`; matching works as for rate.
 
+## Tonality
+
+Tonality is the emotion underneath the voice. The course's main tonality problem is the **blank face**: under stress the face goes still and the emotion drains out of the voice. `tonality.ts` judges the voice and the words separately, each with a model suited to it:
+
+- **Voice:** Gemini (`GEMINI_MODEL`, default `gemini-3.5-flash`) listens to each passage and rates how expressive the voice sounds, from 1 (flat, blank) to 5 (vivid), in `gemini.ts`. It is told to ignore what the words say.
+- **Words:** a text model (`TONALITY_MODEL`, default `gpt-6-sol` at `TONALITY_EFFORT=low`) reads the whole transcript once and lists, per passage, every emotion a skilled speaker's voice could carry there, and whether a calm, matter-of-fact voice would serve as well. It never hears the audio. Delivery has many valid readings, so this is a set.
+- **Flat voice (`TONE_FLAT`):** a passage is flagged when its voice is rated `TONALITY_FLAT_SCORE` (default 2, "mostly flat") or lower where the words call for feeling. Adjacent flagged passages form one highlight. The note names the feeling the words call for ("…while the words call for warmth or enthusiasm") and follows the lesson: decide what the passage should feel like and let the face lead.
+- Passages are sentences joined to **10–30 s**, so each rating hears enough voice. These two lengths and the flagged score are the whole configuration (`DEFAULT_TONALITY_CONFIG`).
+- Without decodable audio, Gemini or the text model, tonality is uncertain rather than clean.
+
+**Sensitivity.** `TONALITY_FLAT_SCORE` sets which ratings count as flat (1–4). On held-out recordings, the share of speaking time flagged was:
+
+| Flagged score | Vinh's lessons | Your talks | Your retake |
+|---|---|---|---|
+| 1 | 0% | 1% | 0% |
+| **2** (default) | **0%** | **35%** | **33%** |
+| 3 | 0% | 60% | 48% |
+
+These come from 141 passages, so treat them as rough. Don't tune the score to make every example come out right: delivery has many valid readings.
+
+**What it does not do.** It doesn't judge *which* emotion the voice carries. On natural speech emotion labels are unreliable, and a rule comparing exact emotions flagged 27–54% of Vinh's teaching. Vinh's blank-face demonstration is visual rather than audible, so it isn't a fair test (Gemini rates it low, but its words say "I don't have much emotion", and that judgment vanishes when the words are filtered out). A single short phrase isn't judged either.
+
+**How well it works.** Gemini hears the voice, not only the words: with the words filtered out (400 Hz low-pass), it still rated every Vinh lesson clip above every one of your talks, and your expressive reading above your flat one. On a single passage its rating is coarse: your expressive reading scores 2 on its own, and is unflagged only because the text model says a calm voice suits that paragraph. The same clip gets the same rating in about 72% of repeat runs. Findings are tentative. See [tonality research](docs/tonality-research.md).
+
+**Cost and privacy.** Audio is billed at 32 tokens per second. One rating costs about $0.0035, about $0.01 per minute of speech, plus one text-model call per take. Each passage's audio is sent to Google's Gemini API, so the paid tier is required: on the free tier Google may use the data to improve its products. `GEMINI_MODEL=gemini-3.1-pro-preview` also works. It was slightly sharper on single clips but changed its rating between runs far more often (43% of clips rated the same twice).
+
+### Tonality benchmark
+
+`benchmarks/tonality-development.json` cuts Vinh's Tonality lesson into six clean teaching excerpts and his three bad-tonality demonstrations, and adds your flat and expressive readings of one paragraph from the voice pack (`Recording (39).m4a`). The demonstrations are **excluded** from scoring, with the reason recorded: the greetings are single 1.5 s phrases, and the blank face isn't audible. The evaluation still analyzes and lists them. One scored positive makes this a smoke test, not an accuracy measure.
+
+```sh
+pnpm import:tonality --videos-dir /path/to/videos --speech-dir /path/to/voice-pack-sources --ffmpeg /path/to/ffmpeg
+# --transcripts-dir reuses <video stem>.deepgram.json; the speech dir holds Recording (39).m4a and Recording (39).deepgram.json.
+pnpm eval:tonality                       # Gemini ratings and text-model replies are cached per run
+pnpm eval:tonality --label-run repeat-1  # an independent set of ratings and replies
+TONALITY_FLAT_SCORE=3 pnpm eval:tonality # try another sensitivity (reuses the cache)
+RECORDINGS_DIR=$PWD/recordings-tonality-development pnpm markup-tools
+```
+
+The importer is shared with rate, pauses and volume (`scripts/import-rate-benchmark.ts --recipe <benchmarks/*.json>`). The report is `recordings-tonality-development/tonality-benchmark.json`.
+
 ## Research and evaluation
 
 - [MVP research](docs/mvp-research.md)
 - [Video lessons and feasibility probe](docs/video-review.md)
+- [Tonality: what can be heard, and which tools hear it](docs/tonality-research.md)
 - [Visual review research](docs/visual-review.md)
 - [Competitive landscape](docs/competitive-landscape.md)
 - [Yoodli assessment](docs/yoodli-assessment.md)

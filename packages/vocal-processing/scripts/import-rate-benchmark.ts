@@ -13,9 +13,10 @@ const { values } = parseArgs({ options: {
 } })
 if (!values["videos-dir"]) throw new Error("Usage: node scripts/import-rate-benchmark.ts --videos-dir <videos> [--recipe <benchmarks/*.json>] [--speech-dir <practice-sources>] [--transcripts-dir <cache>] [--output <corpus>] [--ffmpeg <binary>]")
 const root = resolve(import.meta.dirname, "../../..")
-type Source = { kind?: string; file: string; sha256: string; foundation: string; takes: { id: string; start: number; end: number; note?: string; rate?: { status: "reviewed" | "excluded"; notes: string }; marks: { start: number; end: number; rule: string; note: string }[] }[] }
+type Source = { kind?: string; file: string; sha256: string; foundation: string; takes: { id: string; start: number; end: number; note?: string; [foundation: string]: unknown; marks: { start: number; end: number; rule: string; note: string }[] }[] }
 type SourceWord = { word: string; punctuated_word?: string; start: number; end: number }
 const recipe = JSON.parse(readFileSync(resolve(values.recipe ?? join(root, "benchmarks/rate-development.json")), "utf8")) as { id: string; foundation?: string; purpose: string; sources: Source[] }
+// The benchmark's foundation; a source's own foundation only names its folder.
 const foundation = recipe.foundation ?? "rate"
 const output = resolve(values.output ?? join(root, `recordings-${recipe.id}`))
 if (existsSync(output)) throw new Error(`${output} exists; choose a new output to preserve annotations`)
@@ -62,9 +63,11 @@ try {
         return { startAt: first.start, endAt: last.end, startIndex, endIndex, foundationType: foundation, rule: mark.rule, note: mark.note }
       })
       const provenance = "Provisional development annotations from transcript and acoustic inspection, chosen before detector evaluation. User-authorized Vinh and practice excerpts. Not independently listener-validated."
-      const reviews = { [foundation]: { status: take.rate?.status ?? "reviewed", notes: [take.note, take.rate?.notes, provenance].filter(Boolean).join(" ") } }
+      // A take may set its status for the benchmark's foundation, e.g. { "rate": { "status": "excluded", "notes": "..." } }.
+      const status = take[foundation] as { status: "reviewed" | "excluded"; notes: string } | undefined
+      const reviews = { [foundation]: { status: status?.status ?? "reviewed", notes: [take.note, status?.notes, provenance].filter(Boolean).join(" ") } }
       writeFileSync(`${base}.golden.json`, JSON.stringify({ schemaVersion: 2, marks, reviews }, null, 2) + "\n")
-      manifest.takes.push({ id: take.id, foundation, take: manifest.takes.length + 1, base: relativeBase, audioExtension: "wav", duration, source: source.file, sourceStart: take.start, sourceEnd: take.end, assignment: source.kind === "practice" ? (marks.length ? "Practice: rate correction" : "Practice: clean rate control") : marks.length ? "Demonstration" : "Clean reference", evidence: `benchmarks/${recipe.id}.json` })
+      manifest.takes.push({ id: take.id, foundation, take: manifest.takes.length + 1, base: relativeBase, audioExtension: "wav", duration, source: source.file, sourceStart: take.start, sourceEnd: take.end, assignment: source.kind === "practice" ? (marks.length ? `Practice: ${foundation} correction` : `Practice: clean ${foundation} control`) : marks.length ? `Demonstration: ${foundation}` : `Clean ${foundation} reference`, evidence: `benchmarks/${recipe.id}.json` })
       console.log(`${take.id}: ${duration}s, ${words.length} words`)
     }
   }
