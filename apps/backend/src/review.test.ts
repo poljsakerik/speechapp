@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { measureVolume, pauseAssessment, rateReview, segmentWords, volumeAssessment } from "./review.ts"
+import { measureVolume, pauseAssessment, rateReview, segmentWords, tonalityAssessment, volumeAssessment } from "./review.ts"
 
 test("segments report syllables per second including internal silence", () => {
   const [segment] = segmentWords([
@@ -99,4 +99,17 @@ test("volume is measured on recognizer timing and highlighted on the aligned tra
   const marks = measureVolume(Float32Array.from(samples), rate, recognized, aligned)!
   assert.deepEqual(marks.map(m => m.rule), ["VOLUME_FADE", "VOLUME_FADE", "VOLUME_FADE"])
   assert.deepEqual(marks.map(m => [m.start, m.end]), marks.map(m => [aligned[m.first].start, aligned[m.last].end]))
+})
+
+test("tonality findings name the feeling the words call for, and a missing review leaves tonality unassessed", () => {
+  const words = "This is one complete passage.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
+  const segments = segmentWords(words)
+  const marks = [{ first: 0, last: 4, start: 0, end: 4.8, text: "This is one complete passage.", rule: "TONE_FLAT" as const, expected: ["neutral" as const, "happy" as const], expressiveness: 2 }]
+  const tonality = tonalityAssessment(segments, marks)
+  assert.equal(tonality.verdict, "mixed")
+  assert.deepEqual(tonality.findings.map(f => [f.rule_id, f.start, f.end]), [["TONE_FLAT", 0, 4.8]])
+  assert.match(tonality.findings[0].practice, /face/)
+  assert.equal(tonality.findings[0].observation, "Your voice sounds flat here, while the words call for warmth or enthusiasm.")
+  assert.equal(tonalityAssessment(segments, []).verdict, "effective")
+  assert.equal(tonalityAssessment(segments, undefined).verdict, "uncertain")
 })

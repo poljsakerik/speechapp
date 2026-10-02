@@ -11,6 +11,13 @@ export function rateModelSettings(env: NodeJS.ProcessEnv = process.env): { model
   return { model: env.RATE_MODEL ?? "gpt-6-sol", effort: effort as ReasoningEffort }
 }
 
+/** The text model that lists the feelings each tonality passage could carry. */
+export function tonalitySettings(env: NodeJS.ProcessEnv = process.env): { model: string; effort: ReasoningEffort } {
+  const effort = env.TONALITY_EFFORT ?? "low"
+  if (!["none", "low", "medium", "high"].includes(effort)) throw new Error(`Invalid TONALITY_EFFORT: ${effort}`)
+  return { model: env.TONALITY_MODEL ?? "gpt-6-sol", effort: effort as ReasoningEffort }
+}
+
 export type OpenAIOptions = {
   apiKey?: string
   model?: string

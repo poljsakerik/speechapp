@@ -19,7 +19,9 @@
     "eval:pause": "pnpm --dir packages/vocal-processing eval:pause",
     "import:pause": "pnpm --dir packages/vocal-processing import:pause",
     "eval:volume": "pnpm --dir packages/vocal-processing eval:volume",
-    "import:volume": "pnpm --dir packages/vocal-processing import:volume"
+    "import:volume": "pnpm --dir packages/vocal-processing import:volume",
+    "eval:tonality": "pnpm --dir packages/vocal-processing eval:tonality",
+    "import:tonality": "pnpm --dir packages/vocal-processing import:tonality"
   },
   "devDependencies": {
     "turbo": "^2.11.5",

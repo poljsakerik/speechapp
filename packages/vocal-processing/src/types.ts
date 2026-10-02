@@ -1,7 +1,7 @@
 /** Transcript words retain recognizer or aligned timing when available. */
 export type Word = { text: string; start?: number; end?: number }
 
-/** Structured completion contract used by text-based pacing prediction. */
+/** A structured completion: a system and user prompt in, JSON matching `schema` out. */
 export type JsonCompletion = (request: {
   system: string
   user: string
