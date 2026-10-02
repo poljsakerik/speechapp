@@ -8,9 +8,12 @@
  * needs the same checks (docs/tonality-research.md).
  */
 import { setTimeout as sleep } from "node:timers/promises"
+import { limiter } from "./limit.ts"
 import type { VoiceRating } from "./tonality.ts"
 
 const API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+/** Requests in flight at once, across pitch listening, tonality and every review in the process. */
+const gate = limiter(Number(process.env.GEMINI_CONCURRENCY ?? 8))
 
 export const VOICE_PROMPT = "Rate how emotionally expressive this speaker's voice sounds: the emotion underneath the voice, not what the words say and not the recording quality. " +
   "1 = flat, blank, emotionless; 2 = mostly flat; 3 = ordinary; 4 = clearly expressive; 5 = vivid, emotionally alive. " +
@@ -43,12 +46,12 @@ export function geminiVoice(options: GeminiOptions = {}): VoiceRating {
       generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { expressiveness: { type: "INTEGER" } }, required: ["expressiveness"] } },
     })
     for (let attempt = 1; ; attempt++) {
-      const response = await fetch(`${API_URL}/${model}:generateContent`, {
+      const response = await gate(() => fetch(`${API_URL}/${model}:generateContent`, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body,
         signal,
-      })
+      }))
       if (response.ok) {
         try {
           return parseRating((await response.json()) as ResponseBody)
@@ -109,11 +112,11 @@ export function geminiJudgment(options: GeminiOptions = {}): AudioJudgment {
       generationConfig: { responseMimeType: "application/json", responseSchema: schema },
     })
     for (let attempt = 1; ; attempt++) {
-      const response = await fetch(`${API_URL}/${model}:generateContent`, {
+      const response = await gate(() => fetch(`${API_URL}/${model}:generateContent`, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body,
-      })
+      }))
       if (response.ok) {
         const data = (await response.json()) as ResponseBody
         const text = (data.candidates?.[0]?.content?.parts ?? []).filter(p => !p.thought).map(p => p.text ?? "").join("")

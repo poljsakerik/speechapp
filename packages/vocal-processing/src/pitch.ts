@@ -73,12 +73,13 @@ type Timed = Word & { index: number; start: number; end: number }
 const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2 }
 const deviation = (xs: number[]) => { const mean = xs.reduce((s, x) => s + x, 0) / xs.length; return Math.sqrt(xs.reduce((s, x) => s + (x - mean) ** 2, 0) / xs.length) }
 
-export function detectPitch(samples: Float32Array, sampleRate: number, words: Word[], config: Partial<PitchConfig> = {}, heard: Heard[] = []): PitchAnalysis {
+/** `pitch` is trackPitch of the samples, when it was already measured. */
+export function detectPitch(samples: Float32Array, sampleRate: number, words: Word[], config: Partial<PitchConfig> = {}, heard: Heard[] = [], pitch?: Float64Array): PitchAnalysis {
   const c = { ...DEFAULT_PITCH_CONFIG, ...config }
   const timed = words.map((w, index) => ({ ...w, index })).filter((w): w is Timed =>
     Number.isFinite(w.start) && Number.isFinite(w.end) && w.start! >= 0 && w.end! > w.start!)
   if (timed.length < 2 || timed.length !== words.length) return { marks: [], reliable: false }
-  const pitch = trackPitch(samples, sampleRate)
+  pitch ??= trackPitch(samples, sampleRate)
   // Each word's speaking time and its voiced frames, in semitones.
   const ws = timed.map(w => {
     const end = Math.min(w.end, w.start + syllables(w.text)), notes: number[] = []
@@ -171,11 +172,34 @@ export function detectPitch(samples: Float32Array, sampleRate: number, words: Wo
  * intonation, and is dropped.
  */
 export function trackPitch(samples: Float32Array, sampleRate: number): Float64Array {
+  const steps = tracking(samples, sampleRate, Infinity)
+  for (;;) {
+    const step = steps.next()
+    if (step.done) return step.value
+  }
+}
+
+/**
+ * trackPitch, handing the event loop back every `block` frames (about 60 ms
+ * of work), so requests in flight keep moving while it runs. A 5-minute take
+ * is about 2 s of work.
+ */
+export async function trackPitchInSteps(samples: Float32Array, sampleRate: number, block = 1000): Promise<Float64Array> {
+  const steps = tracking(samples, sampleRate, block)
+  for (;;) {
+    const step = steps.next()
+    if (step.done) return step.value
+    await new Promise(resolve => setImmediate(resolve))
+  }
+}
+
+function* tracking(samples: Float32Array, sampleRate: number, block: number): Generator<void, Float64Array> {
   const n = Math.round(sampleRate * 0.04), hop = Math.round(sampleRate * HOP)
   const count = Math.max(0, Math.floor((samples.length - n) / hop) + 1)
   if (!count) return new Float64Array(0)
   const detector = PitchDetector.forFloat32Array(n), raw = new Float64Array(count)
   for (let k = 0; k < count; k++) {
+    if (k && k % block === 0) yield
     const [hz, clarity] = detector.findPitch(samples.subarray(k * hop, k * hop + n), sampleRate)
     raw[k] = clarity >= 0.8 && hz >= 60 && hz <= 500 ? hz : 0
   }

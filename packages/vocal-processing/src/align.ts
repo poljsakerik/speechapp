@@ -106,7 +106,14 @@ export async function loadAligner(path?: string, chunkSeconds = 20, contextSecon
 
 /** Re-time `words` against the audio: align, then refine with the measured pauses. */
 export async function alignWords<W extends Word>(words: W[], samples: Float32Array, aligner: Aligner, pauses: Pause[], options: AlignOptions = {}): Promise<W[]> {
-  const emission = await aligner.emit(samples)
+  return alignEmission(words, await aligner.emit(samples), pauses, options)
+}
+
+/**
+ * The same from an emission already scored. Scoring needs only the audio and
+ * is most of the work, so it can run before the words are known.
+ */
+export function alignEmission<W extends Word>(words: W[], emission: Emission, pauses: Pause[], options: AlignOptions = {}): W[] {
   return refineTimings(viterbiAlign(words, emission, options), pauses)
 }
 

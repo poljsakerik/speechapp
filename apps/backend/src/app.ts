@@ -18,7 +18,7 @@ export function buildApp(review = reviewAudio) {
       if (!allowed.has(upload.mimetype)) return reply.code(415).send({ error: "Unsupported audio format" })
       const audio = await upload.toBuffer()
       if (!audio.length) return reply.code(422).send({ error: "Empty recording" })
-      const result = await review(audio, upload.mimetype)
+      const result = await review(audio)
       if (!result) return reply.code(422).send({ error: "Not enough speech" })
       return result
     } catch (error) {

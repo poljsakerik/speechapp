@@ -1,7 +1,10 @@
 import { setTimeout as sleep } from "node:timers/promises"
+import { limiter } from "./limit.ts"
 import type { JsonCompletion } from "./types.ts"
 
 const API_URL = "https://api.openai.com/v1/responses"
+/** Requests in flight at once, across every feature and review in the process. */
+const gate = limiter(Number(process.env.OPENAI_CONCURRENCY ?? 16))
 
 export type ReasoningEffort = "none" | "low" | "medium" | "high"
 
@@ -41,7 +44,7 @@ export function openaiCompletion(options: OpenAIOptions = {}): JsonCompletion {
   const effort = options.effort ?? settings.effort
   const attempts = options.attempts ?? 4
 
-  return async ({ system, user, schema, schemaName }, signal) => {
+  return async ({ system, user, schema, schemaName, cacheKey }, signal) => {
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set")
     const body = JSON.stringify({
       model,
@@ -50,14 +53,15 @@ export function openaiCompletion(options: OpenAIOptions = {}): JsonCompletion {
       reasoning: { effort },
       text: { format: { type: "json_schema", name: schemaName, schema, strict: true } },
       store: false,
+      ...(cacheKey ? { prompt_cache_key: cacheKey } : {}),
     })
     for (let attempt = 1; ; attempt++) {
-      const response = await fetch(API_URL, {
+      const response = await gate(() => fetch(API_URL, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body,
         signal,
-      })
+      }))
       if (response.ok) {
         try {
           return parseOutput((await response.json()) as ResponseBody, model)

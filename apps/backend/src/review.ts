@@ -1,5 +1,5 @@
 import { transcribe, wordsFromDeepgram } from "@micmane/vocal-processing/deepgram"
-import { alignWords, loadAligner, type Aligner } from "@micmane/vocal-processing/align"
+import { alignEmission, loadAligner, type Aligner, type Emission } from "@micmane/vocal-processing/align"
 import { openaiCompletion, tonalitySettings } from "@micmane/vocal-processing/openai"
 import { predictPacing } from "@micmane/vocal-processing/pacing"
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
@@ -8,7 +8,7 @@ import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause"
 import { reviewPause } from "@micmane/vocal-processing/pause-review"
 import { detectVolume, VOLUME_VERSION, type VolumeMark } from "@micmane/vocal-processing/volume"
 import { geminiJudgment, geminiVoice } from "@micmane/vocal-processing/gemini"
-import { detectPitch, PITCH_VERSION, type PitchMark } from "@micmane/vocal-processing/pitch"
+import { detectPitch, trackPitchInSteps, PITCH_VERSION, type PitchMark } from "@micmane/vocal-processing/pitch"
 import { listenForPitch, type Heard } from "@micmane/vocal-processing/pitch-listen"
 import { reviewTonality, tonalityConfig, TONALITY_VERSION, type Emotion, type ToneMark } from "@micmane/vocal-processing/tonality"
 import { decodeAudio } from "./audio.ts"
@@ -188,14 +188,22 @@ export function volumeAssessment(segments: Segment[], marks: VolumeMark[] | unde
 }
 
 /**
+ * Spans measured on the recognizer's word timing, moved onto the aligned
+ * transcript the segments are built from. Alignment keeps the same words in
+ * the same order, so word indexes carry over.
+ */
+export function onto<S extends { first: number; last: number; start: number; end: number }>(spans: S[], transcript: Word[]): S[] {
+  return spans.map(s => ({ ...s, start: transcript[s.first].start, end: transcript[s.last].end }))
+}
+
+/**
  * Volume uses the recognizer's word timing, as its benchmark does: forced
  * alignment refines words against measured pauses and trims a fading voice
- * as if it were silence. Alignment keeps the same words in the same order, so
- * the marks are moved onto the aligned transcript the segments are built from.
+ * as if it were silence.
  */
 export function measureVolume(samples: Float32Array, sampleRate: number, recognized: Word[], transcript: Word[]): VolumeMark[] | undefined {
   const volume = detectVolume(samples, sampleRate, recognized)
-  return volume.reliable ? volume.marks.map(m => ({ ...m, start: transcript[m.first].start, end: transcript[m.last].end })) : undefined
+  return volume.reliable ? onto(volume.marks, transcript) : undefined
 }
 
 /**
@@ -215,7 +223,10 @@ export function pitchAssessment(segments: Segment[], marks: PitchMark[] | undefi
   }
 }
 
-/** Tonality is judged only when Gemini and the text model both answered; otherwise it is not assessed. */
+/**
+ * Tonality is judged only when Gemini and the text model both answered;
+ * otherwise it is not assessed. Its marks are moved onto the aligned transcript.
+ */
 export function tonalityAssessment(segments: Segment[], marks: ToneMark[] | undefined) {
   const findings = findingsFor(segments, marks ?? [], toneCopy).map(f => ({ ...f, observation: flatObservation(marks![Number(f.group_id)].expected) }))
   return {
@@ -256,65 +267,97 @@ async function analyzeTonality(words: Word[], decoded: { samples: Float32Array; 
   }
 }
 
-// Refine recognizer timing before measuring speaking time.
-let aligner: Promise<Aligner> | undefined
 /** Pitch problems as Gemini hears them; undefined without the waveform, an API key, or a reply. */
 async function listen(decoded: { samples: Float32Array; sampleRate: number } | undefined, words: Word[]): Promise<Heard[] | undefined> {
   if (!decoded || !process.env.GEMINI_API_KEY) return undefined
   try {
-    return await listenForPitch(decoded.samples, decoded.sampleRate, words, geminiJudgment())
+    // Its 30 s chunks are the slowest Gemini requests; the shared Gemini limit (GEMINI_CONCURRENCY) still caps it and tonality together.
+    return await listenForPitch(decoded.samples, decoded.sampleRate, words, geminiJudgment(), { concurrency: 8 })
   } catch {
     return undefined
   }
 }
 
-async function retime(words: Word[], decoded: { samples: Float32Array; pauses: Pause[] } | undefined): Promise<Word[]> {
-  if (process.env.ALIGN_WORDS === "0" || !decoded) return words
+// Refine recognizer timing before measuring speaking time.
+let aligner: Promise<Aligner> | undefined
+const aligning = () => process.env.ALIGN_WORDS !== "0"
+
+/** Load the alignment model before the first review needs it; if loading fails, the next review tries again. */
+export function warmUp() {
+  if (!aligning() || aligner) return
+  aligner = loadAligner()
+  aligner.catch(() => { aligner = undefined })
+}
+
+/** The alignment model's scores for the audio, most of alignment's work; they need no words. */
+async function scoreAudio(decoded: { samples: Float32Array } | undefined): Promise<Emission | undefined> {
+  if (!aligning() || !decoded) return undefined
   try {
     aligner ??= loadAligner()
-    return await alignWords(words, decoded.samples, await aligner, decoded.pauses)
+    return await (await aligner).emit(decoded.samples)
   } catch {
     aligner = undefined
+    return undefined
+  }
+}
+
+function retime(words: Word[], pauses: Pause[] | undefined, emission: Emission | undefined): Word[] {
+  if (!pauses || !emission) return words
+  try {
+    return alignEmission(words, emission, pauses)
+  } catch {
     return words
   }
 }
 
-export async function reviewAudio(audio: Buffer, audioType: string) {
-  const [response, decoded] = await Promise.all([transcribe(new Uint8Array(audio)), measurePauses(audio)])
+export async function reviewAudio(audio: Buffer) {
+  // When each step finished, in milliseconds after the upload arrived.
+  const began = performance.now(), timings: Record<string, number> = {}
+  const done = (step: string) => { timings[step] = Math.round(performance.now() - began) }
+  const timed = <T>(step: string, work: Promise<T>) => work.finally(() => done(step))
+  const decoding = timed("decode", measurePauses(audio))
+  // Alignment scores the audio while the recognizer transcribes it; only matching the words to the scores waits for the transcript.
+  const scoring = timed("alignmentScores", decoding.then(scoreAudio))
+  const [response, decoded] = await Promise.all([timed("transcript", transcribe(new Uint8Array(audio))), decoding])
   const recognized = wordsFromDeepgram(response) as Word[]
   if (recognized.length < 3) return undefined
-  // The pacing prediction reads only the text and pitch listening needs only rough word times, so both run while alignment re-times the words.
-  const [transcript, pacing, heard] = await Promise.all([retime(recognized, decoded), predictPacing(recognized, openaiCompletion()).catch(() => undefined), listen(decoded, recognized)])
+  // What needs only the recognizer's words starts at once. The pacing prediction reads only the text;
+  // pitch listening and tonality cut the audio into passages of 10 s or more, on recognizer timing as in their benchmarks.
+  const predicting = timed("pacing", predictPacing(recognized, openaiCompletion()).catch(() => undefined))
+  const listening = timed("pitchListening", listen(decoded, recognized))
+  const toning = timed("tonality", decoded ? analyzeTonality(recognized, decoded) : Promise.resolve(undefined))
+  const transcript = retime(recognized, decoded?.pauses, await scoring)
+  done("alignment")
   const pauses = decoded?.pauses
+  // Timing measures every pause; a model judges each one and every stretch without one.
+  const reviewing = timed("pauseReview", pauses ? reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : Promise.resolve(undefined))
+  // While the models answer, measure what needs only the audio. Pitch is tracked in steps so their requests keep moving.
+  const measuring = timed("measurement", decoded
+    ? trackPitchInSteps(decoded.samples, decoded.sampleRate).then(track => ({ track, volume: measureVolume(decoded.samples, decoded.sampleRate, recognized, transcript) }))
+    : Promise.resolve(undefined))
+  const [pacing, heard, tone, pause, measured] = await Promise.all([predicting, listening, toning, reviewing, measuring])
   const segments = segmentWords(transcript)
   const analysis = detectRate(transcript, {}, pauses, pacing)
   // Without the waveform, silence cannot be told from speech; without the prediction, contrast is unjudged.
-  const measured = !!decoded && analysis.reliable
-  const status = measured && analysis.contrast ? "reviewed" as const : "uncertain" as const
-  const marks = measured ? analysis.marks : []
-  // Timing measures every pause; a model judges each one and every stretch without one.
-  // Tonality runs alongside: Gemini hears each passage while a text model reads the words.
-  const [pause, tone] = await Promise.all([
-    pauses ? reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : undefined,
-    decoded ? analyzeTonality(transcript, decoded) : undefined,
-  ])
-  const toneMarks = tone?.reliable ? tone.marks : undefined
+  const status = !!decoded && analysis.reliable && analysis.contrast ? "reviewed" as const : "uncertain" as const
+  const marks = decoded && analysis.reliable ? analysis.marks : []
+  const toneMarks = tone?.reliable ? onto(tone.marks, transcript) : undefined
   const pauseMarks = pause?.reliable ? pause.marks : undefined
   const rate = rateReview(segments, marks, "", status)
-  const volumeMarks = decoded && measureVolume(decoded.samples, decoded.sampleRate, recognized, transcript)
+  const volumeMarks = measured?.volume
   // Pitch movement is measured inside the spoken words; what Gemini heard counts only where the measurement agrees.
-  const melody = decoded && detectPitch(decoded.samples, decoded.sampleRate, transcript, {}, heard)
+  const melody = decoded && detectPitch(decoded.samples, decoded.sampleRate, transcript, {}, heard, measured?.track)
   const pitchMarks = melody && melody.reliable ? melody.marks : undefined
   const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a.foundation === "volume" ? volumeAssessment(segments, volumeMarks) : a.foundation === "tonality" ? tonalityAssessment(segments, toneMarks) : a.foundation === "pitch_melody" ? pitchAssessment(segments, pitchMarks) : a) }
+  done("total")
   return {
-    audio: audio.toString("base64"),
-    audioType,
     segments,
     rateDiagnostics: { version: RATE_VERSION, status, pace: analysis.pace, articulationRate: analysis.articulationRate, pacing, marks },
     pauseDiagnostics: { version: PAUSE_VERSION, status: pauseMarks ? "reviewed" as const : "uncertain" as const, review: pause?.status, pauses, marks: pauseMarks ?? [] },
     volumeDiagnostics: { version: VOLUME_VERSION, status: volumeMarks ? "reviewed" as const : "uncertain" as const, marks: volumeMarks ?? [] },
-    tonalityDiagnostics: { version: TONALITY_VERSION, status: toneMarks ? "reviewed" as const : "uncertain" as const, passages: tone?.passages, marks: toneMarks ?? [] },
+    tonalityDiagnostics: { version: TONALITY_VERSION, status: toneMarks ? "reviewed" as const : "uncertain" as const, passages: tone && onto(tone.passages, transcript), marks: toneMarks ?? [] },
     pitchDiagnostics: { version: PITCH_VERSION, status: pitchMarks ? "reviewed" as const : "uncertain" as const, marks: pitchMarks ?? [], spread: melody ? melody.spread : undefined, heard },
+    timings,
     review,
   }
 }
