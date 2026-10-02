@@ -93,3 +93,41 @@ export function wav(samples: Float32Array, sampleRate: number): Buffer {
   header.writeUInt32LE(pcm.length, 40)
   return Buffer.concat([header, pcm])
 }
+
+/** A structured judgment of audio: a prompt, a response schema and 16-bit WAV in, the parsed JSON reply out. */
+export type AudioJudgment = (request: { prompt: string; schema: Record<string, unknown>; wav: Uint8Array }) => Promise<unknown>
+
+/** An AudioJudgment backed by the Gemini API. */
+export function geminiJudgment(options: GeminiOptions = {}): AudioJudgment {
+  const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY
+  const model = options.model ?? geminiSettings().model
+  const attempts = options.attempts ?? 4
+  return async ({ prompt, schema, wav: audio }) => {
+    if (!apiKey) throw new Error("GEMINI_API_KEY is not set")
+    const body = JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: "audio/wav", data: Buffer.from(audio).toString("base64") } }] }],
+      generationConfig: { responseMimeType: "application/json", responseSchema: schema },
+    })
+    for (let attempt = 1; ; attempt++) {
+      const response = await fetch(`${API_URL}/${model}:generateContent`, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+        body,
+      })
+      if (response.ok) {
+        const data = (await response.json()) as ResponseBody
+        const text = (data.candidates?.[0]?.content?.parts ?? []).filter(p => !p.thought).map(p => p.text ?? "").join("")
+        try {
+          return JSON.parse(text)
+        } catch (error) {
+          if (attempt >= attempts) throw new Error(`Gemini ${model}: ${(error as Error).message}`, { cause: error })
+          continue
+        }
+      }
+      if (!(response.status === 429 || response.status >= 500) || attempt >= attempts) {
+        throw new Error(`Gemini ${model} returned ${response.status}: ${await response.text()}`)
+      }
+      await sleep(2000 * 2 ** (attempt - 1))
+    }
+  }
+}

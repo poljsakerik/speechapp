@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { measureVolume, pauseAssessment, rateReview, segmentWords, tonalityAssessment, volumeAssessment } from "./review.ts"
+import { measureVolume, pauseAssessment, pitchAssessment, rateReview, segmentWords, tonalityAssessment, volumeAssessment } from "./review.ts"
 
 test("segments report syllables per second including internal silence", () => {
   const [segment] = segmentWords([
@@ -112,4 +112,24 @@ test("tonality findings name the feeling the words call for, and a missing revie
   assert.equal(tonality.findings[0].observation, "Your voice sounds flat here, while the words call for warmth or enthusiasm.")
   assert.equal(tonalityAssessment(segments, []).verdict, "effective")
   assert.equal(tonalityAssessment(segments, undefined).verdict, "uncertain")
+})
+
+test("a monotone stretch becomes a pitch finding; without a pitch measurement, pitch stays uncertain", () => {
+  const words = "So the thing is. Sales fell by half.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
+  const segments = segmentWords(words)
+  const mark = { first: 0, last: 7, start: 0, end: 7.8, text: words.map(w => w.text).join(" "), rule: "PITCH_VARIETY" as const, spread: 1.7, shift: 0 }
+  const pitch = pitchAssessment(segments, [mark])
+  assert.equal(pitch.verdict, "mixed")
+  assert.deepEqual(pitch.findings.map(f => [f.rule_id, f.segment_id]), [["PITCH_VARIETY", "segment-1"], ["PITCH_VARIETY", "segment-2"]])
+  assert.equal(pitch.findings[0].observation, "Your voice stays on one note through this stretch.")
+  assert.equal(pitchAssessment(segments, []).verdict, "effective")
+  assert.equal(pitchAssessment(segments, undefined).verdict, "uncertain")
+})
+
+test("a pitch mark the listening model supports uses its description and fix", () => {
+  const words = "So the thing is. Sales fell by half.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
+  const mark = { first: 0, last: 3, start: 0, end: 3.8, text: "So the thing is.", rule: "PITCH_HIGH" as const, spread: 3, shift: 14, how: "The voice jumps into a squeaky falsetto.", fix: "Say it in your usual voice." }
+  const [finding] = pitchAssessment(segmentWords(words), [mark]).findings
+  assert.deepEqual([finding.observation, finding.practice], [mark.how, mark.fix])
+  assert.equal(finding.why_it_matters, "A voice stuck high draws attention to itself and away from your message.")
 })
