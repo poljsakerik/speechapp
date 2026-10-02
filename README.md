@@ -105,7 +105,8 @@ The pause review works like a speaking coach marking up a recording. Timing only
 | | so long it stops sounding deliberate → `PAUSE_TOO_LONG` | **Shorten the pause after "…"** |
 | Each stretch said without a pause (listed with its length): did the listener need one? | → `PAUSE_NECESSARY` | **Pause after "…"** ‖ |
 
-- **Parts:** the take is reviewed in parts of about 120 words, cut at pauses, with the whole transcript as context in every request. One request for a whole take made the verdicts swing between runs (6 to 37 "breaks" on the same take); in parts, a take's count varies by about ±15%, and a finding recurs in another run 61–74% of the time. The parts run in parallel.
+- **Parts:** the take is reviewed in parts of about 120 words, cut at pauses, with the whole transcript as context in every request. One request for a whole take made the verdicts swing between runs (6 to 37 "breaks" on the same take); in parts, the bad take gets 40–45 findings per run, and a finding recurs in another run 54–79% of the time. Counts and recurrence are steadiest where the mistakes are clear (the bad take, 79%) and least steady on good speech (the retake, 9–19 findings, 55%), whose borderline findings come and go. The parts run in parallel.
+- **Complete replies:** a reply must judge every pause and every stretch in its part; the pause that ends a part belongs to that part. An incomplete part is asked once more, then the review is not assessed: a skipped stretch is not evidence that it needs no pause.
 - **Timing check:** a finding is dropped where the aligned and the recognizer's word timing disagree about which words a pause sits between, since the aligner occasionally moves a short word across a silence ("Here we ‖ go.").
 - **No fallback rules:** without decodable audio, a model or a usable reply, pauses are reported as not assessed.
 
@@ -113,10 +114,10 @@ Results, three runs each:
 
 | Recording | Findings per run |
 |---|---|
-| Selection-bias talk, bad take (4.6 min) | 32–40 |
-| Same talk, good retake (4.2 min) | 13–15 |
-| Student Gladiator reading, before → after coaching | 4–5 → 0–1 |
-| Student reading (Rate lesson), before → after | 5–6 → 1–3 |
+| Selection-bias talk, bad take (4.6 min) | 40–45 |
+| Same talk, good retake (4.2 min) | 9–19 |
+| Student Gladiator reading, before → after coaching | 4–7 → 0–2 |
+| Student reading (Rate lesson), before → after | 5–6 → 2–3 |
 
 The coach's clean clips get about 6 findings per minute. About a third of their missing-pause points fall on sentence ends with an exact 0.00 s gap, which are likely jump cuts that removed a real pause. Edited video is not a fair "no missing pauses" reference; the unedited retake is.
 
@@ -132,7 +133,7 @@ RECORDINGS_DIR=recordings-pause-development pnpm markup-tools
 pnpm eval:pause --run run-1   # replies cached per take and run label
 ```
 
-A demonstration can rightly get several findings (two places to pause in one run-on), so a finding is correct when it falls inside an annotated span of the same kind. Version 3 finds the annotated mistakes 6/6, 6/6 and 5/6 in three runs, including the uncoached reading ("Pause after 'son,'") and the slow greeting ("Don't stop after 'It's'"). Clean takes report findings per minute instead of pass/fail. A perfect score would be suspicious: skilled speakers hesitate too, and the lessons' edits remove real pauses.
+A demonstration can rightly get several findings (two places to pause in one run-on), so a finding is correct when it falls inside an annotated span of the same kind. Version 3 finds the annotated mistakes 6/6 in each of three runs, including the uncoached reading ("Pause after 'son,'" or "'Legion,'") and the slow greeting ("Don't stop after 'It's'"). Clean takes report findings per minute instead of pass/fail. A perfect score would be suspicious: skilled speakers hesitate too, and the lessons' edits remove real pauses.
 
 ## Research and evaluation
 

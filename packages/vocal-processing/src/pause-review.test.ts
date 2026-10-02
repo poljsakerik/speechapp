@@ -27,17 +27,28 @@ test("every real pause is marked in place with its length, and every stretch wit
   assert.match(user, /S3: words 9-16, 1\.6s, 8 syllables/)
 })
 
-test("a reply must judge every pause asked about; missing pauses must sit inside a stretch", () => {
-  assert.equal(parseReview(t.words, marked, { pauses: [{ id: 0, verdict: "fits" }], stretches: [] }), undefined)
-  const ok = parseReview(t.words, marked, { pauses: [0, 1, 2].map(id => ({ id, verdict: "fits" })), stretches: [{ id: 3, pause_after: [12, 16, 4, 2.5] }] })
+test("a reply must judge every pause and stretch asked about; missing pauses must sit inside a stretch", () => {
+  const fits = [0, 1, 2].map(id => ({ id, verdict: "fits" })), none = [0, 1, 2].map(id => ({ id, pause_after: [] }))
+  assert.equal(parseReview(t.words, marked, { pauses: [{ id: 0, verdict: "fits" }], stretches: [...none, { id: 3, pause_after: [] }] }), undefined)
+  assert.equal(parseReview(t.words, marked, { pauses: fits, stretches: none }), undefined, "stretch 3 is not judged")
+  const ok = parseReview(t.words, marked, { pauses: fits, stretches: [...none, { id: 3, pause_after: [12, 16, 4, 2.5] }] })
   assert.deepEqual(ok?.missing, [12], "16 ends the stretch, 4 is outside it, 2.5 is not a word")
 })
 
 test("long takes are reviewed in parts that never split a stretch", () => {
-  const long = take(Array.from({ length: 300 }, (_, i) => `w${i}`), Object.fromEntries(Array.from({ length: 30 }, (_, k) => [k * 10 + 9, 0.5])))
-  const pauses = Array.from({ length: 30 }, (_, k) => ({ after: k * 10 + 9, seconds: 0.5 }))
+  const long = take(Array.from({ length: 300 }, (_, i) => `w${i}`), Object.fromEntries(Array.from({ length: 29 }, (_, k) => [k * 10 + 9, 0.5])))
+  const pauses = Array.from({ length: 29 }, (_, k) => ({ after: k * 10 + 9, seconds: 0.5 }))
   const parts = reviewParts(long.words, pauses)
   assert.deepEqual(parts, [[0, 119], [120, 239], [240, 299]])
+  // The pause that ends a part is judged there, so every pause is judged exactly once.
+  const asked = parts.flatMap(part => ids(reviewRequest(long.words, pauses, () => 1, part).user.split("Review only")[1].split("\n")[0]))
+  assert.deepEqual(asked, pauses.map((_, k) => k))
+})
+
+test("a pause at a part boundary is judged", async () => {
+  const long = take(Array.from({ length: 125 }, (_, i) => `w${i}`), { 119: 0.8 })
+  const review = await reviewPause(long.words, long.pauses, reply(() => "breaks"))
+  assert.deepEqual(review.marks.map(m => [m.rule, m.at]), [["PAUSE_UNNECESSARY", [119]]])
 })
 
 test("findings name their words and group by kind; a fitting pause yields nothing", async () => {
@@ -51,6 +62,14 @@ test("without a model or a usable reply, pauses are not assessed rather than jud
   assert.equal((await reviewPause(t.words, t.pauses)).status, "no model")
   assert.equal((await reviewPause(t.words, t.pauses, async () => { throw new Error("offline") })).reliable, false)
   assert.equal((await reviewPause(t.words, t.pauses, async () => ({ pauses: [], stretches: [] }))).status, "unusable reply")
+  // An incomplete reply is asked again once.
+  let calls = 0
+  const flaky: JsonCompletion = async request => ++calls === 1 ? { pauses: [], stretches: [] } : reply(() => "fits")(request)
+  assert.equal((await reviewPause(t.words, t.pauses, flaky)).status, "reviewed")
+  assert.equal(calls, 2)
+  // A take without any pause is still one stretch the model must judge.
+  const unbroken = take("We looked at the data and it was clear that it worked".split(" "), {})
+  assert.equal((await reviewPause(unbroken.words, unbroken.pauses, async () => ({ pauses: [], stretches: [] }))).status, "unusable reply")
 })
 
 test("a pause the two timings place at different words gets no finding", () => {

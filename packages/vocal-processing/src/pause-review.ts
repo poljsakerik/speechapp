@@ -22,7 +22,7 @@ export const REVIEW_SYSTEM = `You coach spoken delivery, the way a speaking coac
 - "breaks": a clearly audible stop that interrupts a small unit that belongs together, so it sounds like hesitation or a lost thread: right after an article, preposition, possessive or auxiliary (the, a, of, to, my, is), inside a name, number or fixed phrase, or within a false start, restart or repeated word.
 - "too_short": the place is right, but the moment needs time to sink in (a key point, a striking claim or number, a question put to the audience, a reveal) and this pause is too brief to let it land.
 - "too_long": for this moment, the silence goes on so long that it stops sounding deliberate and the listener starts to wonder whether the speaker lost their place.
-2. Then the stretches the speaker said without any pause are listed with their length. For each, decide whether the listener needed a pause inside it: because ideas blur together, or a key point, claim or question gets no time to land. If so, give the indexes of the words the pause should follow; most stretches need none.
+2. Then the stretches the speaker said without any pause are listed with their length. For each, decide whether the listener needed a pause inside it: because ideas blur together, or a key point, claim or question gets no time to land. Answer every listed stretch: give the indexes of the words a pause should follow, or an empty list when it needs none, as most do.
 Many deliveries are valid. Only flag what a good speaking coach would clearly correct; when in doubt, leave it. The punctuation comes from speech recognition and can be wrong.`
 const schema = {
   type: "object", additionalProperties: false, required: ["pauses", "stretches"],
@@ -41,6 +41,17 @@ export function stretches(words: Word[], marked: MarkedPause[]): [number, number
 }
 
 /**
+ * What one part reviews: the pauses after words [from, to] and the stretches
+ * inside it. Parts end at a pause, so that pause is the last one in its part.
+ */
+function covered(words: Word[], marked: MarkedPause[], [from, to]: [number, number]) {
+  return {
+    pauses: marked.flatMap((p, k) => p.after >= from && p.after <= to ? [k] : []),
+    stretches: stretches(words, marked).flatMap(([a, b], k) => a >= from && b <= to ? [k] : []),
+  }
+}
+
+/**
  * One request reviews the pauses and stretches in words [from, to]; the whole
  * transcript is always included for context. Long lists made the model's
  * verdicts swing between runs, so takes are reviewed in parts.
@@ -48,9 +59,10 @@ export function stretches(words: Word[], marked: MarkedPause[]): [number, number
 export function reviewRequest(words: (Word & { start: number; end: number })[], marked: MarkedPause[], syllables: (text: string) => number, [from, to] = [0, words.length - 1]) {
   const id = new Map(marked.map((p, k) => [p.after, k]))
   const transcript = words.map((w, i) => `${i}:${w.text}${id.has(i) ? ` [P${id.get(i)} ${marked[id.get(i)!].seconds.toFixed(1)}s]` : ""}`).join(" ")
-  const runs = stretches(words, marked).flatMap(([a, b], k) => a >= from && b <= to ? [`S${k}: words ${a}-${b}, ${(words[b].end - words[a].start).toFixed(1)}s, ${words.slice(a, b + 1).reduce((n, w) => n + syllables(w.text), 0)} syllables`] : [])
-  const ids = marked.flatMap((p, k) => p.after >= from && p.after < to ? [`P${k}`] : [])
-  return { system: REVIEW_SYSTEM, user: `Transcript:\n${transcript}\n\nReview only words ${from}-${to}: pauses ${ids.length ? ids.join(", ") : "(none)"} and these stretches without a pause:\n${runs.join("\n")}`, schema, schemaName: "pause_review" }
+  const part = covered(words, marked, [from, to]), runs = stretches(words, marked)
+  const listed = part.stretches.map(k => { const [a, b] = runs[k]; return `S${k}: words ${a}-${b}, ${(words[b].end - words[a].start).toFixed(1)}s, ${words.slice(a, b + 1).reduce((n, w) => n + syllables(w.text), 0)} syllables` })
+  const ids = part.pauses.map(k => `P${k}`)
+  return { system: REVIEW_SYSTEM, user: `Transcript:\n${transcript}\n\nReview only words ${from}-${to}: pauses ${ids.length ? ids.join(", ") : "(none)"} and these stretches without a pause:\n${listed.join("\n")}`, schema, schemaName: "pause_review" }
 }
 
 /** Word ranges of about `size` words, cut at pauses so no stretch is split. */
@@ -64,21 +76,20 @@ export function reviewParts(words: Word[], marked: MarkedPause[], size = 120): [
 
 /**
  * Verdicts for the pauses in words [from, to] (undefined outside it) and valid
- * missing positions, or undefined when the reply leaves a pause unjudged.
+ * missing positions, or undefined when the reply leaves a pause or a stretch
+ * unjudged: silence about a stretch is not evidence that it needs no pause.
  */
 export function parseReview(words: Word[], marked: MarkedPause[], reply: unknown, [from, to] = [0, words.length - 1]): { verdicts: (Verdict | undefined)[]; missing: number[] } | undefined {
   const data = reply as { pauses?: { id?: unknown; verdict?: unknown }[]; stretches?: { id?: unknown; pause_after?: unknown }[] }
   if (!Array.isArray(data?.pauses) || !Array.isArray(data?.stretches)) return undefined
+  const part = covered(words, marked, [from, to])
   const byId = new Map(data.pauses.map(p => [p?.id, p?.verdict]))
-  const inside = (p: MarkedPause) => p.after >= from && p.after < to
-  const verdicts = marked.map((p, k) => inside(p) ? byId.get(k) : undefined)
-  if (marked.some((p, k) => inside(p) && !["fits", "breaks", "too_short", "too_long"].includes(verdicts[k] as string))) return undefined
+  const verdicts = marked.map((_, k) => part.pauses.includes(k) ? byId.get(k) : undefined)
+  if (part.pauses.some(k => !["fits", "breaks", "too_short", "too_long"].includes(verdicts[k] as string))) return undefined
+  const answers = new Map(data.stretches.map(s => [s?.id, s?.pause_after]))
+  if (part.stretches.some(k => !Array.isArray(answers.get(k)))) return undefined
   const runs = stretches(words, marked)
-  const missing = data.stretches.flatMap(s => {
-    const run = Number.isInteger(s?.id) ? runs[s.id as number] : undefined
-    if (run && (run[0] < from || run[1] > to)) return []
-    return run && Array.isArray(s.pause_after) ? s.pause_after.filter((n): n is number => Number.isInteger(n) && n >= run[0] && n < run[1]) : []
-  })
+  const missing = part.stretches.flatMap(k => (answers.get(k) as unknown[]).filter((n): n is number => typeof n === "number" && Number.isInteger(n) && n >= runs[k][0] && n < runs[k][1]))
   return { verdicts: verdicts as (Verdict | undefined)[], missing: [...new Set(missing)].sort((a, b) => a - b) }
 }
 
@@ -110,8 +121,13 @@ export async function reviewPause(words: Word[], pauses: Pause[], complete?: Jso
   const marked = after.flatMap((seconds, i) => seconds > 0 ? [{ after: i, seconds }] : [])
   if (!complete) return { marks: [], reliable: false, status: "no model", marked }
   const parts = reviewParts(words, marked)
+  // The model occasionally skips a stretch; a part is asked once more before the review gives up.
   const replies = await Promise.all(parts.map(async part => {
-    try { return parseReview(words, marked, await complete(reviewRequest(words, marked, syllables, part)), part) } catch { return undefined }
+    const request = reviewRequest(words, marked, syllables, part)
+    for (const user of [request.user, `${request.user}\n\nAnswer every listed pause and stretch.`]) {
+      try { const parsed = parseReview(words, marked, await complete({ ...request, user }), part); if (parsed) return parsed } catch { /* asked again below */ }
+    }
+    return undefined
   }))
   if (replies.some(r => !r)) return { marks: [], reliable: false, status: "unusable reply", marked }
   const review = { verdicts: marked.map((_, k) => replies.map(r => r!.verdicts[k]).find(Boolean)), missing: replies.flatMap(r => r!.missing) }
