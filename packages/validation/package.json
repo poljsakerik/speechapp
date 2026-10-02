@@ -1,0 +1,23 @@
+{
+  "name": "@micmane/validation",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Valibot schemas shared by the backend and the webapp",
+  "exports": {
+    "./*": "./src/schemas/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "valibot": "^1.5.0"
+  },
+  "devDependencies": {
+    "@micmane/eslint-config": "workspace:*",
+    "@micmane/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "valibot": "^1.5.0"
+  }
+}

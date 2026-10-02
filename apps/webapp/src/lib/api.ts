@@ -1,5 +1,6 @@
 import { TRPCClientError } from "@trpc/client";
 import type { inferRouterOutputs } from "@trpc/server";
+import * as v from "valibot";
 
 import {
   normalizeReview,
@@ -8,6 +9,7 @@ import {
   type Take,
 } from "@/lib/review";
 import type { AppRouter } from "@micmane/backend";
+import { recordingSchema } from "@micmane/validation/review";
 
 type ReviewResponse = inferRouterOutputs<AppRouter>["review"]["create"];
 
@@ -28,6 +30,21 @@ const MESSAGES: Record<ReviewErrorKind, string> = {
   failed:
     "The review couldn't be completed. Your take wasn't saved; send it again.",
 };
+
+const ISSUE_KINDS: Record<string, ReviewErrorKind> = {
+  mime_type: "format",
+  max_size: "size",
+  min_size: "speech",
+};
+
+/** Why the coach can't take this recording, checked before it is sent. Undefined when it can. */
+export function recordingErrorMessage(recording: Blob): string | undefined {
+  const result = v.safeParse(recordingSchema, recording, {
+    abortPipeEarly: true,
+  });
+  if (result.success) return undefined;
+  return MESSAGES[ISSUE_KINDS[result.issues[0].type] ?? "failed"];
+}
 
 /** What to tell the speaker when `review.create` fails. */
 export function reviewErrorMessage(error: unknown): string {

@@ -1,10 +1,13 @@
+import { maxRecordingBytes } from "@micmane/validation/review";
 import { nodeHTTPRequestHandler } from "@trpc/server/adapters/node-http";
 import Fastify from "fastify";
 
 import { reviewAudio } from "./review.ts";
 import { createContextFactory } from "./trpc/context.ts";
 import { appRouter } from "./trpc/routers/_app.ts";
-import { maxBodyBytes } from "./trpc/routers/review.ts";
+
+/** The whole request body: the recording plus room for multipart framing. */
+const maxBodyBytes = maxRecordingBytes + 64 * 1024;
 
 export function buildApp(review = reviewAudio) {
   const app = Fastify({

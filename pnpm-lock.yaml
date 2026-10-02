@@ -26,6 +26,9 @@ importers:
 
   apps/backend:
     dependencies:
+      '@micmane/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@micmane/vocal-processing':
         specifier: workspace:*
         version: link:../../packages/vocal-processing
@@ -68,6 +71,9 @@ importers:
       '@micmane/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@micmane/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@tanstack/react-query':
         specifier: ^5.104.0
         version: 5.104.0(react@19.3.0)
@@ -95,6 +101,9 @@ importers:
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@6.0.3)
     devDependencies:
       '@micmane/backend':
         specifier: workspace:*
@@ -201,6 +210,21 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
+  packages/validation:
+    devDependencies:
+      '@micmane/eslint-config':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@micmane/typescript-config':
+        specifier: workspace:*
+        version: link:../config-typescript
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@6.0.3)
 
   packages/vocal-processing:
     dependencies:

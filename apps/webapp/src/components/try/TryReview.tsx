@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
+  recordingErrorMessage,
   reviewErrorMessage,
   toReviewResult,
   type ReviewResult,
@@ -171,6 +172,12 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
   };
 
   const send = async (blob: Blob, label: string) => {
+    // The same checks the backend runs, so a take it would refuse isn't uploaded.
+    const invalid = recordingErrorMessage(blob);
+    if (invalid) {
+      setState({ name: "error", message: invalid });
+      return;
+    }
     setState({ name: "reviewing", blob, label, started: performance.now() });
     try {
       const ext = blob.type.includes("mp4")
