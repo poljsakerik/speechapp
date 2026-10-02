@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { detectPitch } from "./pitch.ts"
+import { detectPitch, trackPitch, trackPitchInSteps } from "./pitch.ts"
 import type { Word } from "./types.ts"
 
 const RATE = 16000
@@ -126,4 +126,11 @@ test("a register mark inside a monotone stretch leaves the monotone parts on eit
   const [before, high, after] = marks
   assert.deepEqual([before.start, after.end], [flat.start, flat.end])
   assert.ok(before.last + 1 === high.first && high.last + 1 === after.first, "the parts meet the register mark without overlapping it")
+})
+
+test("pitch tracked in steps matches the track measured at once, and detection can reuse it", async () => {
+  const { samples, words } = take([...sentences(MELODIC, 5), ...sentences(FLAT, 8), ...sentences(MELODIC, 5)])
+  const track = trackPitch(samples, RATE)
+  assert.deepEqual(await trackPitchInSteps(samples, RATE, 100), track)
+  assert.deepEqual(detectPitch(samples, RATE, words, {}, [], track), detectPitch(samples, RATE, words))
 })

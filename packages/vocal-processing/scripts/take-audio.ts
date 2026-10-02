@@ -34,7 +34,8 @@ export async function loadTake(root: string, take: Take, align = true) {
 /** Model replies cached by request, model settings and run label, so benchmark reruns are reproducible. */
 export function cachedCompletion(dir: string, complete: JsonCompletion, settings: unknown): JsonCompletion {
   return async request => {
-    const file = join(dir, `reply-${createHash("sha256").update(JSON.stringify({ request, settings })).digest("hex")}.json`)
+    // The provider's cache key doesn't change the reply, so saved replies stay valid.
+    const file = join(dir, `reply-${createHash("sha256").update(JSON.stringify({ request: { ...request, cacheKey: undefined }, settings })).digest("hex")}.json`)
     if (existsSync(file)) return JSON.parse(readFileSync(file, "utf8"))
     const reply = await complete(request)
     mkdirSync(dir, { recursive: true })

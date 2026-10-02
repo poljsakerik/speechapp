@@ -41,11 +41,10 @@ export async function requestReview(file: Blob, name: string): Promise<ReviewRes
       : "failed"
     throw new ReviewError(MESSAGES[kind], kind)
   }
-  const data = (await response.json()) as { audio: string; audioType: string; segments: Segment[]; review: unknown }
-  const bytes = Uint8Array.from(atob(data.audio), (c) => c.charCodeAt(0))
-  const audio = new Blob([bytes], { type: data.audioType })
-  const take = await measureTake(audio, data.segments)
-  return { take, review: normalizeReview(data.review, take.segments), audioUrl: URL.createObjectURL(audio) }
+  const data = (await response.json()) as { segments: Segment[]; review: unknown }
+  // The review is of the file sent, so it plays and is drawn from that.
+  const take = await measureTake(file, data.segments)
+  return { take, review: normalizeReview(data.review, take.segments), audioUrl: URL.createObjectURL(file) }
 }
 
 /** Draw the reviewed excerpt: waveform and recorded level from the audio, pauses from word timings. */

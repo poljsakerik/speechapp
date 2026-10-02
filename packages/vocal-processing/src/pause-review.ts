@@ -8,6 +8,7 @@
  * No fixed syllable counts or durations decide anything: without a model the
  * pause review is not assessed.
  */
+import { createHash } from "node:crypto"
 import { pauseAfterWords, timed, type PauseMark, type PauseRule } from "./pause.ts"
 import type { Pause } from "./pauses.ts"
 import { syllables } from "./syllables.ts"
@@ -62,7 +63,9 @@ export function reviewRequest(words: (Word & { start: number; end: number })[], 
   const part = covered(words, marked, [from, to]), runs = stretches(words, marked)
   const listed = part.stretches.map(k => { const [a, b] = runs[k]; return `S${k}: words ${a}-${b}, ${(words[b].end - words[a].start).toFixed(1)}s, ${words.slice(a, b + 1).reduce((n, w) => n + syllables(w.text), 0)} syllables` })
   const ids = part.pauses.map(k => `P${k}`)
-  return { system: REVIEW_SYSTEM, user: `Transcript:\n${transcript}\n\nReview only words ${from}-${to}: pauses ${ids.length ? ids.join(", ") : "(none)"} and these stretches without a pause:\n${listed.join("\n")}`, schema, schemaName: "pause_review" }
+  // Every part starts with the same prompt and transcript; the key lets the provider reuse it.
+  const cacheKey = `pause-review-${createHash("sha256").update(transcript).digest("hex").slice(0, 32)}`
+  return { system: REVIEW_SYSTEM, user: `Transcript:\n${transcript}\n\nReview only words ${from}-${to}: pauses ${ids.length ? ids.join(", ") : "(none)"} and these stretches without a pause:\n${listed.join("\n")}`, schema, schemaName: "pause_review", cacheKey }
 }
 
 /** Word ranges of about `size` words, cut at pauses so no stretch is split. */
