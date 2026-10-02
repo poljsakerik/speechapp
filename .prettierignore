@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+**/routeTree.gen.ts
+# Managed by turbo
+AGENTS.md
+# Agent tooling
+.claude/
+.impeccable/
+.t3/

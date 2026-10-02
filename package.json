@@ -11,6 +11,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,md}\"",
     "markup-tools": "pnpm --dir apps/markup-tools dev",
     "rate": "pnpm --dir packages/vocal-processing rate",
     "eval:rate": "pnpm --dir packages/vocal-processing eval:rate",
@@ -26,9 +28,10 @@
     "import:pitch": "pnpm --dir packages/vocal-processing import:pitch"
   },
   "devDependencies": {
-    "turbo": "^2.11.5",
-    "typescript": "^6.0.3",
     "eslint": "^10.11.0",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "turbo": "^2.11.5",
+    "typescript": "^6.0.3"
   }
 }

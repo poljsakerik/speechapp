@@ -7,7 +7,7 @@ Speech coaching for the five foundations taught in `videos/`: rate, volume, pitc
 This is a pnpm and Turborepo workspace modeled on the layout of `../leksoro`:
 
 - `apps/webapp` — React, Vite, TanStack Router, and the sample take/editor.
-- `apps/backend` — Fastify `/api/review` and `/api/health`.
+- `apps/backend` — Fastify serving a tRPC router at `/trpc` (`review.create`, `health.get`).
 - `apps/markup-tools` — local golden-set annotator.
 - `packages/ui` — reusable components, `cn`, and the single shared Tailwind stylesheet used by the web app.
 - `packages/vocal-processing` — transcription, alignment, rate detection, evaluation scripts, and tests.
@@ -24,7 +24,7 @@ pnpm lint
 pnpm test
 ```
 
-The Vite server proxies `/api` to the backend. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Pauses are judged by a model from the measured silences, volume is measured from the same decoded audio, tonality sends each passage's audio to Gemini, and pitch is measured from the decoded audio, with Gemini listening for problems the measurement must confirm. The backend returns the original audio, timed segments, and findings to the editor.
+The Vite server proxies `/trpc` to the backend, where Fastify serves the tRPC router; the webapp calls it through TanStack Query. The page's sample take was voiced with macOS `say`; its review in `apps/webapp/src/lib/sample.ts` is written by hand and labeled as a sample. A live upload is transcribed with Deepgram, its text is given a pacing prediction by OpenAI, and the rate package measures the audio against it. Pauses are judged by a model from the measured silences, volume is measured from the same decoded audio, tonality sends each passage's audio to Gemini, and pitch is measured from the decoded audio, with Gemini listening for problems the measurement must confirm. The backend returns timed segments and findings; the editor draws and plays the file that was sent.
 
 Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
@@ -41,18 +41,19 @@ The aim is to show an untrained speaker where someone of the course coach's cali
 ### How well it matches skilled delivery
 
 Speech allows several valid interpretations, so the goal is partial agreement with skilled delivery, not a perfect score. A perfect benchmark result would suggest overfitting. `scripts/eval-pacing.ts` measures two things per group of recordings:
+
 - **Agreement:** the rank correlation between predicted scores and actual phrase pace.
 - **Flagged:** the share of passages the contrast check flags.
 
 On recordings that played no part in designing the check:
 
-| Group | Agreement | Passages flagged |
-|---|---|---|
-| Course coach, 13 benchmark clips (8 min) | +0.16 to +0.24 | 7–21% |
-| Course coach, three other lessons (18 min) | +0.17 | 29–31% |
-| 21 untrained practice talks (126 min) | −0.05 to −0.01 | 45–53% |
-| A good retake of one talk | −0.03 to +0.08 | 0–17% |
-| The original, poorer take of that talk | −0.10 to −0.12 | 86–100% |
+| Group                                      | Agreement      | Passages flagged |
+| ------------------------------------------ | -------------- | ---------------- |
+| Course coach, 13 benchmark clips (8 min)   | +0.16 to +0.24 | 7–21%            |
+| Course coach, three other lessons (18 min) | +0.17          | 29–31%           |
+| 21 untrained practice talks (126 min)      | −0.05 to −0.01 | 45–53%           |
+| A good retake of one talk                  | −0.03 to +0.08 | 0–17%            |
+| The original, poorer take of that talk     | −0.10 to −0.12 | 86–100%          |
 
 Ranges span `gpt-6-sol` and `gpt-6-luna`. The coach's pace follows the prediction and untrained talks don't, and the check flags him far less often. Fresh predictions from the same model agree at a correlation of 0.92. Simple text features (function words, phrase length, position) explain only 1% of the coach's pace changes, so the prediction captures meaning rather than word sounds.
 
@@ -96,14 +97,14 @@ CLI file paths are relative to `packages/vocal-processing`, including arguments 
 
 ## Pauses
 
-The pause review works like a speaking coach marking up a recording. Timing only *measures*: every pause the speaker made, found in the audio (`findPauses`, silences of 0.2 s or more), with its exact place and length. Recognizer timestamps alone hide about half of them. Every *decision* is a judgment about meaning, made by a model (`RATE_MODEL`/`RATE_EFFORT`) reading the whole transcript with each real pause marked in place (`src/pause-review.ts`). No syllable count or duration decides anything.
+The pause review works like a speaking coach marking up a recording. Timing only _measures_: every pause the speaker made, found in the audio (`findPauses`, silences of 0.2 s or more), with its exact place and length. Recognizer timestamps alone hide about half of them. Every _decision_ is a judgment about meaning, made by a model (`RATE_MODEL`/`RATE_EFFORT`) reading the whole transcript with each real pause marked in place (`src/pause-review.ts`). No syllable count or duration decides anything.
 
-| The model is asked | Finding | Instruction |
-|---|---|---|
-| Each pause: does it fit? | breaks a small unit (after "the", inside a name, a restart) → `PAUSE_UNNECESSARY` | **Don't stop after "…"** |
-| | the right place, but too brief for the moment to land → `PAUSE_TOO_SHORT` | **Hold the pause longer after "…"** ‖ |
-| | so long it stops sounding deliberate → `PAUSE_TOO_LONG` | **Shorten the pause after "…"** |
-| Each stretch said without a pause (listed with its length): did the listener need one? | → `PAUSE_NECESSARY` | **Pause after "…"** ‖ |
+| The model is asked                                                                     | Finding                                                                           | Instruction                           |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
+| Each pause: does it fit?                                                               | breaks a small unit (after "the", inside a name, a restart) → `PAUSE_UNNECESSARY` | **Don't stop after "…"**              |
+|                                                                                        | the right place, but too brief for the moment to land → `PAUSE_TOO_SHORT`         | **Hold the pause longer after "…"** ‖ |
+|                                                                                        | so long it stops sounding deliberate → `PAUSE_TOO_LONG`                           | **Shorten the pause after "…"**       |
+| Each stretch said without a pause (listed with its length): did the listener need one? | → `PAUSE_NECESSARY`                                                               | **Pause after "…"** ‖                 |
 
 - **Parts:** the take is reviewed in parts of about 120 words, cut at pauses, with the whole transcript as context in every request. One request for a whole take made the verdicts swing between runs (6 to 37 "breaks" on the same take); in parts, the bad take gets 40–45 findings per run, and a finding recurs in another run 54–79% of the time. Counts and recurrence are steadiest where the mistakes are clear (the bad take, 79%) and least steady on good speech (the retake, 9–19 findings, 55%), whose borderline findings come and go. The parts run in parallel.
 - **Complete replies:** a reply must judge every pause and every stretch in its part; the pause that ends a part belongs to that part. An incomplete part is asked once more, then the review is not assessed: a skipped stretch is not evidence that it needs no pause.
@@ -112,12 +113,12 @@ The pause review works like a speaking coach marking up a recording. Timing only
 
 Results, three runs each:
 
-| Recording | Findings per run |
-|---|---|
-| Selection-bias talk, bad take (4.6 min) | 40–45 |
-| Same talk, good retake (4.2 min) | 9–19 |
-| Student Gladiator reading, before → after coaching | 4–7 → 0–2 |
-| Student reading (Rate lesson), before → after | 5–6 → 2–3 |
+| Recording                                          | Findings per run |
+| -------------------------------------------------- | ---------------- |
+| Selection-bias talk, bad take (4.6 min)            | 40–45            |
+| Same talk, good retake (4.2 min)                   | 9–19             |
+| Student Gladiator reading, before → after coaching | 4–7 → 0–2        |
+| Student reading (Rate lesson), before → after      | 5–6 → 2–3        |
 
 The coach's clean clips get about 6 findings per minute. About a third of their missing-pause points fall on sentence ends with an exact 0.00 s gap, which are likely jump cuts that removed a real pause. Edited video is not a fair "no missing pauses" reference; the unedited retake is.
 
@@ -145,12 +146,12 @@ Volume problems are what the course's volume lesson demonstrates (dropping to "3
 
 Held out (the coach's three other lessons, 22 practice talks and a good retake, about 3.4 h), no everyday speech is flagged, clean or degraded. The one mark is the coach's deliberately sad greeting in the tonality lesson (0:57–1:13, 11.1 dB). Degrading the recording costs detections, never adds false alarms:
 
-| Recording | "3 out of 10" (full lesson) | Trail-off (3 endings) |
-|---|---|---|
-| Clean, or 20 dB quieter | found | 3 |
-| Laptop microphone (bass cut below 250 Hz) or telephone band | found | 0 |
-| Fast automatic gain control | missed | 2 |
-| Noise at 30 dB / 20 dB below the voice | missed | 3 / 0 |
+| Recording                                                   | "3 out of 10" (full lesson) | Trail-off (3 endings) |
+| ----------------------------------------------------------- | --------------------------- | --------------------- |
+| Clean, or 20 dB quieter                                     | found                       | 3                     |
+| Laptop microphone (bass cut below 250 Hz) or telephone band | found                       | 0                     |
+| Fast automatic gain control                                 | missed                      | 2                     |
+| Noise at 30 dB / 20 dB below the voice                      | missed                      | 3 / 0                 |
 
 Mild fades aren't caught: the voice-pack reading `volume-01` ends 9–11 dB down, within everyday intonation. Its `volume-02` is quieter than another take throughout, which one recording can't show.
 
@@ -179,15 +180,15 @@ Tonality is the emotion underneath the voice. The course's main tonality problem
 
 **Sensitivity.** `TONALITY_FLAT_SCORE` sets which ratings count as flat (1–4). On held-out recordings, the share of speaking time flagged was:
 
-| Flagged score | Vinh's lessons | Your talks | Your retake |
-|---|---|---|---|
-| 1 | 0% | 1% | 0% |
-| **2** (default) | **0%** | **35%** | **33%** |
-| 3 | 0% | 60% | 48% |
+| Flagged score   | Vinh's lessons | Your talks | Your retake |
+| --------------- | -------------- | ---------- | ----------- |
+| 1               | 0%             | 1%         | 0%          |
+| **2** (default) | **0%**         | **35%**    | **33%**     |
+| 3               | 0%             | 60%        | 48%         |
 
 These come from 141 passages, so treat them as rough. Don't tune the score to make every example come out right: delivery has many valid readings.
 
-**What it does not do.** It doesn't judge *which* emotion the voice carries. On natural speech emotion labels are unreliable, and a rule comparing exact emotions flagged 27–54% of Vinh's teaching. Vinh's blank-face demonstration is visual rather than audible, so it isn't a fair test (Gemini rates it low, but its words say "I don't have much emotion", and that judgment vanishes when the words are filtered out). A single short phrase isn't judged either.
+**What it does not do.** It doesn't judge _which_ emotion the voice carries. On natural speech emotion labels are unreliable, and a rule comparing exact emotions flagged 27–54% of Vinh's teaching. Vinh's blank-face demonstration is visual rather than audible, so it isn't a fair test (Gemini rates it low, but its words say "I don't have much emotion", and that judgment vanishes when the words are filtered out). A single short phrase isn't judged either.
 
 **How well it works.** Gemini hears the voice, not only the words: with the words filtered out (400 Hz low-pass), it still rated every Vinh lesson clip above every one of your talks, and your expressive reading above your flat one. On a single passage its rating is coarse: your expressive reading scores 2 on its own, and is unflagged only because the text model says a calm voice suits that paragraph. The same clip gets the same rating in about 72% of repeat runs. Findings are tentative. See [tonality research](docs/tonality-research.md).
 
@@ -223,12 +224,12 @@ The pitch lesson has no demonstration of a flat or stuck voice by the coach. His
 
 On recordings that played no part in choosing anything, as a share of speaking time flagged:
 
-| Recording | Flagged |
-|---|---|
-| Coach, volume, pitch and tonality lessons (19 min) | 0–4% |
-| 22 untrained practice talks (2.9 h) | 0–48%, median 20% |
-| A good retake of one talk / the original, poorer take | 3% / 14% |
-| Course student before / after coaching (another speaker) | 78% / 50% |
+| Recording                                                | Flagged           |
+| -------------------------------------------------------- | ----------------- |
+| Coach, volume, pitch and tonality lessons (19 min)       | 0–4%              |
+| 22 untrained practice talks (2.9 h)                      | 0–48%, median 20% |
+| A good retake of one talk / the original, poorer take    | 3% / 14%          |
+| Course student before / after coaching (another speaker) | 78% / 50%         |
 
 Of the coach's two marks, one is mostly the student's reading in the tonality lesson; the other is his calm closing of the volume lesson (2.37 semitones). Of the user's 14 voice-pack readings of one paragraph, the two marked flat for pitch or tonality are flagged and the two good ones aren't. Seven of the other ten are flagged too: they were recorded for rate, pauses or volume, and pitch was never judged.
 
@@ -238,12 +239,12 @@ The margin on the clean side is thin: the good reading sits at 3.0 semitones and
 
 The largest shift of any 10 s of speaking from the speaker's normal:
 
-| Recording | Shift |
-|---|---|
-| 22 untrained practice talks and the good retake | −2.9 to +3.8 semitones |
-| Coach's normal teaching | −4.1 to +5.0 (+6.5 impersonating a student) |
-| Coach's "3 out of 10" / sad-face exercise | −10.5 / −9.3 |
-| The user's high reading among their three | +17.4 |
+| Recording                                       | Shift                                       |
+| ----------------------------------------------- | ------------------------------------------- |
+| 22 untrained practice talks and the good retake | −2.9 to +3.8 semitones                      |
+| Coach's normal teaching                         | −4.1 to +5.0 (+6.5 impersonating a student) |
+| Coach's "3 out of 10" / sad-face exercise       | −10.5 / −9.3                                |
+| The user's high reading among their three       | +17.4                                       |
 
 So 7 semitones sits in a wide gap. The practice talks, retake and other voice-pack recordings get no register mark at any value from 5 to 10, the coach's normal teaching gets none from 7 up, and his deliberate drops are caught up to 9. His other marks are other speakers (the students in the pitch and tonality lessons) and the siren demonstration (+11.5).
 
@@ -254,6 +255,7 @@ So 7 semitones sits in a wide gap. The practice talks, retake and other voice-pa
 `pitch-listen.ts` sends the audio to Gemini (`GEMINI_MODEL`, default `gemini-3.5-flash`) in chunks of about 30 s, cut between words. On a whole 5-minute talk it returns nothing. For each stretch where pitch is a problem, it gives an issue (too high, too low, monotone, sing-song), a severity from 1 (badly distracting) to 5 (fine), what the voice does wrong and a fix. Moving pitch on purpose for emphasis is defined as good delivery. Without `GEMINI_API_KEY`, or if a call fails, pitch is measured only. A 5-minute talk takes about 22 s, alongside alignment.
 
 A heard stretch becomes a mark only at severity 1–2 and only when the measured pitch agrees in that stretch:
+
 - **Monotone:** spread under 2.6 semitones.
 - **Too low:** 7 semitones or more below normal; if it is merely flat, it becomes a monotone mark.
 - **Too high:** an octave above normal, or above 350 Hz. The 350 Hz bar is above everyday speaking for men and women, and is the only way a take high throughout can be flagged.
@@ -261,6 +263,7 @@ A heard stretch becomes a mark only at severity 1–2 and only when the measured
 Marks show the model's description and fix where it heard the same problem over them, at severity 3 or worse; otherwise the standard wording.
 
 Why the measurement must agree, from about 200 calls:
+
 - **Labelled short clips:** severity 1–2 caught all five of the user's high, flat and quiet readings in two runs, including the falsetto reading alone. That is something measurement can't do.
 - **Words muffled:** the coach's demonstrations were still heard as problems with the words muffled (low-passed), so it hears the voice, not the words.
 - **Everyday speech:** it rates nearly every problem a 3, so a severity cut alone barely fires. Its severity-2 calls on good delivery (the good retake "monotone" for 27 s, the blank-face demonstration, the coach's excited "That was fantastic!", the good tonality reading) all measure as moving or within range, so none becomes a mark.
@@ -274,6 +277,7 @@ Degraded copies (20 dB quieter, laptop bass cut, telephone band, automatic gain 
 ### Pitch benchmark
 
 `benchmarks/pitch-development.json` has fourteen takes:
+
 - **Coach, natural:** seven teaching clips from the pitch lesson, excluding the music, the acted sketch, the student's siren exercise and the siren demonstration.
 - **Coach, other foundations:** his constant-pace and blank-face demonstrations (clean), and "3 out of 10" inside his normal speech (`PITCH_LOW`).
 - **The user's readings** (the voice-pack pitch source, `--speech-dir`): all three together (`PITCH_HIGH` on the first, `PITCH_VARIETY` on the second), and the flat and good readings alone.

@@ -36,28 +36,28 @@ typography:
     fontWeight: 800
     lineHeight: 0.95
     letterSpacing: "-0.035em"
-    fontVariation: "\"wdth\" 125"
+    fontVariation: '"wdth" 125'
   headline:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(2rem, 3.8vw, 3.5rem)"
     fontWeight: 800
     lineHeight: 0.98
     letterSpacing: "-0.03em"
-    fontVariation: "\"wdth\" 125"
+    fontVariation: '"wdth" 125'
   title:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.625rem"
     fontWeight: 700
     lineHeight: 1
     letterSpacing: "-0.02em"
-    fontVariation: "\"wdth\" 125"
+    fontVariation: '"wdth" 125'
   monitor:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.875rem"
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "-0.015em"
-    fontVariation: "\"wdth\" 125"
+    fontVariation: '"wdth" 125'
   body-lead:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.0625rem"
@@ -68,7 +68,7 @@ typography:
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.625
-    fontVariation: "\"wdth\" 100"
+    fontVariation: '"wdth" 100'
   body-sm:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.8125rem"
@@ -84,7 +84,7 @@ typography:
     fontSize: "0.75rem"
     fontWeight: 400
     lineHeight: 1.3
-    fontFeature: "\"tnum\""
+    fontFeature: '"tnum"'
 rounded:
   hair: "2px"
   tick: "3px"
@@ -180,6 +180,7 @@ Color is rationed. The canvas is a nearly achromatic white. Five pastel foundati
 State is carried by stroke rather than by extra color: a solid leader is a clear note, a dashed one is tentative; a filled pin is a strength, an open ring an improvement; sample content wears a dashed badge edge. Depth is almost flat. Lines mark structure, not lists: a one-pixel rule appears only where a fixed region meets scrolling content or where two panes share one container. Rows and sections separate by spacing on a shared grid. The only large soft shadows sit under the two instruments (the editor frame and the graphite recorder).
 
 **Key Characteristics:**
+
 - White editor chrome; one-pixel lines mark scroll edges and pane splits, never rows or sections.
 - Five foundation hues, each a pastel field plus a deep ink, shown only where that foundation is active.
 - Neutral graphite for dark surfaces; orange glass as the only warm color, lit only while something is live.
@@ -191,14 +192,17 @@ State is carried by stroke rather than by extra color: a solid leader is a clear
 A near-white canvas and graphite inks, five pastel foundation hues with paired deep inks, neutral graphite for dark surfaces, and orange glass as the only warm color.
 
 ### Primary
+
 - **Graphite Ink** (ink): the primary action color. Primary buttons, headline text, the played portion of the waveform, active tab indicator. On hover the primary button lifts toward graphite (ink mixed with 45% graphite).
 
 ### Secondary
+
 - **Orange Glass** (glass): the only warm color in the system. Playhead line and handle, playing state of the play button, the record button while live, slider thumb, progress fill, focus ring and outline, `accent-color`. Always rendered with the glass-lit shadow, never as a large flat field of UI chrome.
 - **Hot Glass** (glass-hot): glass hover state and the selection tint (mixed 38% into white).
 - **Glass Ink** (glass-ink): orange for text and strokes on white: unlit play button glyph, input focus border, caret, the arrow in the try heading.
 
 ### Tertiary
+
 - **The Five Foundations**, each a pastel fill for fields and a deep ink for text and strokes:
   - **Rate Sky** (f-rate / f-rate-ink)
   - **Volume Lilac** (f-volume / f-volume-ink)
@@ -208,6 +212,7 @@ A near-white canvas and graphite inks, five pastel foundation hues with paired d
 - **Iridescent Film**: a 100deg linear gradient through the five fills in course order (rate, volume, pitch, tonality, pauses). In the build it appears only on the live input-level bars while recording.
 
 ### Neutral
+
 - **Paper** (paper): page background, editor label column, notes rail, card footers.
 - **Surface** (surface): pure white for the editor, cards, inputs, outline buttons, the Foundations band.
 - **Sunken** (sunken): hover fill, secondary buttons, tab list ground, disabled inputs.
@@ -220,6 +225,7 @@ A near-white canvas and graphite inks, five pastel foundation hues with paired d
 - **Destructive** (destructive): errors, used on a 88% white tint rather than as a solid fill.
 
 ### Named Rules
+
 **The Active-Only Rule.** A foundation color appears only where that foundation is present in the data: its lane, its swatch, its badge, its note. Never as decoration, section tint, or brand accent.
 
 **The One Warm Light Rule.** Orange glass marks the single live or draggable thing: the playhead, recording, playback in progress, focus. Unlit glass is graphite-line. If two unrelated things are orange, one of them is wrong.
@@ -237,6 +243,7 @@ A near-white canvas and graphite inks, five pastel foundation hues with paired d
 **Character:** One variable family stretched two ways: wide and extra-bold for anything that names a thing, normal width for reading. Martian Mono is reserved for time and measurement, so a mono glyph always means "this is a number from the take".
 
 ### Hierarchy
+
 - **Display** (800, clamp(2.5rem, 4.5vw, 4.25rem), 0.95, -0.035em, wide): the single page headline; balanced wrapping.
 - **Headline** (800, clamp(2rem, 3.8vw, 3.5rem), 0.98, -0.03em, wide): section headings, paired left with a lead paragraph right on large screens.
 - **Title** (700, 1.625rem to 1.125rem, tight, -0.02em to -0.01em, wide): foundation names, promise titles, retake steps, recorder prompts.
@@ -248,6 +255,7 @@ A near-white canvas and graphite inks, five pastel foundation hues with paired d
 - **Time** (Martian Mono 400, 0.75rem to 0.5625rem, tabular): timecodes, ruler ticks, lane measurements (syllables/s, seconds).
 
 ### Named Rules
+
 **The Mono Means Measured Rule.** Martian Mono is used only for times and measured values. Words are never set in mono.
 
 **The Sentence-Case Rule.** Labels are small, semibold and sentence case. The build has no uppercase tracked labels.
@@ -265,6 +273,7 @@ The nav is 56px and sticky; after 8px of scroll it turns translucent paper with 
 Nearly flat. Structure comes from spacing, tonal steps (paper, surface, sunken, graphite, graphite-deep) and one-pixel structural lines at scroll edges and pane splits. Shadows exist in four roles: a faint contact shadow under controls and cards, a soft lift for the active rail note, the glass glow that makes orange read as lit, and one long soft drop under each instrument (the editor frame and the graphite recorder).
 
 ### Shadow Vocabulary
+
 - **Contact** (`box-shadow: 0 1px 2px oklch(0.2 0.01 55 / 0.05)`): cards; 0.08 alpha for active tabs and toggles combined with a line-strong ring.
 - **Ink button** (`box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.14), 0 1px 2px oklch(0.2 0.01 55 / 0.3)`): primary and graphite buttons.
 - **Scroll cue** (`box-shadow: inset 0 10px 10px -10px oklch(0.2 0.01 55 / 0.25)`): the top of the rail's note list once it has scrolled, under the summary's scroll-edge line.
@@ -274,6 +283,7 @@ Nearly flat. Structure comes from spacing, tonal steps (paper, surface, sunken, 
 - **Focus** (`box-shadow: 0 0 0 3px color-mix(in oklch, var(--glass) 22%, transparent)`): input focus halo.
 
 ### Named Rules
+
 **The Lines Mark Structure, Not Lists Rule.** A one-pixel line rule is used in exactly two cases. Scroll edge: a fixed region sits over content that scrolls (the scrolled nav's bottom border, the rail summary above the note list, the phone notes sheet header). Pane split: two panes share one container (editor toolbar and viewer, viewer and timeline, label column, notes rail, figure caption and takes, card and dialog footers, phone note pane and all-notes bar, the tabs line rail the active indicator rides on). Rows and section breaks get no line: foundation rows, lanes, rail notes, promises, accordion items, the "Listening for" list and page sections separate by spacing and sit on the shared grid. Data lines are exempt (ruler baseline, retake timeline, waveform, leaders).
 
 **The Fading Separator Rule.** A free-standing separator, outside any container, fades to transparent at both ends (line-strong at its midpoint).
@@ -285,7 +295,9 @@ Small, square-shouldered corners. The base radius is 6px (lg) for frames and car
 ## Components
 
 ### Buttons
+
 Tactile and precise, like hardware keys.
+
 - **Shape:** gently squared (md, about 4.8px); xs sizes use 3px.
 - **Primary:** graphite ink on paper text, 36px tall, 14px horizontal padding, 14px text, weight 500, inset top highlight. Hover lifts toward graphite.
 - **Hover / Focus:** 200ms on the house easing; 2px glass focus ring offset 2px on paper; pressed state nudges down 1px; disabled at 45% opacity.
@@ -294,12 +306,14 @@ Tactile and precise, like hardware keys.
 - **Sizes:** xs 24px, sm 32px, default 36px, lg 44px; icon squares to match.
 
 ### Badges
+
 - **Style:** 20px tall, 3px radius, 11px medium text, 6px padding.
 - **Foundation variants:** pastel fill with the matching deep ink text.
 - **Sample:** dashed line-strong border on white with ink-3 text; all sample content is labeled with it.
 - **Live:** lit glass.
 
 ### Cards / Containers
+
 - **Corner Style:** 6px.
 - **Background:** surface; the footer is a paper pane split from the body by a one-pixel line (dialog footers match).
 - **Shadow Strategy:** contact shadow only.
@@ -307,30 +321,37 @@ Tactile and precise, like hardware keys.
 - **Internal Padding:** 20px (12px small).
 
 ### Inputs / Fields
+
 - **Style:** 40px, white, line-strong border, 6px-ish (md) radius, faint inset shadow, ink-3 placeholder.
 - **Focus:** border turns glass-ink with a 3px glass halo at 22%.
 - **Error / Disabled:** destructive border with a 16% halo; disabled goes sunken with ink-3 text.
 
 ### Navigation
+
 Wordmark (placeholder mic-with-mane mark plus wide extra-bold "MicMane"), three 13px medium ink-2 links that go ink on hover, a small primary button right. When scrolled, a one-pixel line bottom border marks the scroll edge; no shadow. Below 768px, links move into a right sheet as spaced rows (no dividers) with a full-width large primary button.
 
 ### Tabs, Toggles and Accordion
+
 Accordion items have no dividers; they separate by spacing.
 
 Tab lists sit on sunken with an inset line; the active tab is white with a line-strong ring. The line variant sits on a one-pixel line rail, and the active tab's one-pixel ink indicator rides on it. Layer toggles keep the label in ink and let a 10px foundation swatch carry color, at 30% opacity when off.
 
 ### Slider / Scrubber
+
 A one-pixel line-strong track with an ink range and a 10 by 20px lit-glass thumb at 3px radius: the playhead handle in miniature.
 
 ### The Editor (signature)
+
 The product's core instrument. Toolbar (round play button, mono timecode, title, sample badge, primary action), monitor (current transcript line with active words highlighted in the note's foundation fill), a ruler with 1s and 5s ticks, caption track, a waveform stroked ink where played and line-strong ahead, then five 46px foundation lanes. The toolbar, viewer and timeline are panes split by lines; the rows between ruler and lanes have no dividers. A 2px glass playhead with a white hairline spans all tracks. Notes are pins in the foundation ink: filled for strengths, open ring for improvements, dashed stroke and dashed leader when tentative. Rail notes are rounded blocks on paper; the active note lifts as a white block with a line ring and the note-lift shadow.
 
 ### The Recorder (signature)
+
 A graphite slab with a large circular glass button (144px, 176px from sm): unlit graphite-line at rest, lit glass while recording. Live input level runs as thin bars in the iridescent film only while recording; foundation swatches light in sequence while the review runs, in a rounded graphite-deep "Listening for" panel whose rows separate by spacing only.
 
 ## Do's and Don'ts
 
 ### Do:
+
 - **Do** keep the canvas paper, surface and graphite; let color enter only through an active foundation or live glass.
 - **Do** pair every foundation fill with its ink, and set foundation text in the ink.
 - **Do** separate rows and sections by spacing on the shared heading/lead grid (lg: minmax(0, 1.35fr) and minmax(0, 1fr), 64px gap).
@@ -340,6 +361,7 @@ A graphite slab with a large circular glass button (144px, 176px from sm): unlit
 - **Do** use the glass focus ring (2px, offset 2px) on every interactive element.
 
 ### Don't:
+
 - **Don't** use a foundation hue for decoration, section backgrounds, or emphasis unrelated to that foundation.
 - **Don't** light glass when nothing is live, or use it for a second, unrelated highlight on the same screen.
 - **Don't** round badges, tags or lane tiles into pills; keep them at 3px or less.

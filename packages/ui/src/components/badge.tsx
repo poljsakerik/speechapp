@@ -1,7 +1,7 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@micmane/ui/lib/utils"
-import { Slot } from "radix-ui"
+import { cn } from "@micmane/ui/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Slot } from "radix-ui";
+import * as React from "react";
 
 // Badges are tags stamped on the editor: small, square-shouldered, never pills.
 const badgeVariants = cva(
@@ -15,7 +15,8 @@ const badgeVariants = cva(
         // Sample content is always labeled as such.
         sample: "border-dashed border-line-strong bg-surface text-ink-3",
         live: "border-transparent glass-lit text-[oklch(0.19_0.008_55)]",
-        destructive: "border-transparent bg-[color-mix(in_oklch,var(--destructive),white_88%)] text-destructive",
+        destructive:
+          "border-transparent bg-[color-mix(in_oklch,var(--destructive),white_88%)] text-destructive",
         // Foundations: pastel field, deep ink text.
         rate: "border-transparent bg-f-rate text-f-rate-ink",
         volume: "border-transparent bg-f-volume text-f-volume-ink",
@@ -29,8 +30,8 @@ const badgeVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
 function Badge({
   className,
@@ -39,7 +40,7 @@ function Badge({
   ...props
 }: React.ComponentProps<"span"> &
   VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "span"
+  const Comp = asChild ? Slot.Root : "span";
 
   return (
     <Comp
@@ -48,7 +49,7 @@ function Badge({
       className={cn(badgeVariants({ variant }), className)}
       {...props}
     />
-  )
+  );
 }
 
-export { Badge, badgeVariants }
+export { Badge, badgeVariants };

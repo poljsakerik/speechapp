@@ -1,2 +1,2 @@
-import config from "@micmane/eslint-config/base"
-export default config
+import config from "@micmane/eslint-config/base";
+export default config;

@@ -77,14 +77,14 @@ Do not erase silence from the canonical timeline. If processing chunks, store ch
 
 Use Python with **Praat/Parselmouth** and NumPy for the local prototype. Parselmouth exposes Praat's pitch and intensity analysis. Voice activity detection, for example Silero VAD, can provide speech regions; keep its original-time intervals. [Parselmouth API](https://parselmouth.readthedocs.io/en/stable/api_reference.html), [Silero VAD](https://github.com/snakers4/silero-vad)
 
-| Dimension | Evidence to compute | How to use it | Important limitation |
-|---|---|---|---|
-| Rate | Syllables/second in phrases and 5–10-second windows; variation across adjacent windows | Find rushed takeaways or consistently unvaried pacing | Counts depend on ASR and language; short windows are unstable |
-| Pauses | Speech boundaries and silence intervals, checked against word timing | Find where an idea may need processing time or a transition needs separation | Breaths, stop consonants, hesitation, and deliberate silence are different |
-| Volume | Short-time RMS in dBFS, relative change across comparable speech regions, clipping | Find fading endings and intentional or missing dynamic contrast | Recording gain, distance, compression, and automatic gain control alter the signal |
-| Pitch/melody | Voiced F0 contour, robust pitch range, phrase-ending movement | Identify little melodic contrast or an unexpected contour on an important phrase | Pitch tracking can fail; a rise is not inherently wrong |
-| Emphasis | Relative word duration, pitch movement, and level, jointly | Check whether intended keywords stand out | Stress cannot be reduced to loudness alone |
-| Tonality | Audio-model descriptions of perceived warmth, energy, softness, or firmness | Offer a tentative interpretation tied to the passage's meaning | No single physical variable proves an emotional tone |
+| Dimension    | Evidence to compute                                                                    | How to use it                                                                    | Important limitation                                                               |
+| ------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Rate         | Syllables/second in phrases and 5–10-second windows; variation across adjacent windows | Find rushed takeaways or consistently unvaried pacing                            | Counts depend on ASR and language; short windows are unstable                      |
+| Pauses       | Speech boundaries and silence intervals, checked against word timing                   | Find where an idea may need processing time or a transition needs separation     | Breaths, stop consonants, hesitation, and deliberate silence are different         |
+| Volume       | Short-time RMS in dBFS, relative change across comparable speech regions, clipping     | Find fading endings and intentional or missing dynamic contrast                  | Recording gain, distance, compression, and automatic gain control alter the signal |
+| Pitch/melody | Voiced F0 contour, robust pitch range, phrase-ending movement                          | Identify little melodic contrast or an unexpected contour on an important phrase | Pitch tracking can fail; a rise is not inherently wrong                            |
+| Emphasis     | Relative word duration, pitch movement, and level, jointly                             | Check whether intended keywords stand out                                        | Stress cannot be reduced to loudness alone                                         |
+| Tonality     | Audio-model descriptions of perceived warmth, energy, softness, or firmness            | Offer a tentative interpretation tied to the passage's meaning                   | No single physical variable proves an emotional tone                               |
 
 Use `speaking_rate = syllable_count / phrase_elapsed_seconds`, including internal pauses. Report an additional articulation-rate estimate using speech-active duration if useful; label it separately. VAD settings change that estimate, so keep them fixed across comparisons.
 
@@ -113,17 +113,17 @@ Keep separate confidence fields for transcript quality, acoustic reliability, la
 
 ## 4. Tool choices and alternatives
 
-| Tool | Role | Decision |
-|---|---|---|
-| Deepgram Nova-3 | Hosted timestamped ASR | Default for the first integrated MVP; test on our recordings |
-| OpenAI Whisper API | Hosted ASR with word timing | Good alternative if OpenAI access is already available |
-| faster-whisper | Local ASR | Used for this research; useful for avoiding audio uploads |
-| WhisperX | Better alignment when needed | Add only if the initial timestamps fail evaluation |
-| Praat/Parselmouth + NumPy | Physical delivery measurements | Use from the beginning |
-| MediaPipe Pose, Hand, and Face Landmarkers | Frame-level visual geometry | Prototype for visible video; validate coverage and false detections |
-| Gemini audio/video understanding | Context-aware review of synchronized delivery | Test directly against the coaching examples |
-| Hume Expression Measurement | Specialized expression features | Optional comparison experiment, not a required dependency |
-| Wispr Flow | Dictation and text capture | Not the recommended backend for this job |
+| Tool                                       | Role                                          | Decision                                                            |
+| ------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------- |
+| Deepgram Nova-3                            | Hosted timestamped ASR                        | Default for the first integrated MVP; test on our recordings        |
+| OpenAI Whisper API                         | Hosted ASR with word timing                   | Good alternative if OpenAI access is already available              |
+| faster-whisper                             | Local ASR                                     | Used for this research; useful for avoiding audio uploads           |
+| WhisperX                                   | Better alignment when needed                  | Add only if the initial timestamps fail evaluation                  |
+| Praat/Parselmouth + NumPy                  | Physical delivery measurements                | Use from the beginning                                              |
+| MediaPipe Pose, Hand, and Face Landmarkers | Frame-level visual geometry                   | Prototype for visible video; validate coverage and false detections |
+| Gemini audio/video understanding           | Context-aware review of synchronized delivery | Test directly against the coaching examples                         |
+| Hume Expression Measurement                | Specialized expression features               | Optional comparison experiment, not a required dependency           |
+| Wispr Flow                                 | Dictation and text capture                    | Not the recommended backend for this job                            |
 
 The [faster-whisper project](https://github.com/SYSTRAN/faster-whisper) supports word timestamps and integrated VAD. Local execution removes API transcription charges but still has compute cost and setup requirements.
 
@@ -174,11 +174,11 @@ Illustrative **audio-only** five-minute request: 9,600 audio tokens + 4,000 text
 
 My **audio-only** engineering estimate for one developer, assuming working API access and no custom training:
 
-| Milestone | Estimate | Deliverable |
-|---|---|---|
-| Feasibility experiment | 1–2 working days | Rubric, small labeled clip set, comparison of three configurations |
-| Integrated local demo | 2–3 more days | Upload, analysis, clickable transcript, evidence-backed cards |
-| Validation and refinement | 2–5 more days | Held-out listener review, fewer false alarms, second-take comparison |
+| Milestone                 | Estimate         | Deliverable                                                          |
+| ------------------------- | ---------------- | -------------------------------------------------------------------- |
+| Feasibility experiment    | 1–2 working days | Rubric, small labeled clip set, comparison of three configurations   |
+| Integrated local demo     | 2–3 more days    | Upload, analysis, clickable transcript, evidence-backed cards        |
+| Validation and refinement | 2–5 more days    | Held-out listener review, fewer false alarms, second-take comparison |
 
 An audio-only demo is plausible in roughly 3–5 working days. An audio-only tested pilot is closer to 1–2 weeks. Video capture, landmarks, visibility handling, synchronized playback, and separate validation add work; estimate that scope after a small visual feasibility test and review of Vinh's visual lessons. These are estimates, not evidence that nuanced delivery feedback is solved.
 

@@ -1,7 +1,7 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@micmane/ui/lib/utils"
-import { Slot } from "radix-ui"
+import { cn } from "@micmane/ui/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Slot } from "radix-ui";
+import * as React from "react";
 
 const buttonVariants = cva(
   "group/button relative inline-flex shrink-0 items-center justify-center rounded-md border border-transparent font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-(--ease-out) outline-none select-none focus-visible:ring-2 focus-visible:ring-glass focus-visible:ring-offset-2 focus-visible:ring-offset-paper active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-45 aria-busy:pointer-events-none aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -14,13 +14,15 @@ const buttonVariants = cva(
         // Hairline on white.
         outline:
           "border-line-strong bg-surface text-ink hover:border-ink-3 hover:bg-sunken aria-expanded:bg-sunken",
-        secondary: "bg-sunken text-ink hover:bg-[color-mix(in_oklch,var(--sunken),var(--ink)_6%)]",
-        ghost: "text-ink-2 hover:bg-sunken hover:text-ink aria-expanded:bg-sunken aria-expanded:text-ink",
+        secondary:
+          "bg-sunken text-ink hover:bg-[color-mix(in_oklch,var(--sunken),var(--ink)_6%)]",
+        ghost:
+          "text-ink-2 hover:bg-sunken hover:text-ink aria-expanded:bg-sunken aria-expanded:text-ink",
         // Orange glass: reserved for recording and the playhead's own controls.
-        glass:
-          "glass-lit text-[oklch(0.19_0.008_55)] hover:bg-glass-hot",
+        glass: "glass-lit text-[oklch(0.19_0.008_55)] hover:bg-glass-hot",
         // Unlit glass: a playback control at rest. It lights only while playing.
-        glassOff: "border-line-strong bg-surface text-glass-ink hover:border-glass-ink",
+        glassOff:
+          "border-line-strong bg-surface text-glass-ink hover:border-glass-ink",
         // Graphite: the recorder's body.
         graphite:
           "bg-graphite text-[oklch(0.96_0.002_80)] shadow-[inset_0_1px_0_oklch(1_0_0/0.12),0_1px_2px_oklch(0.2_0.005_60/0.35)] hover:bg-[color-mix(in_oklch,var(--graphite),white_8%)]",
@@ -43,8 +45,8 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 function Button({
   className,
@@ -54,9 +56,9 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
+    asChild?: boolean;
   }) {
-  const Comp = asChild ? Slot.Root : "button"
+  const Comp = asChild ? Slot.Root : "button";
 
   return (
     <Comp
@@ -66,7 +68,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };
