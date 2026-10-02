@@ -13,7 +13,9 @@ export type Take = {
   segments: Segment[]
 }
 
-export type Suggestion = { direction: "slow_down" | "speed_up"; span: [number, number]; text: string }
+/** A phrase to change inside a passage; pause directions point at the word a pause follows. */
+export type Suggestion = { direction: "slow_down" | "speed_up" | "pause_after" | "lengthen_pause_after" | "no_pause_after" | "shorten_pause_after"; span: [number, number]; text: string }
+const DIRECTIONS: Suggestion["direction"][] = ["slow_down", "speed_up", "pause_after", "lengthen_pause_after", "no_pause_after", "shorten_pause_after"]
 
 export type Verdict = "effective" | "mixed" | "needs_work" | "uncertain"
 
@@ -44,11 +46,16 @@ export type Review = {
   findings: Finding[]
 }
 
+const ISSUE_NAMES: Record<FoundationKey, string> = { rate: "rate-of-speech", volume: "volume", pitch_melody: "pitch", tonality: "tonality", pauses: "pause" }
+const COUNTS = ["", "one", "two", "three", "four"]
+
 /** An empty findings list is not evidence that every foundation was assessed. */
 export function emptyReviewMessage(assessments: Assessment[]): string {
-  const rate = assessments.find(a => a.foundation === "rate")
-  if (!rate || rate.verdict === "uncertain") return "There wasn’t enough reliable evidence to assess your rate of speech."
-  return "No rate-of-speech issues were flagged. The other four fundamentals haven’t been assessed."
+  const assessed = assessments.filter(a => a.verdict !== "uncertain").map(a => ISSUE_NAMES[a.foundation])
+  if (!assessed.length) return "There wasn’t enough reliable evidence to assess this take."
+  const others = COUNTS[5 - assessed.length]
+  const rest = others === "one" ? " The other fundamental hasn’t been assessed." : others ? ` The other ${others} fundamentals haven’t been assessed.` : ""
+  return `No ${assessed.join(" or ")} issues were flagged.${rest}`
 }
 
 const VERDICTS: Verdict[] = ["effective", "mixed", "needs_work", "uncertain"]
@@ -89,7 +96,7 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
       const suggestions = (Array.isArray(f.suggestions) ? (f.suggestions as Record<string, unknown>[]) : []).flatMap(
         (s): Suggestion[] => {
           const at = timeSpan(s.start, s.end)
-          const direction = s.direction === "slow_down" || s.direction === "speed_up" ? s.direction : undefined
+          const direction = DIRECTIONS.find(d => d === s.direction)
           return at && direction ? [{ direction, span: at, text: text(s.text) }] : []
         },
       )

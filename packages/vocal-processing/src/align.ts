@@ -189,7 +189,9 @@ export function viterbiAlign<W extends Word>(words: W[], emission: Emission, opt
     back.push(ptr)
     ;[score, next] = [next, score]
   }
-  let s = score[S - 1] >= score[S - 2] ? S - 1 : S - 2
+  // After a long trailing silence the last band holds only the final blank,
+  // and the last letter's score is stale.
+  let s = S - 2 >= active[frames - 1][0] && score[S - 2] > score[S - 1] ? S - 2 : S - 1
   if (score[s] === NEG) return words
   const firstFrame = new Map<number, number>()
   const lastFrame = new Map<number, number>()

@@ -4,7 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from "lucide-r
 import { Button } from "@micmane/ui/components/button"
 import { Popover, PopoverAnchor, PopoverContent } from "@micmane/ui/components/popover"
 import { FOUNDATION_BY_KEY } from "@/lib/foundations"
-import { emptyReviewMessage, formatTime, type Assessment, type Finding, type Take, type Word } from "@/lib/review"
+import { emptyReviewMessage, formatTime, type Assessment, type Finding, type Suggestion, type Take, type Word } from "@/lib/review"
 import { cn } from "@micmane/ui/lib/utils"
 
 type FeedbackViewProps = {
@@ -24,6 +24,19 @@ const RULES: Record<string, { label: string; stretch?: boolean }> = {
   RATE_IMPORTANCE_FAST: { label: "Rushed passage", stretch: true },
   RATE_IMPORTANCE_SLOW: { label: "Dragged passage", stretch: true },
   RATE_CONTRAST: { label: "Flat pacing", stretch: true },
+  PAUSE_NECESSARY: { label: "Missing pause", stretch: true },
+  PAUSE_TOO_SHORT: { label: "Pause too short" },
+  PAUSE_UNNECESSARY: { label: "Pause out of place", stretch: true },
+  PAUSE_TOO_LONG: { label: "Pause too long" },
+}
+
+const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {
+  slow_down: "Slow down on",
+  speed_up: "Speed up through",
+  pause_after: "Pause after",
+  lengthen_pause_after: "Hold the pause longer after",
+  no_pause_after: "Don’t stop after",
+  shorten_pause_after: "Shorten the pause after",
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]
@@ -324,7 +337,12 @@ const Transcript = memo(function Transcript({ paragraphs, now, openKey, onOpenCh
                     onOpenChange={(open) => onOpenChange(open ? run.key : null)}
                     onPlay={onPlay}
                   >
-                    <Words words={run.words} now={now} emphasized={(w) => !!finding.suggestions?.some((s) => within(w, s.span))} />
+                    <Words
+                      words={run.words}
+                      now={now}
+                      emphasized={(w) => !!finding.suggestions?.some((s) => within(w, s.span))}
+                      pauseAfter={(w) => !!finding.suggestions?.some((s) => (s.direction === "pause_after" || s.direction === "lengthen_pause_after") && within(w, s.span))}
+                    />
                   </Highlight>
                 ) : (
                   <Words words={run.words} now={now} />
@@ -343,9 +361,11 @@ type WordsProps = {
   now: number
   /** Phrases a note singles out inside a stretch, e.g. where to slow down. */
   emphasized?: (word: Word) => boolean
+  /** Words a pause should follow, marked in the text. */
+  pauseAfter?: (word: Word) => boolean
 }
 
-function Words({ words, now, emphasized }: WordsProps) {
+function Words({ words, now, emphasized, pauseAfter }: WordsProps) {
   const groups: { emphasis: boolean; words: Run["words"] }[] = []
   for (const item of words) {
     const emphasis = emphasized?.(item.word) ?? false
@@ -358,6 +378,11 @@ function Words({ words, now, emphasized }: WordsProps) {
       <Fragment key={index}>
         {i > 0 && " "}
         <span className={cn(index === now && "shadow-[inset_0_-3px_0_var(--glass)]")}>{word.text}</span>
+        {pauseAfter?.(word) && (
+          <span aria-label="pause" className="ml-1 font-semibold text-(--hl-ink)">
+            ‖
+          </span>
+        )}
       </Fragment>
     ))
     return (
@@ -485,14 +510,14 @@ function Note({ finding, onPlay }: { finding: Finding; onPlay: (span: [number, n
           {finding.practice && <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-pretty">{finding.practice}</p>}
           {finding.suggestions?.map((s) => (
             <button
-              key={s.direction}
+              key={`${s.direction}-${s.span[0]}`}
               type="button"
               onClick={() => onPlay(s.span)}
               className="mt-2 flex w-full items-start gap-2 rounded-sm text-left text-[0.8125rem] leading-snug hover:text-(--hl-ink)"
             >
               <PlayIcon className="mt-0.5 size-3 shrink-0 fill-current text-ink-3" />
               <span>
-                <span className="font-semibold">{s.direction === "slow_down" ? "Slow down on" : "Speed up through"}</span>{" "}
+                <span className="font-semibold">{SUGGESTION_LABELS[s.direction]}</span>{" "}
                 <span className="text-ink-2">“{s.text}”</span>
               </span>
             </button>
