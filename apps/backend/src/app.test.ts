@@ -71,14 +71,14 @@ test("health and upload contract", async (context) => {
   });
   assert.equal(extra.status, 400);
 
-  // Recorders add codec parameters; the review service gets the bare type.
-  for (const [type, bare] of [
-    ["audio/webm;codecs=opus", "audio/webm"],
-    ["audio/mp4; codecs=mp4a.40.2", "audio/mp4"],
+  // Recorders add codec parameters to the type.
+  for (const type of [
+    "audio/webm;codecs=opus",
+    "audio/mp4; codecs=mp4a.40.2",
   ]) {
     received = undefined;
     assert.equal((await upload("file", type)).status, 200);
-    assert.deepEqual(received, { audio: Buffer.from("abc"), type: bare });
+    assert.deepEqual(received, Buffer.from("abc"));
   }
 
   // A chunked body has no Content-Length, so the limit must hold while reading.

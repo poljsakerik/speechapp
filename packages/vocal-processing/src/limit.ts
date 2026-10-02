@@ -4,17 +4,19 @@
  * same API at the same time, and concurrent reviews, can't exceed it together.
  */
 export function limiter(size: number) {
-  if (!Number.isInteger(size) || size < 1) throw new Error(`Invalid concurrency limit: ${size}`)
-  let active = 0
-  const waiting: (() => void)[] = []
+  if (!Number.isInteger(size) || size < 1)
+    throw new Error(`Invalid concurrency limit: ${size}`);
+  let active = 0;
+  const waiting: (() => void)[] = [];
   return async <T>(run: () => Promise<T>): Promise<T> => {
-    while (active >= size) await new Promise<void>(resolve => waiting.push(resolve))
-    active++
+    while (active >= size)
+      await new Promise<void>((resolve) => waiting.push(resolve));
+    active++;
     try {
-      return await run()
+      return await run();
     } finally {
-      active--
-      waiting.shift()?.()
+      active--;
+      waiting.shift()?.();
     }
-  }
+  };
 }
