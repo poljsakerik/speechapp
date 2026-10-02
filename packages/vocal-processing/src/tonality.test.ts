@@ -16,6 +16,18 @@ test("sentences join into passages of 10-30 s, and a short clip is one passage",
   assert.ok(passages(runOn).every(p => p.end - p.start <= 30))
 })
 
+test("a short tail never stretches a passage past 30 s", () => {
+  // Joined, the last two would span 34.8 s: they are split evenly instead.
+  const runOn = Array.from({ length: 35 }, (_, i) => ({ text: `w${i}`, start: i, end: i + 0.8 }))
+  assert.deepEqual(passages(runOn).map(p => [p.first, p.last]), [[0, 16], [17, 34]])
+  // A sentence end inside the limits is preferred to an even split.
+  const sentences = runOn.map((w, i) => i === 21 ? { ...w, text: "w21." } : w)
+  assert.deepEqual(passages(sentences).map(p => [p.first, p.last]), [[0, 21], [22, 34]])
+  // After a long silence no split fits, so the tail is judged alone rather than across the gap.
+  const late = [...words(20), { text: "late", start: 100, end: 100.8 }, { text: "words.", start: 101, end: 101.8 }]
+  assert.deepEqual(passages(late).map(p => [p.first, p.last]), [[0, 14], [15, 19], [20, 21]])
+})
+
 test("a flat voice is flagged only where the words call for feeling", () => {
   const ps = passages(words(45))
   const fits = new Map<string, Emotion[]>([["p1", ["happy"]], ["p2", ["neutral", "sad"]], ["p3", ["happy", "surprised"]]])
@@ -62,4 +74,24 @@ test("the review rates each passage's audio and asks the text model once", async
   assert.deepEqual(heard, [[236800, 16000], [236800, 16000], [236800, 16000]])
   assert.equal(analysis.marks.length, 1)
   assert.equal((await reviewTonality([], samples, sampleRate, async () => 1, async () => ({}))).reliable, false)
+})
+
+test("a failed review sends no further audio and cancels what is in flight", async () => {
+  const sampleRate = 16000, samples = new Float32Array(75 * sampleRate), ws = words(75) // five passages
+  const never = (signal?: AbortSignal) => new Promise<number>((_, reject) => signal!.addEventListener("abort", () => reject(signal!.reason)))
+  // The text model fails at once: four ratings had started, none follows, and all four are cancelled.
+  const started: AbortSignal[] = []
+  await assert.rejects(reviewTonality(ws, samples, sampleRate, async (_, __, signal) => { started.push(signal!); return never(signal) },
+    async () => { throw new Error("text model down") }), /text model down/)
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(started.length, 4)
+  assert.ok(started.every(s => s.aborted))
+  // One rating fails: its siblings are cancelled and the queued passage is never sent.
+  let calls = 0
+  const textSignal: AbortSignal[] = []
+  await assert.rejects(reviewTonality(ws, samples, sampleRate, async (_, __, signal) => { if (calls++ === 0) throw new Error("rating failed"); return never(signal) },
+    async (_, signal) => { textSignal.push(signal!); return never(signal) }), /rating failed/)
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(calls, 4)
+  assert.ok(textSignal[0].aborted)
 })

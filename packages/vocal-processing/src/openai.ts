@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises"
 import type { JsonCompletion } from "./types.ts"
 
 const API_URL = "https://api.openai.com/v1/responses"
@@ -40,7 +41,7 @@ export function openaiCompletion(options: OpenAIOptions = {}): JsonCompletion {
   const effort = options.effort ?? settings.effort
   const attempts = options.attempts ?? 4
 
-  return async ({ system, user, schema, schemaName }) => {
+  return async ({ system, user, schema, schemaName }, signal) => {
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set")
     const body = JSON.stringify({
       model,
@@ -55,6 +56,7 @@ export function openaiCompletion(options: OpenAIOptions = {}): JsonCompletion {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body,
+        signal,
       })
       if (response.ok) {
         try {
@@ -69,7 +71,7 @@ export function openaiCompletion(options: OpenAIOptions = {}): JsonCompletion {
       if (!retryable || attempt >= attempts) {
         throw new Error(`OpenAI ${model} returned ${response.status}: ${await response.text()}`)
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
+      await sleep(1000 * 2 ** (attempt - 1), undefined, { signal })
     }
   }
 }

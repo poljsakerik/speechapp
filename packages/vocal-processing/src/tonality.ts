@@ -21,8 +21,8 @@ import type { JsonCompletion, Word } from "./types.ts"
 /** The feelings the text model may call for; neutral means a calm voice serves as well. */
 export const EMOTIONS = ["happy", "sad", "angry", "surprised", "fearful", "disgusted", "neutral"] as const
 export type Emotion = (typeof EMOTIONS)[number]
-/** How expressive a voice sounds, from 1 (flat, blank) to 5 (vivid). */
-export type VoiceRating = (samples: Float32Array, sampleRate: number) => Promise<number>
+/** How expressive a voice sounds, from 1 (flat, blank) to 5 (vivid). The signal cancels a rating no longer needed. */
+export type VoiceRating = (samples: Float32Array, sampleRate: number, signal?: AbortSignal) => Promise<number>
 
 export type ToneRule = "TONE_FLAT"
 export type Passage = { id: string; first: number; last: number; start: number; end: number; text: string }
@@ -67,10 +67,26 @@ export function passages(words: Word[], config: Partial<TonalityConfig> = {}): P
     current.push(w)
     if (/[.!?]["”’)]*$/.test(w.text) && w.end - current[0].start >= c.minPassageSeconds) flush()
   }
-  // A short tail joins the passage before it rather than being judged alone.
+  // A short tail joins the passage before it rather than being judged alone. If the
+  // two together are too long, they are split again where both halves are within the passage limits,
+  // preferably at a sentence end, then as evenly as possible; failing that the tail stays alone.
   if (current.length && out.length && current.at(-1)!.end - current[0].start < c.minPassageSeconds) {
     const last = out.pop()!
-    current = [...ws.filter(w => w.index >= last.first && w.index <= last.last), ...current]
+    const joined = [...ws.filter(w => w.index >= last.first && w.index <= last.last), ...current]
+    if (joined.at(-1)!.end - joined[0].start <= c.maxPassageSeconds) current = joined
+    else {
+      let best: { cut: number; score: number } | undefined
+      for (let cut = 1; cut < joined.length; cut++) {
+        const left = joined[cut - 1].end - joined[0].start, right = joined.at(-1)!.end - joined[cut].start
+        if (Math.min(left, right) < c.minPassageSeconds || Math.max(left, right) > c.maxPassageSeconds) continue
+        const score = Math.abs(left - right) + (/[.!?]["”’)]*$/.test(joined[cut - 1].text) ? 0 : c.maxPassageSeconds)
+        if (!best || score < best.score) best = { cut, score }
+      }
+      const cut = best?.cut ?? joined.length - current.length
+      current = joined.slice(0, cut)
+      flush()
+      current = joined.slice(cut)
+    }
   }
   flush()
   return out
@@ -140,11 +156,16 @@ export async function reviewTonality(words: Word[], samples: Float32Array, sampl
   if (!ps.length) return { passages: [], marks: [], reliable: false }
   const clips = ps.map(p => samples.subarray(Math.floor(p.start * sampleRate), Math.ceil(p.end * sampleRate)))
   // Each rating is a network call of a few seconds, so a few run at once, alongside the text model.
+  // A failure on either side makes the rest useless: no further passage is sent, and requests
+  // in flight are cancelled.
+  const controller = new AbortController(), { signal } = controller
+  const stop = (error: unknown): never => { controller.abort(error); throw error }
   const ratings: number[] = new Array(clips.length)
   let next = 0
   const rateAll = Promise.all(Array.from({ length: Math.min(4, clips.length) }, async () => {
-    while (next < clips.length) { const i = next++; ratings[i] = await rate(clips[i], sampleRate) }
-  }))
-  const [fits] = await Promise.all([complete(tonalityRequest(ps)).then(reply => parseFits(ps, reply)), rateAll])
-  return detectTonality(ps, ratings, fits, config)
+    while (!signal.aborted && next < clips.length) { const i = next++; ratings[i] = await rate(clips[i], sampleRate, signal) }
+  })).catch(stop)
+  const fits = complete(tonalityRequest(ps), signal).then(reply => parseFits(ps, reply)).catch(stop)
+  await Promise.all([fits, rateAll])
+  return detectTonality(ps, ratings, await fits, config)
 }

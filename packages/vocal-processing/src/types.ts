@@ -7,4 +7,4 @@ export type JsonCompletion = (request: {
   user: string
   schema: Record<string, unknown>
   schemaName: string
-}) => Promise<unknown>
+}, signal?: AbortSignal) => Promise<unknown>

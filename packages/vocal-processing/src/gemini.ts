@@ -7,6 +7,7 @@
  * reading above your flat one. The prompt is the one measured; changing it
  * needs the same checks (docs/tonality-research.md).
  */
+import { setTimeout as sleep } from "node:timers/promises"
 import type { VoiceRating } from "./tonality.ts"
 
 const API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -35,7 +36,7 @@ export function geminiVoice(options: GeminiOptions = {}): VoiceRating {
   const model = options.model ?? geminiSettings().model
   const attempts = options.attempts ?? 4
 
-  return async (samples, sampleRate) => {
+  return async (samples, sampleRate, signal) => {
     if (!apiKey) throw new Error("GEMINI_API_KEY is not set")
     const body = JSON.stringify({
       contents: [{ role: "user", parts: [{ text: VOICE_PROMPT }, { inline_data: { mime_type: "audio/wav", data: wav(samples, sampleRate).toString("base64") } }] }],
@@ -46,6 +47,7 @@ export function geminiVoice(options: GeminiOptions = {}): VoiceRating {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body,
+        signal,
       })
       if (response.ok) {
         try {
@@ -59,7 +61,7 @@ export function geminiVoice(options: GeminiOptions = {}): VoiceRating {
       if (!retryable || attempt >= attempts) {
         throw new Error(`Gemini ${model} returned ${response.status}: ${await response.text()}`)
       }
-      await new Promise((resolve) => setTimeout(resolve, 2000 * 2 ** (attempt - 1)))
+      await sleep(2000 * 2 ** (attempt - 1), undefined, { signal })
     }
   }
 }
