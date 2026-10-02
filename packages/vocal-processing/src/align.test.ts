@@ -31,6 +31,14 @@ test("aligns words to the frames that spell them, even when the recognizer's tim
   assert.deepEqual(withDash[1], { text: "—", start: 0.1, end: 0.12 })
 })
 
+test("aligns a take that ends in a silence longer than the margin", () => {
+  // "go" at frames 1-2, then 40 frames of uncertain silence after the last word's band.
+  const em = emission(["-", "G", "O", ...Array(41).fill("-")])
+  for (let t = 3; t < em.frames; t++) em.logProbs[t * LETTERS.length] = -1
+  const aligned = viterbiAlign([{ text: "Go", start: 0.02, end: 0.06 }], em, { margin: 0.04 })
+  assert.deepEqual(aligned.map((w) => [w.start, w.end].map((x) => Math.round(x! * 100))), [[2, 6]])
+})
+
 test("refining closes gaps that aren't silent and trims words that run into a pause", () => {
   const words = [{ text: "a", start: 0, end: 0.1 }, { text: "b", start: 0.3, end: 1.2 }, { text: "c", start: 1.2, end: 1.4 }]
   const refined = refineTimings(words, [{ start: 0.8, end: 1.2 }])
