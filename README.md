@@ -1,6 +1,6 @@
 # MicMane
 
-Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
+Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review currently evaluates **rate of speech** and **pauses**. The other foundations are shown in the hand-written sample review, but are not yet analyzed for uploaded takes.
 
 ## Workspace
 
@@ -93,6 +93,46 @@ python3 -m unittest discover -s apps/markup-tools -p 'test_*.py'
 ```
 
 CLI file paths are relative to `packages/vocal-processing`, including arguments passed through root package scripts. The rate CLI accepts PCM WAV; live uploads use FFmpeg to decode the supported upload formats.
+
+## Pauses
+
+The pause review works like a speaking coach marking up a recording. Timing only *measures*: every pause the speaker made, found in the audio (`findPauses`, silences of 0.2 s or more), with its exact place and length. Recognizer timestamps alone hide about half of them. Every *decision* is a judgment about meaning, made by a model (`RATE_MODEL`/`RATE_EFFORT`) reading the whole transcript with each real pause marked in place (`src/pause-review.ts`). No syllable count or duration decides anything.
+
+| The model is asked | Finding | Instruction |
+|---|---|---|
+| Each pause: does it fit? | breaks a small unit (after "the", inside a name, a restart) → `PAUSE_UNNECESSARY` | **Don't stop after "…"** |
+| | the right place, but too brief for the moment to land → `PAUSE_TOO_SHORT` | **Hold the pause longer after "…"** ‖ |
+| | so long it stops sounding deliberate → `PAUSE_TOO_LONG` | **Shorten the pause after "…"** |
+| Each stretch said without a pause (listed with its length): did the listener need one? | → `PAUSE_NECESSARY` | **Pause after "…"** ‖ |
+
+- **Parts:** the take is reviewed in parts of about 120 words, cut at pauses, with the whole transcript as context in every request. One request for a whole take made the verdicts swing between runs (6 to 37 "breaks" on the same take); in parts, a take's count varies by about ±15%, and a finding recurs in another run 61–74% of the time. The parts run in parallel.
+- **Timing check:** a finding is dropped where the aligned and the recognizer's word timing disagree about which words a pause sits between, since the aligner occasionally moves a short word across a silence ("Here we ‖ go.").
+- **No fallback rules:** without decodable audio, a model or a usable reply, pauses are reported as not assessed.
+
+Results, three runs each:
+
+| Recording | Findings per run |
+|---|---|
+| Selection-bias talk, bad take (4.6 min) | 32–40 |
+| Same talk, good retake (4.2 min) | 13–15 |
+| Student Gladiator reading, before → after coaching | 4–5 → 0–1 |
+| Student reading (Rate lesson), before → after | 5–6 → 1–3 |
+
+The coach's clean clips get about 6 findings per minute. About a third of their missing-pause points fall on sentence ends with an exact 0.00 s gap, which are likely jump cuts that removed a real pause. Edited video is not a fair "no missing pauses" reference; the unedited retake is.
+
+Filler words and trailing off (also in the lesson) are not covered.
+
+### Pause benchmark
+
+`benchmarks/pause-development.json` cuts the Pause and Rate lessons into 20 takes: 14 clean (13 of the coach teaching and the student's coached Gladiator reading), five deliberate mistakes by the coach, and the student's first, uncoached Gladiator reading. Filler-word and trailing-off demonstrations are excluded with reasons.
+
+```sh
+pnpm import:pause --videos-dir /path/to/videos --transcripts-dir /path/to/cache --ffmpeg /path/to/ffmpeg
+RECORDINGS_DIR=recordings-pause-development pnpm markup-tools
+pnpm eval:pause --run run-1   # replies cached per take and run label
+```
+
+A demonstration can rightly get several findings (two places to pause in one run-on), so a finding is correct when it falls inside an annotated span of the same kind. Version 3 finds the annotated mistakes 6/6, 6/6 and 5/6 in three runs, including the uncoached reading ("Pause after 'son,'") and the slow greeting ("Don't stop after 'It's'"). Clean takes report findings per minute instead of pass/fail. A perfect score would be suspicious: skilled speakers hesitate too, and the lessons' edits remove real pauses.
 
 ## Research and evaluation
 

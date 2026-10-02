@@ -4,6 +4,8 @@ import { openaiCompletion } from "@micmane/vocal-processing/openai"
 import { predictPacing } from "@micmane/vocal-processing/pacing"
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses"
 import { detectRate, syllables, RATE_VERSION, type RateMark } from "@micmane/vocal-processing/rate"
+import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause"
+import { reviewPause } from "@micmane/vocal-processing/pause-review"
 import { decodeAudio } from "./audio.ts"
 
 type Word = { text: string; start: number; end: number }
@@ -54,20 +56,66 @@ const copy = {
     practice: "Move through this phrase more briskly and save time for the key idea.",
   },
 } as const
+const pauseCopy = {
+  PAUSE_NECESSARY: {
+    observation: "This stretch runs on without a pause.",
+    why_it_matters: "A pause gives the listener a moment to take in what you just said.",
+    practice: "Stop at the marked place and let the point land before you go on.",
+  },
+  PAUSE_TOO_SHORT: {
+    observation: "This moment passes too quickly.",
+    why_it_matters: "The point needs a moment to sink in before you move on.",
+    practice: "Hold the marked pause longer and let the point land.",
+  },
+  PAUSE_UNNECESSARY: {
+    observation: "The pauses here break up the thought.",
+    why_it_matters: "Stopping every few words makes one idea hard to follow.",
+    practice: "Say this thought in one breath, without stopping at the marked places.",
+  },
+  PAUSE_TOO_LONG: {
+    observation: "This silence goes on too long.",
+    why_it_matters: "A silence this long stops sounding deliberate, and the listener starts to wonder if you lost your place.",
+    practice: "Keep the pause, but move on after a beat or two.",
+  },
+} as const
 
-export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {
-  const findings = marks.flatMap((mark, markIndex) => segments.flatMap(segment => {
+/** One finding per segment a mark covers; the shared group ID lets the app rejoin them into one highlight. */
+function findingsFor<R extends string>(segments: Segment[], marks: { start: number; end: number; rule: R; suggestions?: RateMark["suggestions"] }[], text: Record<R, { observation: string; why_it_matters: string; practice: string }>) {
+  return marks.flatMap((mark, markIndex) => segments.flatMap(segment => {
     const covered = segment.words.filter(word => word.start >= mark.start && word.end <= mark.end)
     if (!covered.length) return []
     const phrase = covered.map(word => word.text).join(" ")
     return [{
       segment_id: segment.id, group_id: String(markIndex), rule_id: mark.rule, kind: "improvement", uncertainty: "tentative",
-      ...copy[mark.rule],
+      ...text[mark.rule],
       start: covered[0].start, end: covered[covered.length - 1].end, text: phrase,
       // Every part of a passage carries its suggestions; the editor keeps them when it rejoins the parts.
       ...(mark.suggestions?.length ? { suggestions: mark.suggestions.map(({ direction, start, end, text }) => ({ direction, start, end, text })) } : {}),
     }]
   }))
+}
+
+/**
+ * Pauses are judged only with pauses measured from the audio and a model
+ * review; otherwise they are not assessed. Each finding names its words.
+ */
+export function pauseAssessment(segments: Segment[], marks: PauseMark[] | undefined, words: Word[] = []) {
+  const findings = findingsFor(segments, marks ?? [], pauseCopy).map(f => {
+    const mark = marks![Number(f.group_id)]
+    const direction = ({ PAUSE_NECESSARY: "pause_after", PAUSE_TOO_SHORT: "lengthen_pause_after", PAUSE_UNNECESSARY: "no_pause_after", PAUSE_TOO_LONG: "shorten_pause_after" } as const)[mark.rule]
+    const suggestions = mark.at.map(i => words[i]).filter(w => w && w.start >= f.start && w.end <= f.end).map(w => ({ direction, start: w.start, end: w.end, text: w.text }))
+    return { ...f, uncertainty: "clear", suggestions }
+  })
+  return {
+    foundation: "pauses" as const,
+    verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
+    summary: !marks ? "Pauses could not be assessed for this take." : marks.length ? "Some pauses are missing, out of place, too short or too long." : "No pause issue was detected in this take.",
+    findings,
+  }
+}
+
+export function rateReview(segments: Segment[], marks: RateMark[], message = "", status: "reviewed" | "uncertain" = "reviewed") {
+  const findings = findingsFor(segments, marks, copy)
   return {
     overall: message ? `Your main message: ${message}` : "Review your rate of speech.",
     assessments: [
@@ -113,11 +161,17 @@ export async function reviewAudio(audio: Buffer, audioType: string) {
   const measured = !!decoded && analysis.reliable
   const status = measured && analysis.contrast ? "reviewed" as const : "uncertain" as const
   const marks = measured ? analysis.marks : []
+  // Timing measures every pause; a model judges each one and every stretch without one.
+  const pause = pauses ? await reviewPause(transcript, pauses, openaiCompletion(), transcript === recognized ? undefined : recognized) : undefined
+  const pauseMarks = pause?.reliable ? pause.marks : undefined
+  const rate = rateReview(segments, marks, "", status)
+  const review = { ...rate, assessments: rate.assessments.map(a => a.foundation === "pauses" ? pauseAssessment(segments, pauseMarks, transcript) : a) }
   return {
     audio: audio.toString("base64"),
     audioType,
     segments,
     rateDiagnostics: { version: RATE_VERSION, status, pace: analysis.pace, articulationRate: analysis.articulationRate, pacing, marks },
-    review: rateReview(segments, marks, "", status),
+    pauseDiagnostics: { version: PAUSE_VERSION, status: pauseMarks ? "reviewed" as const : "uncertain" as const, review: pause?.status, pauses, marks: pauseMarks ?? [] },
+    review,
   }
 }

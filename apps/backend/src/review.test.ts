@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { rateReview, segmentWords } from "./review.ts"
+import { pauseAssessment, rateReview, segmentWords } from "./review.ts"
 
 test("segments report syllables per second including internal silence", () => {
   const [segment] = segmentWords([
@@ -54,4 +54,16 @@ test("a passage whose key points went by too fast carries one phrase to slow dow
     { direction: "slow_down", start: 4, end: 7.8, text: "Sales fell by half." },
     { direction: "speed_up", start: 8, end: 13.8, text: "And then we just moved on." },
   ])
+})
+
+test("pause findings highlight the stretch, and unmeasured audio leaves pauses unassessed", () => {
+  const words = "We keep going. And going on.".split(" ").map((text, i) => ({ text, start: i, end: i + .8 }))
+  const segments = segmentWords(words)
+  const mark = { first: 0, last: 5, start: 0, end: 5.8, text: words.map(w => w.text).join(" "), rule: "PAUSE_NECESSARY" as const, at: [2] }
+  const assessment = pauseAssessment(segments, [mark], words)
+  assert.equal(assessment.verdict, "mixed")
+  assert.deepEqual(assessment.findings.map(f => [f.rule_id, f.group_id, f.start, f.end, f.uncertainty]), [["PAUSE_NECESSARY", "0", 0, 2.8, "clear"], ["PAUSE_NECESSARY", "0", 3, 5.8, "clear"]])
+  assert.deepEqual(assessment.findings.map(f => f.suggestions), [[{ direction: "pause_after", start: 2, end: 2.8, text: "going." }], []], "the pause point sits in the segment that holds its word")
+  assert.equal(pauseAssessment(segments, []).verdict, "effective")
+  assert.equal(pauseAssessment(segments, undefined).verdict, "uncertain")
 })

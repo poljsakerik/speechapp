@@ -17,7 +17,7 @@ RULES = {
     "volume": {"VOLUME_LOW", "VOLUME_FADE", "VOLUME_HIGH"},
     "pitch_melody": {"PITCH_LOW", "PITCH_HIGH", "PITCH_VARIETY"},
     "tonality": {"TONE_FLAT"},
-    "pauses": {"PAUSE_NECESSARY", "PAUSE_UNNECESSARY", "PAUSE_FILLERS"},
+    "pauses": {"PAUSE_NECESSARY", "PAUSE_TOO_SHORT", "PAUSE_UNNECESSARY", "PAUSE_TOO_LONG", "PAUSE_FILLERS"},
 }
 
 

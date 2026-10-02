@@ -8,6 +8,8 @@
     "./deepgram": "./src/deepgram.ts",
     "./openai": "./src/openai.ts",
     "./pacing": "./src/pacing.ts",
+    "./pause": "./src/pause.ts",
+    "./pause-review": "./src/pause-review.ts",
     "./pauses": "./src/pauses.ts",
     "./rate": "./src/rate.ts"
   },
@@ -17,8 +19,10 @@
     "test": "node --test --experimental-strip-types src/*.test.ts",
     "rate": "node --env-file-if-exists=../../.env scripts/rate.ts",
     "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts",
+    "eval:pause": "node --env-file-if-exists=../../.env scripts/eval-pause.ts",
     "import:voice-pack": "node --env-file-if-exists=../../.env scripts/import-voice-pack.ts",
-    "import:rate": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts"
+    "import:rate": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts",
+    "import:pause": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/pause-development.json"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",

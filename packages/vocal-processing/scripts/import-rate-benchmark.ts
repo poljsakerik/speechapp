@@ -1,4 +1,4 @@
-/** Import annotated teaching and ordinary-speech rate excerpts. Never overwrite a corpus. */
+/** Import annotated teaching and ordinary-speech excerpts from a benchmark recipe. Never overwrite a corpus. */
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
@@ -9,15 +9,16 @@ import { transcribe } from "../src/deepgram.ts"
 
 const { values } = parseArgs({ options: {
   "videos-dir": { type: "string" }, "speech-dir": { type: "string" }, "transcripts-dir": { type: "string" },
-  output: { type: "string" }, ffmpeg: { type: "string", default: process.env.FFMPEG ?? "ffmpeg" },
+  output: { type: "string" }, recipe: { type: "string" }, ffmpeg: { type: "string", default: process.env.FFMPEG ?? "ffmpeg" },
 } })
-if (!values["videos-dir"]) throw new Error("Usage: node scripts/import-rate-benchmark.ts --videos-dir <videos> [--speech-dir <practice-sources>] [--transcripts-dir <cache>] [--output <corpus>] [--ffmpeg <binary>]")
+if (!values["videos-dir"]) throw new Error("Usage: node scripts/import-rate-benchmark.ts --videos-dir <videos> [--recipe <benchmarks/*.json>] [--speech-dir <practice-sources>] [--transcripts-dir <cache>] [--output <corpus>] [--ffmpeg <binary>]")
 const root = resolve(import.meta.dirname, "../../..")
-const output = resolve(values.output ?? join(root, "recordings-rate-development"))
-if (existsSync(output)) throw new Error(`${output} exists; choose a new output to preserve annotations`)
 type Source = { kind?: string; file: string; sha256: string; foundation: string; takes: { id: string; start: number; end: number; note?: string; rate?: { status: "reviewed" | "excluded"; notes: string }; marks: { start: number; end: number; rule: string; note: string }[] }[] }
 type SourceWord = { word: string; punctuated_word?: string; start: number; end: number }
-const recipe = JSON.parse(readFileSync(join(root, "benchmarks/rate-development.json"), "utf8")) as { id: string; purpose: string; sources: Source[] }
+const recipe = JSON.parse(readFileSync(resolve(values.recipe ?? join(root, "benchmarks/rate-development.json")), "utf8")) as { id: string; foundation?: string; purpose: string; sources: Source[] }
+const foundation = recipe.foundation ?? "rate"
+const output = resolve(values.output ?? join(root, `recordings-${recipe.id}`))
+if (existsSync(output)) throw new Error(`${output} exists; choose a new output to preserve annotations`)
 mkdirSync(dirname(output), { recursive: true })
 const staging = mkdtempSync(join(dirname(output), ".reference-"))
 const manifest: Corpus = { schemaVersion: 1, id: recipe.id, takes: [] }
@@ -58,19 +59,19 @@ try {
         const first = selected[0], last = selected.at(-1)!
         const startIndex = words.slice(0, first.index).reduce((s, w) => s + (w.punctuated_word ?? w.word).length + 1, 0)
         const endIndex = words.slice(0, last.index + 1).reduce((s, w) => s + (w.punctuated_word ?? w.word).length + 1, 0) - 1
-        return { startAt: first.start, endAt: last.end, startIndex, endIndex, foundationType: "rate", rule: mark.rule, note: mark.note }
+        return { startAt: first.start, endAt: last.end, startIndex, endIndex, foundationType: foundation, rule: mark.rule, note: mark.note }
       })
       const provenance = "Provisional development annotations from transcript and acoustic inspection, chosen before detector evaluation. User-authorized Vinh and practice excerpts. Not independently listener-validated."
-      const reviews = { rate: { status: take.rate?.status ?? "reviewed", notes: [take.note, take.rate?.notes, provenance].filter(Boolean).join(" ") } }
+      const reviews = { [foundation]: { status: take.rate?.status ?? "reviewed", notes: [take.note, take.rate?.notes, provenance].filter(Boolean).join(" ") } }
       writeFileSync(`${base}.golden.json`, JSON.stringify({ schemaVersion: 2, marks, reviews }, null, 2) + "\n")
-      manifest.takes.push({ id: take.id, foundation: "rate", take: manifest.takes.length + 1, base: relativeBase, audioExtension: "wav", duration, source: source.file, sourceStart: take.start, sourceEnd: take.end, assignment: source.kind === "practice" ? (marks.length ? "Practice: rate correction" : "Practice: clean rate control") : marks.length ? "Rate demonstration" : "Clean rate reference", evidence: "benchmarks/rate-development.json" })
+      manifest.takes.push({ id: take.id, foundation, take: manifest.takes.length + 1, base: relativeBase, audioExtension: "wav", duration, source: source.file, sourceStart: take.start, sourceEnd: take.end, assignment: source.kind === "practice" ? (marks.length ? "Practice: rate correction" : "Practice: clean rate control") : marks.length ? "Demonstration" : "Clean reference", evidence: `benchmarks/${recipe.id}.json` })
       console.log(`${take.id}: ${duration}s, ${words.length} words`)
     }
   }
   writeFileSync(join(staging, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n")
   writeFileSync(join(staging, "recipe.json"), JSON.stringify(recipe, null, 2) + "\n")
   renameSync(staging, output)
-  console.log(`Imported ${manifest.takes.length} annotated rate takes to ${output}`)
+  console.log(`Imported ${manifest.takes.length} annotated ${foundation} takes to ${output}`)
 } finally {
   if (existsSync(staging)) rmSync(staging, { recursive: true })
 }
