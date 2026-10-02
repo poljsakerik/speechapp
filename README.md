@@ -224,12 +224,12 @@ The pitch lesson has no demonstration of a flat or stuck voice by the coach. His
 
 On recordings that played no part in choosing anything, as a share of speaking time flagged:
 
-| Recording | Flagged |
-|---|---|
-| Coach, volume, pitch and tonality lessons (19 min) | 0–4% |
-| 22 untrained practice talks (2.9 h) | 0–48%, median 20% |
-| A good retake of one talk / the original, poorer take | 3% / 14% |
-| Course student before / after coaching (another speaker) | 78% / 50% |
+| Recording                                                | Flagged           |
+| -------------------------------------------------------- | ----------------- |
+| Coach, volume, pitch and tonality lessons (19 min)       | 0–4%              |
+| 22 untrained practice talks (2.9 h)                      | 0–48%, median 20% |
+| A good retake of one talk / the original, poorer take    | 3% / 14%          |
+| Course student before / after coaching (another speaker) | 78% / 50%         |
 
 Of the coach's two marks, one is mostly the student's reading in the tonality lesson; the other is his calm closing of the volume lesson (2.37 semitones). Of the user's 14 voice-pack readings of one paragraph, the two marked flat for pitch or tonality are flagged and the two good ones aren't. Seven of the other ten are flagged too: they were recorded for rate, pauses or volume, and pitch was never judged.
 
@@ -239,12 +239,12 @@ The margin on the clean side is thin: the good reading sits at 3.0 semitones and
 
 The largest shift of any 10 s of speaking from the speaker's normal:
 
-| Recording | Shift |
-|---|---|
-| 22 untrained practice talks and the good retake | −2.9 to +3.8 semitones |
-| Coach's normal teaching | −4.1 to +5.0 (+6.5 impersonating a student) |
-| Coach's "3 out of 10" / sad-face exercise | −10.5 / −9.3 |
-| The user's high reading among their three | +17.4 |
+| Recording                                       | Shift                                       |
+| ----------------------------------------------- | ------------------------------------------- |
+| 22 untrained practice talks and the good retake | −2.9 to +3.8 semitones                      |
+| Coach's normal teaching                         | −4.1 to +5.0 (+6.5 impersonating a student) |
+| Coach's "3 out of 10" / sad-face exercise       | −10.5 / −9.3                                |
+| The user's high reading among their three       | +17.4                                       |
 
 So 7 semitones sits in a wide gap. The practice talks, retake and other voice-pack recordings get no register mark at any value from 5 to 10, the coach's normal teaching gets none from 7 up, and his deliberate drops are caught up to 9. His other marks are other speakers (the students in the pitch and tonality lessons) and the siren demonstration (+11.5).
 
@@ -255,6 +255,7 @@ So 7 semitones sits in a wide gap. The practice talks, retake and other voice-pa
 `pitch-listen.ts` sends the audio to Gemini (`GEMINI_MODEL`, default `gemini-3.5-flash`) in chunks of about 30 s, cut between words. On a whole 5-minute talk it returns nothing. For each stretch where pitch is a problem, it gives an issue (too high, too low, monotone, sing-song), a severity from 1 (badly distracting) to 5 (fine), what the voice does wrong and a fix. Moving pitch on purpose for emphasis is defined as good delivery. Without `GEMINI_API_KEY`, or if a call fails, pitch is measured only. A 5-minute talk takes about 22 s, alongside alignment.
 
 A heard stretch becomes a mark only at severity 1–2 and only when the measured pitch agrees in that stretch:
+
 - **Monotone:** spread under 2.6 semitones.
 - **Too low:** 7 semitones or more below normal; if it is merely flat, it becomes a monotone mark.
 - **Too high:** an octave above normal, or above 350 Hz. The 350 Hz bar is above everyday speaking for men and women, and is the only way a take high throughout can be flagged.
@@ -262,6 +263,7 @@ A heard stretch becomes a mark only at severity 1–2 and only when the measured
 Marks show the model's description and fix where it heard the same problem over them, at severity 3 or worse; otherwise the standard wording.
 
 Why the measurement must agree, from about 200 calls:
+
 - **Labelled short clips:** severity 1–2 caught all five of the user's high, flat and quiet readings in two runs, including the falsetto reading alone. That is something measurement can't do.
 - **Words muffled:** the coach's demonstrations were still heard as problems with the words muffled (low-passed), so it hears the voice, not the words.
 - **Everyday speech:** it rates nearly every problem a 3, so a severity cut alone barely fires. Its severity-2 calls on good delivery (the good retake "monotone" for 27 s, the blank-face demonstration, the coach's excited "That was fantastic!", the good tonality reading) all measure as moving or within range, so none becomes a mark.
@@ -275,6 +277,7 @@ Degraded copies (20 dB quieter, laptop bass cut, telephone band, automatic gain 
 ### Pitch benchmark
 
 `benchmarks/pitch-development.json` has fourteen takes:
+
 - **Coach, natural:** seven teaching clips from the pitch lesson, excluding the music, the acted sketch, the student's siren exercise and the siren demonstration.
 - **Coach, other foundations:** his constant-pace and blank-face demonstrations (clean), and "3 out of 10" inside his normal speech (`PITCH_LOW`).
 - **The user's readings** (the voice-pack pitch source, `--speech-dir`): all three together (`PITCH_HIGH` on the first, `PITCH_VARIETY` on the second), and the flat and good readings alone.
