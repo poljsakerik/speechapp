@@ -10,12 +10,11 @@
       "sha256": "6164d27b9ab42e54797dba8666260cc6cb3831200ece87882a635b6e66fcfbc8",
       "foundation": "volume",
       "takes": [
-        { "id": "vinh_volume-01", "start": 6.7, "end": 42.65, "marks": [] },
         {
           "id": "vinh_demo-01",
-          "start": 42.65,
+          "start": 6.7,
           "end": 109.65,
-          "note": "His normal volume (about 7 out of 10) before and after the demonstration.",
+          "note": "His normal volume (about 7 out of 10) before and after the demonstration. The drop is judged against his normal, so the clip keeps the lesson's opening: with only the 40 s before it, the drop measures 9.1 dB and is missed.",
           "marks": [
             { "start": 81.16, "end": 99.6, "rule": "VOLUME_LOW", "note": "Deliberate 3 out of 10: \"Hi, everyone\" through \"this default volume?\"" }
           ]

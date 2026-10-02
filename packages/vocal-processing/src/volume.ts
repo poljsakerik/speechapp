@@ -15,10 +15,11 @@
  * - Low (VOLUME_LOW): 10 s of phrase bodies that turned softer and duller.
  *   The drop is level plus brightness (energy above 1 kHz relative to below
  *   it), which falls with vocal effort whatever the microphone gain. A single
- *   quieter line can be deliberate; 10 s of it is a habit. Everyday speech,
- *   the coach's or untrained, stays within 5.3 dB. The coach's "3 out of 10"
- *   demonstration drops 8-10 dB, depending on how much normal speech
- *   surrounds it and on word timing.
+ *   quieter line can be deliberate; 10 s of it is a habit. Untrained talks
+ *   stay within 6.4 dB and the coach's teaching within 9.8 (a stretch with
+ *   music under it). The coach's "3 out of 10" demonstration drops 12.3 dB in
+ *   its full lesson but only 8.9-10.9 in a 1.7-minute clip, depending on the
+ *   transcript, so a short recording can miss it.
  * A word's loudness is its loudest part, so word timing that stretches over
  * silence or a decaying ending doesn't lower it. Pass recognizer timing, not
  * forced alignment: alignment's pause refinement trims a fading voice as if it
@@ -39,7 +40,7 @@ export const DEFAULT_VOLUME_CONFIG = {
   fadeSeconds: 1, // The end of a phrase that must stay projected; phrases need twice this much speech.
   fadeDrop: 12,
   lowSeconds: 10,
-  lowDrop: 8,
+  lowDrop: 10,
   minSpeechSeconds: 5, // Less speech than this cannot be judged.
 }
 export type VolumeConfig = typeof DEFAULT_VOLUME_CONFIG
