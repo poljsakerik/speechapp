@@ -12,16 +12,31 @@
  * two commonest findings are kept only where they also sound that way
  * (pause-hearing.ts): a pause that breaks the thought must sound hesitant, and
  * a missing pause must sound like the words run on.
+ *
+ * The same reply says what work each held pause does, and the same hearing
+ * checks whether the ones worth praising sound deliberate (pause-strength.ts):
+ * one reading of the transcript and one hearing per stretch of audio, so a
+ * pause is never faulted by one request and praised by another.
  */
 import { createHash } from "node:crypto";
 import type { AudioJudgment } from "./gemini.ts";
 import {
-  hearPause,
-  hearsRunOn,
+  hearingClips,
+  hearMoments,
   type Audio,
   type HearingConfig,
+  type Moment,
   type PauseSound,
 } from "./pause-hearing.ts";
+import {
+  DEFAULT_PAUSE_STRENGTH_CONFIG,
+  nameStrengths,
+  proposeStrength,
+  WORKS,
+  type PauseStrengthConfig,
+  type PauseStrengthMark,
+  type Work,
+} from "./pause-strength.ts";
 import {
   pauseAfterWords,
   timed,
@@ -42,6 +57,11 @@ export const REVIEW_SYSTEM = `You coach spoken delivery, the way a speaking coac
 - "too_short": the place is right, but the moment needs time to sink in (a key point, a striking claim or number, a question put to the audience, a reveal) and this pause is too brief to let it land.
 - "too_long": for this moment, the silence goes on so long that it stops sounding deliberate and the listener starts to wonder whether the speaker lost their place.
 2. Then the stretches the speaker said without any pause are listed with their length. For each, decide whether the listener needed a pause inside it: because ideas blur together, or a key point, claim or question gets no time to land. Answer every listed stretch: give the indexes of the words a pause should follow, or an empty list when it needs none, as most do.
+3. Some of the pauses are also listed as held. For each of those, say what work the pause does; you are looking for the few pauses worth praising:
+- "lets_it_land": the words just before it are a line meant to land: the main point of the passage, a striking claim or number, a punchline, or a question the listener is meant to think about. The silence gives the listener time to take it in.
+- "builds_anticipation": the speaker has set up something and pauses just before delivering it: the answer to a question they just asked, a reveal, a punchline, or the last item a list was building to. The listener leans in.
+- "ordinary": anything else. That includes a pause after an ordinary statement, even an important one, a breath, a pause between list items or around an aside, a pause that fits but does no special work, and one that breaks up a thought, hesitates, or sounds like the speaker is searching for words.
+Most pauses are ordinary, including most good ones; a whole talk usually has only a few that a speaking coach would single out as a model to copy. When in doubt, say "ordinary", and say "ordinary" for every pause not listed as held.
 Many deliveries are valid. Only flag what a good speaking coach would clearly correct; when in doubt, leave it. The punctuation comes from speech recognition and can be wrong.`;
 const schema = {
   type: "object",
@@ -53,13 +73,14 @@ const schema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "verdict"],
+        required: ["id", "verdict", "work"],
         properties: {
           id: { type: "integer" },
           verdict: {
             type: "string",
             enum: ["fits", "breaks", "too_short", "too_long"],
           },
+          work: { type: "string", enum: [...WORKS] },
         },
       },
     },
@@ -114,13 +135,15 @@ function covered(
 /**
  * One request reviews the pauses and stretches in words [from, to]; the whole
  * transcript is always included for context. Long lists made the model's
- * verdicts swing between runs, so takes are reviewed in parts.
+ * verdicts swing between runs, so takes are reviewed in parts. `held` are the
+ * pauses long enough to be asked what work they do.
  */
 export function reviewRequest(
   words: (Word & { start: number; end: number })[],
   marked: MarkedPause[],
   syllables: (text: string) => number,
   [from, to] = [0, words.length - 1],
+  held: number[] = [],
 ) {
   const id = new Map(marked.map((p, k) => [p.after, k]));
   const transcript = words
@@ -135,12 +158,14 @@ export function reviewRequest(
     const [a, b] = runs[k];
     return `S${k}: words ${a}-${b}, ${(words[b].end - words[a].start).toFixed(1)}s, ${words.slice(a, b + 1).reduce((n, w) => n + syllables(w.text), 0)} syllables`;
   });
-  const ids = part.pauses.map((k) => `P${k}`);
-  // Every part starts with the same prompt and transcript; the key lets the provider reuse it.
+  const ids = part.pauses.map((k) => `P${k}`),
+    asked = part.pauses.filter((k) => held.includes(k)).map((k) => `P${k}`);
+  // Every part starts with the same prompt and transcript, and the key sends them to the same cache.
+  // Measured on gpt-6-luna, only a repeat of an identical request was served from it, not the shared start.
   const cacheKey = `pause-review-${createHash("sha256").update(transcript).digest("hex").slice(0, 32)}`;
   return {
     system: REVIEW_SYSTEM,
-    user: `Transcript:\n${transcript}\n\nReview only words ${from}-${to}: pauses ${ids.length ? ids.join(", ") : "(none)"} and these stretches without a pause:\n${listed.join("\n")}`,
+    user: `Transcript:\n${transcript}\n\nReview only words ${from}-${to}: pauses ${ids.length ? ids.join(", ") : "(none)"} and these stretches without a pause:\n${listed.join("\n")}\nHeld pauses to judge the work of: ${asked.length ? asked.join(", ") : "(none)"}`,
     schema,
     schemaName: "pause_review",
     cacheKey,
@@ -165,18 +190,26 @@ export function reviewParts(
 }
 
 /**
- * Verdicts for the pauses in words [from, to] (undefined outside it) and valid
- * missing positions, or undefined when the reply leaves a pause or a stretch
- * unjudged: silence about a stretch is not evidence that it needs no pause.
+ * Verdicts for the pauses in words [from, to] (undefined outside it), the work
+ * of the `held` ones among them and valid missing positions, or undefined when
+ * the reply leaves a pause, its work or a stretch unjudged: silence about a
+ * stretch is not evidence that it needs no pause.
  */
 export function parseReview(
   words: Word[],
   marked: MarkedPause[],
   reply: unknown,
   [from, to] = [0, words.length - 1],
-): { verdicts: (Verdict | undefined)[]; missing: number[] } | undefined {
+  held: number[] = [],
+):
+  | {
+      verdicts: (Verdict | undefined)[];
+      works: (Work | undefined)[];
+      missing: number[];
+    }
+  | undefined {
   const data = reply as {
-    pauses?: { id?: unknown; verdict?: unknown }[];
+    pauses?: { id?: unknown; verdict?: unknown; work?: unknown }[];
     stretches?: { id?: unknown; pause_after?: unknown }[];
   };
   if (!Array.isArray(data?.pauses) || !Array.isArray(data?.stretches))
@@ -195,6 +228,16 @@ export function parseReview(
     )
   )
     return undefined;
+  const workOf = new Map(data.pauses.map((p) => [p?.id, p?.work]));
+  const works = marked.map((_, k) =>
+    part.pauses.includes(k) && held.includes(k) ? workOf.get(k) : undefined,
+  );
+  if (
+    part.pauses.some(
+      (k) => held.includes(k) && !WORKS.includes(works[k] as Work),
+    )
+  )
+    return undefined;
   const answers = new Map(data.stretches.map((s) => [s?.id, s?.pause_after]));
   if (part.stretches.some((k) => !Array.isArray(answers.get(k))))
     return undefined;
@@ -210,6 +253,7 @@ export function parseReview(
   );
   return {
     verdicts: verdicts as (Verdict | undefined)[],
+    works: works as (Work | undefined)[],
     missing: [...new Set(missing)].sort((a, b) => a - b),
   };
 }
@@ -247,6 +291,10 @@ export type PauseReview = {
   /** How many places the text model faulted, and how many of them were kept. */
   read?: number;
   kept?: number;
+  /** How many moments were heard, and in how many requests. */
+  hearing?: { moments: number; clips: number };
+  /** The pauses that do real work; undefined unless they were heard. */
+  strengths?: PauseStrengthMark[];
 };
 
 const RULES: Record<Exclude<Verdict, "fits"> | "missing", PauseRule> = {
@@ -260,8 +308,11 @@ const RULES: Record<Exclude<Verdict, "fits"> | "missing", PauseRule> = {
  * Review every pause in a take. `recognized` is the recognizer's timing for the
  * same words when `words` were re-aligned. Findings of one kind close together
  * (within a sentence or so) form one highlight. With `hear`, breaks and missing
- * pauses are kept only where they sound like one; if a hearing fails, the text
- * model's findings stand.
+ * pauses are kept only where they sound like one, and the held pauses the
+ * model says do real work become strengths where they sound deliberate. If a
+ * fault can't be heard, the text model's findings stand; if a proposed strength
+ * can't, no strength is reported; neither failure touches the other. With
+ * `strength` false, no pause is asked or heard about its work.
  */
 export async function reviewPause(
   words: Word[],
@@ -274,6 +325,7 @@ export async function reviewPause(
     config?: Partial<PauseHeardConfig>;
     hearing?: Partial<HearingConfig>;
   },
+  strength: Partial<PauseStrengthConfig> | false = {},
 ): Promise<PauseReview> {
   if (!timed(words))
     return { marks: [], reliable: false, status: "no timing", marked: [] };
@@ -283,44 +335,49 @@ export async function reviewPause(
   );
   if (!complete)
     return { marks: [], reliable: false, status: "no model", marked };
-  const parts = reviewParts(words, marked);
-  // The model occasionally skips a stretch; a part is asked once more before the review gives up.
-  const replies = await Promise.all(
-    parts.map(async (part) => {
-      const request = reviewRequest(words, marked, syllables, part);
-      for (const user of [
-        request.user,
-        `${request.user}\n\nAnswer every listed pause and stretch.`,
-      ]) {
-        try {
-          const parsed = parseReview(
-            words,
-            marked,
-            await complete({ ...request, user }),
-            part,
-          );
-          if (parsed) return parsed;
-        } catch {
-          /* asked again below */
-        }
-      }
-      return undefined;
-    }),
-  );
-  if (replies.some((r) => !r))
-    return { marks: [], reliable: false, status: "unusable reply", marked };
-  const review = {
-    verdicts: marked.map((_, k) =>
-      replies.map((r) => r!.verdicts[k]).find(Boolean),
-    ),
-    missing: replies.flatMap((r) => r!.missing),
-  };
   // Findings next to a pause whose position the two timings disagree on are not reliable.
   const sure = new Set(
     (recognized ? confirmedPauses(words, recognized, marked) : marked).map(
       (p) => p.after,
     ),
   );
+  const s = { ...DEFAULT_PAUSE_STRENGTH_CONFIG, ...strength };
+  const held = marked.flatMap((p, k) =>
+    strength && p.seconds >= s.minSeconds && sure.has(p.after) ? [k] : [],
+  );
+  const parts = reviewParts(words, marked);
+  // The model occasionally skips a stretch; a part is asked once more before the review gives up.
+  const ask = async (part: [number, number]) => {
+    const request = reviewRequest(words, marked, syllables, part, held);
+    for (const user of [
+      request.user,
+      `${request.user}\n\nAnswer every listed pause and stretch.`,
+    ]) {
+      try {
+        const parsed = parseReview(
+          words,
+          marked,
+          await complete({ ...request, user }),
+          part,
+          held,
+        );
+        if (parsed) return parsed;
+      } catch {
+        /* asked again below */
+      }
+    }
+    return undefined;
+  };
+  const replies = await Promise.all(parts.map(ask));
+  if (replies.some((r) => !r))
+    return { marks: [], reliable: false, status: "unusable reply", marked };
+  const review = {
+    verdicts: marked.map((_, k) =>
+      replies.map((r) => r!.verdicts[k]).find(Boolean),
+    ),
+    works: marked.map((_, k) => replies.map((r) => r!.works[k]).find(Boolean)),
+    missing: replies.flatMap((r) => r!.missing),
+  };
   const unsure = marked.filter((p) => !sure.has(p.after)).map((p) => p.after);
   const read: { at: number; rule: PauseRule }[] = [
     ...marked.flatMap((p, k) =>
@@ -337,36 +394,68 @@ export async function reviewPause(
       .filter((i) => !unsure.some((u) => Math.abs(u - i) <= 1))
       .map((at) => ({ at, rule: RULES.missing })),
   ].sort((a, b) => a.at - b.at);
+  // Only a pause that fits can be one to copy.
+  const proposed = held.flatMap((k) => {
+    const work = review.works[k];
+    return review.verdicts[k] === "fits" && work && work !== "ordinary"
+      ? [proposeStrength(words, marked, marked[k], work, s)]
+      : [];
+  });
   let points = read,
-    heard = false;
+    heard = false,
+    hearing: PauseReview["hearing"],
+    strengths: PauseStrengthMark[] | undefined;
   if (hear) {
     const c = { ...DEFAULT_PAUSE_HEARD_CONFIG, ...hear.config };
     const seconds = new Map(marked.map((p) => [p.after, p.seconds]));
-    try {
-      const sounds = await Promise.all(
-        read.map(async ({ at, rule }) => {
-          if (rule === "PAUSE_UNNECESSARY" && c.breakSounds.length) {
-            const sound = await hearPause(
-              words,
-              at,
-              seconds.get(at)!,
-              hear.audio,
-              hear.judge,
-              undefined,
-              hear.hearing,
-            );
-            return !!sound && c.breakSounds.includes(sound);
-          }
-          return rule === "PAUSE_NECESSARY" && c.missingMustRunOn
-            ? hearsRunOn(words, at, hear.audio, hear.judge, hear.hearing)
-            : true;
-        }),
+    // What must be heard: breaks, missing pauses and proposed strengths, each with the fault or strength it decides.
+    const moments: Moment[] = [],
+      faults: number[] = [];
+    read.forEach(({ at, rule }, i) => {
+      if (rule === "PAUSE_UNNECESSARY" && c.breakSounds.length)
+        moments.push({ kind: "pause", at, seconds: seconds.get(at)! });
+      else if (rule === "PAUSE_NECESSARY" && c.missingMustRunOn)
+        moments.push({ kind: "missing", at });
+      else return;
+      faults.push(i);
+    });
+    for (const p of proposed)
+      moments.push({
+        kind: "pause",
+        at: p.at,
+        seconds: p.seconds,
+        first: p.first,
+      });
+    const sounds = await hearMoments(
+      words,
+      moments,
+      hear.audio,
+      hear.judge,
+      hear.hearing,
+    );
+    hearing = {
+      moments: moments.length,
+      clips: hearingClips(words, moments, hear.hearing).length,
+    };
+    // A fault that couldn't be heard leaves the text model's findings standing, as they were read.
+    heard = faults.every((_, n) => sounds[n]);
+    if (heard)
+      points = read.filter((_, i) => {
+        const n = faults.indexOf(i);
+        return (
+          n < 0 ||
+          sounds[n] === "runs_on" ||
+          c.breakSounds.includes(sounds[n] as PauseSound)
+        );
+      });
+    const sound = (n: number) => sounds[faults.length + n];
+    // Strengths are named only when every proposed one was heard.
+    if (strength && proposed.every((_, n) => sound(n)))
+      strengths = nameStrengths(
+        words,
+        proposed.filter((_, n) => s.sounds.includes(sound(n) as PauseSound)),
+        s,
       );
-      points = read.filter((_, i) => sounds[i]);
-      heard = true;
-    } catch {
-      /* the text model's findings stand */
-    }
   }
   const marks: PauseMark[] = [];
   for (const rule of Object.values(RULES)) {
@@ -401,5 +490,7 @@ export async function reviewPause(
     heard,
     read: read.length,
     kept: points.length,
+    hearing,
+    strengths,
   };
 }

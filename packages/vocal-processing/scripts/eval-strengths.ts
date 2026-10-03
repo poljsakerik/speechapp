@@ -42,11 +42,7 @@ import {
 } from "../src/openai.ts";
 import { predictPacing } from "../src/pacing.ts";
 import { reviewPause } from "../src/pause-review.ts";
-import {
-  faulted,
-  findPauseStrengths,
-  PAUSE_STRENGTH_VERSION,
-} from "../src/pause-strength.ts";
+import { faulted, PAUSE_STRENGTH_VERSION } from "../src/pause-strength.ts";
 import { decodeWav, findPauses } from "../src/pauses.ts";
 import { listenForPitch } from "../src/pitch-listen.ts";
 import { detectPitch, PITCH_VERSION } from "../src/pitch.ts";
@@ -171,23 +167,15 @@ async function strengthsOf(r: (typeof recordings)[number]) {
     },
   );
   const audio = { samples, sampleRate };
-  const [pacing, pauseReview, pauseStrengths, tone, heard] = await Promise.all([
+  const [pacing, pauseReview, tone, heard] = await Promise.all([
     predictPacing(recognized, cachedPacing(cache, run)).catch(() => undefined),
-    reviewPause(words, pauses, complete, recognized, {
-      audio,
-      judge,
-      config: config.pauseHeard,
-      hearing: config.hearing,
-    }),
-    findPauseStrengths(
+    reviewPause(
       words,
       pauses,
-      audio,
       complete,
-      judge,
       recognized,
-      config.pauseStrength,
-      config.hearing,
+      { audio, judge, config: config.pauseHeard, hearing: config.hearing },
+      config.strengths && config.pauseStrength,
     ),
     reviewTonality(
       recognized,
@@ -210,7 +198,8 @@ async function strengthsOf(r: (typeof recordings)[number]) {
     ).catch(() => undefined),
     listenForPitch(samples, sampleRate, recognized, judge).catch(() => []),
   ]);
-  const marks = pauseReview.reliable ? pauseReview.marks : undefined;
+  const marks = pauseReview.reliable ? pauseReview.marks : undefined,
+    pauseStrengths = pauseReview.strengths;
   const rate = detectRate(words, config.rate, pauses, pacing);
   const melody = detectPitch(samples, sampleRate, words, config.pitch, heard);
   const found: Found[] = [
@@ -277,6 +266,7 @@ async function strengthsOf(r: (typeof recordings)[number]) {
     issues,
     assessed,
     pausePoints: { read: pauseReview.read ?? 0, kept: pauseReview.kept ?? 0 },
+    hearing: pauseReview.hearing ?? { moments: 0, clips: 0 },
   };
 }
 
@@ -303,6 +293,8 @@ const wholes = new Map<
     pauseIssues: number;
     read: number;
     kept: number;
+    moments: number;
+    clips: number;
   }
 >();
 const praise: {
@@ -340,7 +332,7 @@ for (const r of recordings) {
     });
     continue;
   }
-  const { words, found, issues, assessed, pausePoints } = result;
+  const { words, found, issues, assessed, pausePoints, hearing } = result;
   // Only the speaker's own teaching counts towards their rates.
   const spoken: Span = { start: words[0].start, end: words.at(-1)!.end };
   const left = source?.notTeaching ?? [];
@@ -443,7 +435,11 @@ for (const r of recordings) {
     pauseIssues: 0,
     read: 0,
     kept: 0,
+    moments: 0,
+    clips: 0,
   };
+  whole.moments += hearing.moments;
+  whole.clips += hearing.clips;
   whole.read += pausePoints.read;
   whole.kept += pausePoints.kept;
   whole.seconds += spoken.end - spoken.start;
@@ -459,6 +455,7 @@ for (const r of recordings) {
     highlighted,
     pauseIssues,
     pausePoints,
+    hearing,
     found,
     issues,
   });
@@ -488,11 +485,11 @@ for (const g of groups)
     `${g.group.padEnd(24)} ${g.minutes.toFixed(1).padStart(7)} ${show(g.rate, false).padStart(10)} ${show(g.pauses, false).padStart(11)} ${show(g.tonality, true).padStart(9)} ${show(g.pitch_melody, true).padStart(6)}`,
   );
 console.log(
-  "\ngroup                    highlighted  pause issues/min  pause faults read → heard, per min (whole recordings)",
+  "\ngroup                    highlighted  pause issues/min  pause faults read → heard, per min  moments heard → requests, per min (whole recordings)",
 );
 for (const [name, w] of wholes)
   console.log(
-    `${name.padEnd(24)} ${`${Math.round((100 * w.lit) / w.seconds)}%`.padStart(11)} ${(w.pauseIssues / (w.seconds / 60)).toFixed(1).padStart(10)}   ${(w.read / (w.seconds / 60)).toFixed(1)} → ${(w.kept / (w.seconds / 60)).toFixed(1)}`,
+    `${name.padEnd(24)} ${`${Math.round((100 * w.lit) / w.seconds)}%`.padStart(11)} ${(w.pauseIssues / (w.seconds / 60)).toFixed(1).padStart(10)}   ${(w.read / (w.seconds / 60)).toFixed(1)} → ${(w.kept / (w.seconds / 60)).toFixed(1)}   ${(w.moments / (w.seconds / 60)).toFixed(1)} → ${(w.clips / (w.seconds / 60)).toFixed(1)}`,
   );
 if (praise.length) {
   console.log(

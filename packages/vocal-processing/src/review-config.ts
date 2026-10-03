@@ -25,6 +25,7 @@
  * | PAUSE_HEAR_MISSING          | 1       | 1 keeps a "missing pause" finding only if the words sound run on     |
  * | PAUSE_HEAR_LEAD_IN_SECONDS  | 6       | Audio the model hears before a pause                                 |
  * | PAUSE_HEAR_AFTER_SECONDS    | 2.5     | ...and after it                                                      |
+ * | PAUSE_HEAR_CLIP_SECONDS     | 20      | Longest clip that moments close together are heard in; 1 hears each alone |
  * TONALITY_FLAT_SCORE (tonality.ts) sets which ratings count as flat.
  */
 import { DEFAULT_HEARING_CONFIG, type HearingConfig } from "./pause-hearing.ts";
@@ -188,6 +189,12 @@ export function reviewConfig(
         DEFAULT_HEARING_CONFIG.afterSeconds,
         0.5,
         30,
+      ),
+      clipSeconds: number(
+        "PAUSE_HEAR_CLIP_SECONDS",
+        DEFAULT_HEARING_CONFIG.clipSeconds,
+        1,
+        120,
       ),
     },
     faults: FAULTS,

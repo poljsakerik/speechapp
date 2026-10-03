@@ -72,7 +72,11 @@ test("every strength setting can be changed from the environment", () => {
     breakSounds: [],
     missingMustRunOn: false,
   });
-  assert.deepEqual(config.hearing, { leadInSeconds: 4, afterSeconds: 1.5 });
+  assert.deepEqual(config.hearing, {
+    leadInSeconds: 4,
+    afterSeconds: 1.5,
+    clipSeconds: 20,
+  });
   // What isn't a strength setting keeps its default.
   assert.equal(config.rate.fastRate, DEFAULT_RATE_CONFIG.fastRate);
   assert.equal(config.pitch.minSpread, DEFAULT_PITCH_CONFIG.minSpread);
