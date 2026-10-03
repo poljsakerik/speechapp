@@ -57,8 +57,8 @@ test("rate review preserves both phrase actions within one sentence", () => {
       ["RATE_IMPORTANCE_FAST", 2, 3.8],
     ],
   );
-  assert.equal(findings[0].observation, "This passage moves slowly.");
-  assert.equal(findings[1].observation, "This passage moves quickly.");
+  assert.deepEqual(findings[0].evidence, {});
+  assert.deepEqual(findings[1].evidence, {});
   assert.deepEqual(
     findings.map((f) => f.text),
     ["We need", "more time"],
@@ -141,9 +141,7 @@ test("a passage whose key points went by too fast carries one phrase to slow dow
   );
   assert.ok(
     findings.every(
-      (f) =>
-        f.observation ===
-        "Your key points go by as fast as the setup around them.",
+      (f) => f.rule_id === "RATE_CONTRAST" && !("observation" in f),
     ),
   );
   assert.ok(findings.every((f) => f.group_id === "0"));
@@ -213,15 +211,8 @@ test("volume findings carry their own coaching; without measured audio volume st
   const volume = volumeAssessment(segments, [fade]);
   assert.equal(volume.verdict, "mixed");
   assert.deepEqual(
-    volume.findings.map((f) => [f.rule_id, f.start, f.end, f.observation]),
-    [
-      [
-        "VOLUME_FADE",
-        4,
-        6.8,
-        "Your voice trails off at the end of these sentences.",
-      ],
-    ],
+    volume.findings.map((f) => [f.rule_id, f.start, f.end, f.evidence]),
+    [["VOLUME_FADE", 4, 6.8, {}]],
   );
   assert.equal(volumeAssessment(segments, []).verdict, "effective");
   assert.equal(volumeAssessment(segments, undefined).verdict, "uncertain");
@@ -291,11 +282,10 @@ test("tonality findings name the feeling the words call for, and a missing revie
     tonality.findings.map((f) => [f.rule_id, f.start, f.end]),
     [["TONE_FLAT", 0, 4.8]],
   );
-  assert.match(tonality.findings[0].practice, /face/);
-  assert.equal(
-    tonality.findings[0].observation,
-    "Your voice sounds flat here, while the words call for warmth or enthusiasm.",
-  );
+  assert.deepEqual(tonality.findings[0].evidence, {
+    expected: ["neutral", "happy"],
+  });
+  assert.equal("practice" in tonality.findings[0], false);
   assert.equal(tonalityAssessment(segments, []).verdict, "effective");
   assert.equal(tonalityAssessment(segments, undefined).verdict, "uncertain");
 });
@@ -324,15 +314,12 @@ test("a monotone stretch becomes a pitch finding; without a pitch measurement, p
       ["PITCH_VARIETY", "segment-2"],
     ],
   );
-  assert.equal(
-    pitch.findings[0].observation,
-    "Your voice stays on one note through this stretch.",
-  );
+  assert.deepEqual(pitch.findings[0].evidence, {});
   assert.equal(pitchAssessment(segments, []).verdict, "effective");
   assert.equal(pitchAssessment(segments, undefined).verdict, "uncertain");
 });
 
-test("a pitch mark the listening model supports uses its description and fix", () => {
+test("a pitch mark returns its rule without model-authored UI copy", () => {
   const words = "So the thing is. Sales fell by half."
     .split(" ")
     .map((text, i) => ({ text, start: i, end: i + 0.8 }));
@@ -349,17 +336,12 @@ test("a pitch mark the listening model supports uses its description and fix", (
     fix: "Say it in your usual voice.",
   };
   const [finding] = pitchAssessment(segmentWords(words), [mark]).findings;
-  assert.deepEqual(
-    [finding.observation, finding.practice],
-    [mark.how, mark.fix],
-  );
-  assert.equal(
-    finding.why_it_matters,
-    "A voice stuck high draws attention to itself and away from your message.",
-  );
+  assert.equal(finding.rule_id, "PITCH_HIGH");
+  for (const key of ["observation", "practice", "why_it_matters", "how", "fix"])
+    assert.equal(key in finding, false);
 });
 
-test("strengths become findings that say what was done well and why it works", () => {
+test("strengths return the evidence needed to localize coaching in the frontend", () => {
   const words = "So when it matters, make sure you slow down. Then move on."
     .split(" ")
     .map((text, i) => ({ text, start: i, end: i + 0.8 }));
@@ -391,11 +373,10 @@ test("strengths become findings that say what was done well and why it works", (
     rate.findings.map((f) => [f.kind, f.rule_id, f.group_id, f.start, f.end]),
     [["strength", "RATE_SLOWS_FOR_POINT", "strength-0", 4, 8.8]],
   );
-  assert.equal(
-    rate.findings[0].observation,
-    "You slow right down on “make sure you slow down”, to about 45% of your usual pace.",
-  );
-  assert.match(rate.findings[0].why_it_matters, /verbal highlight/);
+  assert.deepEqual(rate.findings[0].evidence, {
+    focusText: "make sure you slow down.",
+    pace: Math.log2(0.43),
+  });
 
   const pause = {
     ...span(1, 6),
@@ -408,18 +389,10 @@ test("strengths become findings that say what was done well and why it works", (
     { ...pause, rule: "PAUSE_BUILDS_ANTICIPATION" },
   ]);
   assert.deepEqual(
-    pauses.findings.map((f) => [f.kind, f.observation, f.suggestions]),
+    pauses.findings.map((f) => [f.kind, f.evidence, f.suggestions]),
     [
-      [
-        "strength",
-        "You stop for 1.2 seconds after “when it matters” and let it land.",
-        [],
-      ],
-      [
-        "strength",
-        "You pause for 1.2 seconds just before “make sure you”.",
-        [],
-      ],
+      ["strength", { seconds: 1.24, focusText: "when it matters," }, []],
+      ["strength", { seconds: 1.24, focusText: "make sure you" }, []],
     ],
   );
   assert.deepEqual(
@@ -440,10 +413,10 @@ test("strengths become findings that say what was done well and why it works", (
       },
     ],
   );
-  assert.equal(
-    tone.findings[0].observation,
-    "Your voice is clearly expressive here, where the words call for warmth or enthusiasm and curiosity.",
-  );
+  assert.deepEqual(tone.findings[0].evidence, {
+    expected: ["neutral", "happy", "surprised"],
+    expressiveness: 4,
+  });
   assert.equal(tone.findings[0].uncertainty, "tentative");
 
   const [melody] = pitchAssessment(
@@ -455,7 +428,7 @@ test("strengths become findings that say what was done well and why it works", (
     [melody.kind, melody.rule_id, melody.uncertainty],
     ["strength", "PITCH_MELODY", "clear"],
   );
-  assert.match(melody.why_it_matters, /song/);
+  assert.deepEqual(melody.evidence, {});
 });
 
 test("a take that is expressive or melodic throughout says so in its summary instead of marking everything", () => {
@@ -465,17 +438,17 @@ test("a take that is expressive or melodic throughout says so in its summary ins
   const segments = segmentWords(words);
   const tone = tonalityAssessment(segments, [], [], true);
   assert.deepEqual(
-    [tone.verdict, tone.findings, tone.summary],
-    ["effective", [], "Your voice is expressive throughout this take."],
+    [tone.verdict, tone.findings, tone.summaryCode],
+    ["effective", [], "expressive"],
   );
-  assert.match(
-    tonalityAssessment(segments, [], [], false).summary,
-    /No flat stretch/,
+  assert.equal(
+    tonalityAssessment(segments, [], [], false).summaryCode,
+    "effective",
   );
   const melody = { first: 0, last: 4, start: 0, end: 4.8, text: "", spread: 6 };
   assert.equal(
     pitchAssessment(segments, [], [{ ...melody, rule: "PITCH_MELODY" }], true)
-      .summary,
-    "Your voice moves freely between high and low notes throughout this take. The marked stretches move the most.",
+      .summaryCode,
+    "lively_marked",
   );
 });

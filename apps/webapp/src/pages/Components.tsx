@@ -1,4 +1,11 @@
 import {
+  COMMON_NS,
+  COMPONENTS_NS,
+  PUBLIC_WEBSITE_NS,
+  REVIEW_NS,
+  t as translate,
+} from "@/core/i18n";
+import {
   InfoIcon,
   Loader2Icon,
   MicIcon,
@@ -9,6 +16,7 @@ import {
   UploadIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { Mark, Wordmark } from "@/components/brand/Mark";
@@ -22,7 +30,7 @@ import { REVIEW_FIXTURE } from "@/data/review-fixture";
 import sampleTake from "@/data/sample-take.json";
 import { FOUNDATIONS } from "@/lib/foundations";
 import { formatTime, type Take } from "@/lib/review";
-import { SAMPLE_REVIEW, SAMPLE_TITLE } from "@/lib/sample";
+import { SAMPLE_REVIEW, sampleTitle } from "@/lib/sample";
 import {
   Accordion,
   AccordionContent,
@@ -95,53 +103,60 @@ const TAKE = sampleTake as Take;
 const SHORT_TAKE: Take = { ...TAKE, segments: TAKE.segments.slice(0, 2) };
 const COVER_PALETTE = FOUNDATIONS.map((f) => f.fill);
 
-const SECTIONS = [
-  ["tokens", "Color"],
-  ["type", "Type"],
-  ["mark", "Mark"],
-  ["cover", "Cover"],
-  ["lyric", "Lyric sheet"],
-  ["note", "Note"],
-  ["recorder", "Recorder tape"],
-  ["pin", "Note pins"],
-  ["button", "Button"],
-  ["badge", "Badge"],
-  ["input", "Input & label"],
-  ["tabs", "Tabs"],
-  ["toggle", "Toggle & layers"],
-  ["slider", "Scrubber"],
-  ["card", "Card"],
-  ["tooltip", "Tooltip"],
-  ["dialog", "Dialog"],
-  ["sheet", "Sheet"],
-  ["progress", "Progress"],
-  ["alert", "Alert"],
-  ["accordion", "Accordion"],
-  ["toast", "Toast"],
-  ["skeleton", "Skeleton"],
-  ["separator", "Separator"],
-] as const;
+const sections = () =>
+  [
+    ["tokens", translate("components:color")],
+    ["type", translate("components:type")],
+    ["mark", translate("components:mark")],
+    ["cover", translate("components:cover")],
+    ["lyric", translate("components:lyricSheet")],
+    ["note", translate("review:feedbackviewNote")],
+    ["recorder", translate("components:recorderTape")],
+    ["pin", translate("components:notePins")],
+    ["button", translate("components:button")],
+    ["badge", translate("components:badge")],
+    ["input", translate("components:inputLabel")],
+    ["tabs", translate("components:tabs")],
+    ["toggle", translate("components:toggleLayers")],
+    ["slider", translate("components:scrubber")],
+    ["card", translate("components:card")],
+    ["tooltip", translate("components:tooltip")],
+    ["dialog", translate("components:dialog")],
+    ["sheet", translate("components:sheet")],
+    ["progress", translate("components:progress")],
+    ["alert", translate("components:alert")],
+    ["accordion", translate("components:accordion")],
+    ["toast", translate("components:toast")],
+    ["skeleton", translate("components:skeleton")],
+    ["separator", translate("components:separator")],
+  ] as const;
 
 export function Components() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   return (
     <>
       <main className={cn(SHELL, "pt-12 pb-24 sm:pt-16 lg:pt-20 lg:pb-36")}>
         <header className={SPREAD}>
           <div className={LEFT}>
             <h1 className="font-wide text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em]">
-              Components
+              {translate("publicWebsite:sitefooterComponents")}
             </h1>
           </div>
           <div className={RIGHT}>
             <p className="max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
-              The parts MicMane is built from, set the way the product sets
-              them: white booklet pages on paper, ink type, one colour per
-              foundation, graphite sleeves, and orange glass for whatever is
-              live.
+              {translate("components:thePartsMicmaneIsBuiltFromSetThe")}
             </p>
-            <nav aria-label="Components" className="mt-10">
+            <nav
+              aria-label={translate("publicWebsite:sitefooterComponents")}
+              className="mt-10"
+            >
               <ul className="grid grid-cols-2 gap-x-6 gap-y-1 text-[0.8125rem] leading-6 sm:grid-cols-3">
-                {SECTIONS.map(([id, label]) => (
+                {sections().map(([id, label]) => (
                   <li key={id}>
                     <a
                       href={`#${id}`}
@@ -159,37 +174,37 @@ export function Components() {
         <div className="mt-24 grid gap-24 lg:mt-36 lg:gap-36">
           <Showcase
             id="tokens"
-            title="Color"
-            note="A near-white canvas and graphite inks. Each foundation is a pair: pastel for fields, deep ink for text. Orange glass is the one warm light, for play controls and whatever is live."
+            title={translate("components:color")}
+            note={translate("components:aNearWhiteCanvasAndGraphiteInksEach")}
           >
             <div className="grid gap-10">
               <SwatchRow
-                label="Canvas and ink"
+                label={translate("components:canvasAndInk")}
                 items={[
-                  ["Paper", "--paper"],
-                  ["Surface", "--surface"],
-                  ["Sunken", "--sunken"],
-                  ["Line", "--line"],
-                  ["Line strong", "--line-strong"],
-                  ["Ink 3", "--ink-3"],
-                  ["Ink 2", "--ink-2"],
-                  ["Ink", "--ink"],
+                  [translate("components:paper"), "--paper"],
+                  [translate("components:surface"), "--surface"],
+                  [translate("components:sunken"), "--sunken"],
+                  [translate("components:line"), "--line"],
+                  [translate("components:lineStrong"), "--line-strong"],
+                  [translate("components:ink3"), "--ink-3"],
+                  [translate("components:ink2"), "--ink-2"],
+                  [translate("components:ink"), "--ink"],
                 ]}
               />
               <SwatchRow
-                label="Graphite and glass"
+                label={translate("components:graphiteAndGlass")}
                 items={[
-                  ["Graphite deep", "--graphite-deep"],
-                  ["Graphite", "--graphite"],
-                  ["Graphite line", "--graphite-line"],
-                  ["Glass ink", "--glass-ink"],
-                  ["Glass", "--glass"],
-                  ["Glass hot", "--glass-hot"],
+                  [translate("components:graphiteDeep"), "--graphite-deep"],
+                  [translate("components:graphite"), "--graphite"],
+                  [translate("components:graphiteLine"), "--graphite-line"],
+                  [translate("components:glassInk"), "--glass-ink"],
+                  [translate("components:glass"), "--glass"],
+                  [translate("components:glassHot"), "--glass-hot"],
                 ]}
               />
               <div>
                 <p className="mb-3 text-[0.75rem] leading-5 font-semibold text-ink-3">
-                  Foundations: fill and ink
+                  {translate("components:foundationsFillAndInk")}
                 </p>
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-5">
                   {FOUNDATIONS.map((f) => (
@@ -216,52 +231,56 @@ export function Components() {
 
           <Showcase
             id="type"
-            title="Type"
-            note="Archivo stretched two ways: wide and extra-bold for anything that names a thing, normal width for reading. Martian Mono numbers the take and the label."
+            title={translate("components:type")}
+            note={translate(
+              "components:archivoStretchedTwoWaysWideAndExtraBold",
+            )}
           >
             <div className="grid gap-8">
-              <TypeRow meta="Display · wide 800">
+              <TypeRow meta={translate("components:displayWide800")}>
                 <span className="font-wide text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance">
-                  Unlock your voice.
+                  {translate("components:unlockYourVoice")}
                 </span>
               </TypeRow>
-              <TypeRow meta="Headline · wide 800">
+              <TypeRow meta={translate("components:headlineWide800")}>
                 <span className="font-wide text-[clamp(1.75rem,3vw,2.5rem)] leading-[0.98] font-extrabold tracking-[-0.03em]">
-                  Notes on your take
+                  {translate("review:feedbackviewNotesOnYourTake")}
                 </span>
               </TypeRow>
-              <TypeRow meta="Lyric · wide 600">
+              <TypeRow meta={translate("components:lyricWide600")}>
                 <span className="font-wide text-[clamp(1.375rem,2.1vw,1.875rem)] leading-[1.3] font-semibold tracking-[-0.015em]">
-                  It's saying no.
+                  {translate("components:itSSayingNo")}
                 </span>
               </TypeRow>
-              <TypeRow meta="Title · wide 700">
+              <TypeRow meta={translate("components:titleWide700")}>
                 <span className="font-wide text-[1.5rem] leading-10 font-bold tracking-[-0.02em]">
-                  Rate of speech
+                  {translate("common:foundationsRateOfSpeech")}
                 </span>
               </TypeRow>
-              <TypeRow meta="Body lead · 400">
+              <TypeRow meta={translate("components:bodyLead400")}>
                 <span className="block max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
-                  Every note ends with one thing to try on the next take.
+                  {translate("components:everyNoteEndsWithOneThingToTry")}
                 </span>
               </TypeRow>
-              <TypeRow meta="Body small · 400">
+              <TypeRow meta={translate("components:bodySmall400")}>
                 <span className="block max-w-[52ch] text-[0.8125rem] leading-5 text-ink-2">
-                  A little more time can make this passage easier to follow.
+                  {translate("review:RATE_IMPORTANCE_FAST_why_it_matters")}
                 </span>
               </TypeRow>
-              <TypeRow meta="Label · 600">
+              <TypeRow meta={translate("components:label600")}>
                 <span
                   className="text-[0.75rem] leading-5 font-semibold"
                   style={{ color: "var(--f-pauses-ink)" }}
                 >
-                  Pauses{" "}
-                  <span className="font-normal text-ink-3">Pause too long</span>
+                  {translate("common:foundationsPauses")}{" "}
+                  <span className="font-normal text-ink-3">
+                    {translate("review:feedbackviewPauseTooLong")}
+                  </span>
                 </span>
               </TypeRow>
-              <TypeRow meta="Time, catalog · Martian Mono">
+              <TypeRow meta={translate("components:timeCatalogMartianMono")}>
                 <span className="font-mono text-[0.75rem] tabular">
-                  00:04.7 / 00:15 · MMV 001
+                  {translate("components:000470015Mmv001")}
                 </span>
               </TypeRow>
             </div>
@@ -269,8 +288,10 @@ export function Components() {
 
           <Showcase
             id="mark"
-            title="Mark"
-            note="Placeholder until the mark is designed: a microphone wearing a mane in the five foundation inks."
+            title={translate("components:mark")}
+            note={translate(
+              "components:placeholderUntilTheMarkIsDesignedAMicrophone",
+            )}
           >
             <div className="flex flex-wrap items-center gap-10">
               <Wordmark />
@@ -283,35 +304,35 @@ export function Components() {
 
           <Showcase
             id="cover"
-            title="Cover"
-            note="Drawn from the take: one ridge for each line that showed a strength, filled with that foundation and stacked up from the bottom. Few strengths make a low stack; covers fill up as you practise. The promotional sleeve shows every foundation."
+            title={translate("components:cover")}
+            note={translate("components:drawnFromTheTakeOneRidgeForEach")}
           >
             <div className="grid gap-6 sm:grid-cols-2">
               <figure>
                 <CoverArt
                   take={TAKE}
                   review={SAMPLE_REVIEW}
-                  title={SAMPLE_TITLE}
+                  title={sampleTitle()}
                   className="cover-shadow"
                   top={<CoverTop no="MMV 001" />}
-                  bottom={<CoverTitle title={SAMPLE_TITLE} />}
+                  bottom={<CoverTitle title={sampleTitle()} />}
                 />
                 <figcaption className="mt-4 text-[0.8125rem] leading-5 text-ink-3">
-                  A take's cover
+                  {translate("components:aTakeSCover")}
                 </figcaption>
               </figure>
               <figure>
                 <CoverArt
                   take={TAKE}
                   review={SAMPLE_REVIEW}
-                  title={SAMPLE_TITLE}
+                  title={sampleTitle()}
                   palette={COVER_PALETTE}
                   className="cover-shadow"
                   top={<CoverTop no="MMV 001" />}
-                  bottom={<CoverTitle title={SAMPLE_TITLE} />}
+                  bottom={<CoverTitle title={sampleTitle()} />}
                 />
                 <figcaption className="mt-4 text-[0.8125rem] leading-5 text-ink-3">
-                  Promotional sleeve
+                  {translate("components:promotionalSleeve")}
                 </figcaption>
               </figure>
             </div>
@@ -319,8 +340,8 @@ export function Components() {
 
           <Showcase
             id="lyric"
-            title="Lyric sheet"
-            note="A take read as its lyrics: timecodes in the gutter, noted words under a foundation highlighter, notes beneath the line. Silence between lines becomes space."
+            title={translate("components:lyricSheet")}
+            note={translate("components:aTakeReadAsItsLyricsTimecodesIn")}
           >
             <LyricSheet
               take={SHORT_TAKE}
@@ -333,8 +354,8 @@ export function Components() {
 
           <Showcase
             id="note"
-            title="Note"
-            note="Sits under the line it is about and quotes its words in the same highlighter: foundation and rule, why it matters, and one thing to try. Every note and every phrase in it can be played."
+            title={translate("review:feedbackviewNote")}
+            note={translate("components:sitsUnderTheLineItIsAboutAnd")}
           >
             <ul className="grid max-w-[38rem] gap-1">
               {REVIEW_FIXTURE.review.findings.slice(0, 2).map((f, i) => (
@@ -342,8 +363,8 @@ export function Components() {
                   key={f.id}
                   quote={
                     i === 0
-                      ? "For three years, I ran the night shift"
-                      : "nobody tells you is that"
+                      ? translate("components:forThreeYearsIRanTheNightShift2")
+                      : translate("components:nobodyTellsYouIsThat")
                   }
                   note={f}
                   open={i === 0}
@@ -357,13 +378,23 @@ export function Components() {
 
           <Showcase
             id="recorder"
-            title="Recorder tape"
-            note="One minute of tape, left to right. It fills with your level as you speak; what is left is a bare line, waiting."
+            title={translate("components:recorderTape")}
+            note={translate("components:oneMinuteOfTapeLeftToRightIt")}
           >
             <div className="grid gap-8">
               {[
-                { label: "Empty", length: 0 },
-                { label: "A 15-second take", length: TAKE.duration },
+                {
+                  get label() {
+                    return translate("components:empty");
+                  },
+                  length: 0,
+                },
+                {
+                  get label() {
+                    return translate("components:a15SecondTake");
+                  },
+                  length: TAKE.duration,
+                },
               ].map((t) => (
                 <div key={t.label}>
                   <Tape
@@ -382,30 +413,40 @@ export function Components() {
 
           <Showcase
             id="pin"
-            title="Note pins"
-            note="State is drawn with stroke, never colour: filled is a strength, an open ring is an improvement, dashed means tentative."
+            title={translate("components:notePins")}
+            note={translate(
+              "components:stateIsDrawnWithStrokeNeverColourFilled",
+            )}
           >
             <ul className="grid gap-4 sm:grid-cols-2">
               {[
                 {
                   kind: "strength" as const,
                   tentative: false,
-                  label: "Strength · clear",
+                  get label() {
+                    return translate("components:strengthClear");
+                  },
                 },
                 {
                   kind: "improvement" as const,
                   tentative: false,
-                  label: "To improve · clear",
+                  get label() {
+                    return translate("components:toImproveClear");
+                  },
                 },
                 {
                   kind: "strength" as const,
                   tentative: true,
-                  label: "Strength · tentative",
+                  get label() {
+                    return translate("components:strengthTentative");
+                  },
                 },
                 {
                   kind: "improvement" as const,
                   tentative: true,
-                  label: "To improve · tentative",
+                  get label() {
+                    return translate("components:toImproveTentative");
+                  },
                 },
               ].map((p, i) => (
                 <li key={p.label} className="flex items-center gap-3">
@@ -427,34 +468,42 @@ export function Components() {
 
           <Showcase
             id="button"
-            title="Button"
-            note="Ink for the primary action. Orange glass for play controls and recording. Graphite is the sleeve's colour."
+            title={translate("components:button")}
+            note={translate("components:inkForThePrimaryActionOrangeGlassFor")}
           >
             <div className="grid gap-6">
               <Row>
-                <Button>Try a free review</Button>
+                <Button>
+                  {translate("publicWebsite:sitefooterTryAFreeReview")}
+                </Button>
                 <Button variant="outline">
                   <PlayIcon className="fill-glass text-glass" />
-                  See an example
+                  {translate("components:seeAnExample")}
                   <span className="font-mono text-[0.75rem] text-ink-3 tabular">
                     0:15
                   </span>
                 </Button>
-                <Button variant="secondary">Secondary</Button>
-                <Button variant="ghost">Ghost</Button>
-                <Button variant="link">Read the lesson</Button>
-                <Button variant="destructive">Discard take</Button>
+                <Button variant="secondary">
+                  {translate("components:secondary")}
+                </Button>
+                <Button variant="ghost">{translate("components:ghost")}</Button>
+                <Button variant="link">
+                  {translate("components:readTheLesson")}
+                </Button>
+                <Button variant="destructive">
+                  {translate("components:discardTake")}
+                </Button>
               </Row>
               <Row>
                 <Button variant="glass">
                   <SquareIcon className="fill-current" />
-                  Stop recording
+                  {translate("review:tryreviewStopRecording")}
                 </Button>
                 <Button
                   variant="glass"
                   size="icon-lg"
                   className="rounded-full"
-                  aria-label="Pause"
+                  aria-label={translate("review:feedbackviewPause")}
                 >
                   <PauseIcon />
                 </Button>
@@ -462,29 +511,29 @@ export function Components() {
                   variant="outline"
                   size="icon-lg"
                   className="rounded-full"
-                  aria-label="Play"
+                  aria-label={translate("review:feedbackviewPlay")}
                 >
                   <PlayIcon className="translate-x-px" />
                 </Button>
                 <Button variant="graphite">
                   <UploadIcon />
-                  Upload a file
+                  {translate("review:tryreviewUploadAFile")}
                 </Button>
               </Row>
               <Row>
-                <Button size="xs">Extra small</Button>
-                <Button size="sm">Small</Button>
-                <Button>Default</Button>
-                <Button size="lg">Large</Button>
+                <Button size="xs">{translate("components:extraSmall")}</Button>
+                <Button size="sm">{translate("components:small")}</Button>
+                <Button>{translate("components:default")}</Button>
+                <Button size="lg">{translate("components:large")}</Button>
               </Row>
               <Row>
-                <Button disabled>Disabled</Button>
+                <Button disabled>{translate("components:disabled")}</Button>
                 <Button aria-busy="true">
                   <Loader2Icon className="animate-spin" />
-                  Reviewing
+                  {translate("components:reviewing")}
                 </Button>
                 <Button variant="glass" disabled>
-                  Glass disabled
+                  {translate("components:glassDisabled")}
                 </Button>
               </Row>
             </div>
@@ -492,8 +541,10 @@ export function Components() {
 
           <Showcase
             id="badge"
-            title="Badge"
-            note="Square-shouldered tags, never pills. Foundations carry their fill with ink text; illustrated data is labelled with a dashed edge."
+            title={translate("components:badge")}
+            note={translate(
+              "components:squareShoulderedTagsNeverPillsFoundationsCarryTheir",
+            )}
           >
             <div className="grid gap-4">
               <Row>
@@ -504,84 +555,115 @@ export function Components() {
                 ))}
               </Row>
               <Row>
-                <Badge>Default</Badge>
-                <Badge variant="secondary">Mixed</Badge>
-                <Badge variant="outline">AI review</Badge>
-                <Badge variant="sample">Illustration</Badge>
-                <Badge variant="live">Recording</Badge>
-                <Badge variant="destructive">Failed</Badge>
+                <Badge>{translate("components:default")}</Badge>
+                <Badge variant="secondary">
+                  {translate("common:foundationsMixed")}
+                </Badge>
+                <Badge variant="outline">
+                  {translate("components:aiReview")}
+                </Badge>
+                <Badge variant="sample">
+                  {translate("components:illustration")}
+                </Badge>
+                <Badge variant="live">
+                  {translate("components:recording")}
+                </Badge>
+                <Badge variant="destructive">
+                  {translate("components:failed")}
+                </Badge>
               </Row>
             </div>
           </Showcase>
 
           <Showcase
             id="input"
-            title="Input & label"
-            note="Glass-ink focus. Errors name the problem and the fix."
+            title={translate("components:inputLabel")}
+            note={translate("components:glassInkFocusErrorsNameTheProblemAnd")}
           >
             <div className="grid max-w-md gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="c-email">Email</Label>
+                <Label htmlFor="c-email">{translate("components:email")}</Label>
                 <Input
                   id="c-email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={translate("components:youExampleCom")}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="c-title">Take title</Label>
-                <Input id="c-title" defaultValue="Night shift" />
+                <Label htmlFor="c-title">
+                  {translate("components:takeTitle")}
+                </Label>
+                <Input
+                  id="c-title"
+                  defaultValue={translate("publicWebsite:sampleNightShift")}
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="c-bad">Email</Label>
+                <Label htmlFor="c-bad">{translate("components:email")}</Label>
                 <Input
                   id="c-bad"
                   aria-invalid="true"
-                  defaultValue="you@example"
+                  defaultValue={translate("components:youExample")}
                   aria-describedby="c-bad-hint"
                 />
                 <p
                   id="c-bad-hint"
                   className="text-[0.8125rem] text-destructive"
                 >
-                  Add the domain, for example you@example.com.
+                  {translate("components:addTheDomainForExampleYouExampleCom")}
                 </p>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="c-off">Disabled</Label>
-                <Input id="c-off" disabled placeholder="Not available yet" />
+                <Label htmlFor="c-off">
+                  {translate("components:disabled")}
+                </Label>
+                <Input
+                  id="c-off"
+                  disabled
+                  placeholder={translate("components:notAvailableYet")}
+                />
               </div>
             </div>
           </Showcase>
 
           <Showcase
             id="tabs"
-            title="Tabs"
-            note="Segmented on sunken ground, or a single-pixel line."
+            title={translate("components:tabs")}
+            note={translate("components:segmentedOnSunkenGroundOrASinglePixel")}
           >
             <div className="grid gap-8">
-              <Tabs defaultValue="notes">
+              <Tabs defaultValue={translate("components:notes")}>
                 <TabsList>
-                  <TabsTrigger value="notes">Notes</TabsTrigger>
-                  <TabsTrigger value="transcript">Transcript</TabsTrigger>
-                  <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                  <TabsTrigger value="notes">
+                    {translate("review:editorNotes")}
+                  </TabsTrigger>
+                  <TabsTrigger value="transcript">
+                    {translate("components:transcript")}
+                  </TabsTrigger>
+                  <TabsTrigger value="lesson">
+                    {translate("components:lesson")}
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="notes" className="pt-3 text-ink-2">
-                  Six notes across five foundations.
+                  {translate("components:sixNotesAcrossFiveFoundations")}
                 </TabsContent>
                 <TabsContent value="transcript" className="pt-3 text-ink-2">
-                  For three years, I ran the night shift…
+                  {translate("components:forThreeYearsIRanTheNightShift")}
                 </TabsContent>
                 <TabsContent value="lesson" className="pt-3 text-ink-2">
-                  Give important points enough time.
+                  {translate("components:giveImportantPointsEnoughTime")}
                 </TabsContent>
               </Tabs>
               <Tabs defaultValue="take-2">
                 <TabsList variant="line">
-                  <TabsTrigger value="take-1">Take 1</TabsTrigger>
-                  <TabsTrigger value="take-2">Take 2</TabsTrigger>
+                  <TabsTrigger value="take-1">
+                    {translate("components:take1")}
+                  </TabsTrigger>
+                  <TabsTrigger value="take-2">
+                    {translate("components:take2")}
+                  </TabsTrigger>
                   <TabsTrigger value="take-3" disabled>
-                    Take 3
+                    {translate("components:take3")}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -590,8 +672,8 @@ export function Components() {
 
           <Showcase
             id="toggle"
-            title="Toggle & layers"
-            note="Layer switches keep the label ink; only the swatch carries colour, and it dims when off."
+            title={translate("components:toggleLayers")}
+            note={translate("components:layerSwitchesKeepTheLabelInkOnlyThe")}
           >
             <div className="grid gap-8 md:grid-cols-2">
               <ToggleGroup
@@ -600,7 +682,7 @@ export function Components() {
                 orientation="vertical"
                 spacing={0}
                 className="w-56 gap-0! overflow-hidden rounded-md border border-line bg-paper! p-0!"
-                aria-label="Layers"
+                aria-label={translate("components:layers")}
               >
                 {FOUNDATIONS.map((f) => (
                   <ToggleGroupItem
@@ -626,26 +708,32 @@ export function Components() {
               <div className="grid content-start gap-5">
                 <ToggleGroup
                   type="single"
-                  defaultValue="all"
+                  defaultValue={translate("components:all")}
                   spacing={0}
-                  aria-label="Filter notes"
+                  aria-label={translate("components:filterNotes")}
                 >
                   <ToggleGroupItem value="all" size="sm">
-                    All
+                    {translate("components:all2")}
                   </ToggleGroupItem>
                   <ToggleGroupItem value="strengths" size="sm">
-                    Strengths
+                    {translate("review:feedbackviewStrengths")}
                   </ToggleGroupItem>
                   <ToggleGroupItem value="improve" size="sm">
-                    To improve
+                    {translate("review:editorToImprove2")}
                   </ToggleGroupItem>
                 </ToggleGroup>
                 <Row>
-                  <Toggle aria-label="Loop" defaultPressed>
-                    Loop passage
+                  <Toggle
+                    aria-label={translate("components:loop")}
+                    defaultPressed
+                  >
+                    {translate("components:loopPassage")}
                   </Toggle>
-                  <Toggle variant="outline" aria-label="Show transcript">
-                    Transcript
+                  <Toggle
+                    variant="outline"
+                    aria-label={translate("components:showTranscript")}
+                  >
+                    {translate("components:transcript")}
                   </Toggle>
                 </Row>
               </div>
@@ -654,32 +742,35 @@ export function Components() {
 
           <Showcase
             id="slider"
-            title="Scrubber"
-            note="The slider is the playhead: a one-pixel ruler and an orange glass handle."
+            title={translate("components:scrubber")}
+            note={translate("components:theSliderIsThePlayheadAOnePixel")}
           >
             <ScrubberDemo />
           </Showcase>
 
           <Showcase
             id="card"
-            title="Card"
-            note="Hairline border, barely lifted. Never nested."
+            title={translate("components:card")}
+            note={translate("components:hairlineBorderBarelyLiftedNeverNested")}
           >
             <Card className="max-w-md">
               <CardHeader>
-                <CardTitle>Night shift</CardTitle>
+                <CardTitle>
+                  {translate("publicWebsite:sampleNightShift")}
+                </CardTitle>
                 <CardDescription>
-                  Recorded today · 0:15 · 6 notes
+                  {translate("components:recordedToday0156Notes")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-ink-2">
-                All five foundations reviewed: two notes on pace, two on pauses,
-                one on volume, one on tonality.
+                {translate(
+                  "components:allFiveFoundationsReviewedTwoNotesOnPace",
+                )}
               </CardContent>
               <CardFooter className="gap-2">
-                <Button size="sm">Open review</Button>
+                <Button size="sm">{translate("components:openReview")}</Button>
                 <Button size="sm" variant="ghost">
-                  Retake
+                  {translate("components:retake")}
                 </Button>
               </CardFooter>
             </Card>
@@ -687,16 +778,18 @@ export function Components() {
 
           <Showcase
             id="tooltip"
-            title="Tooltip"
-            note="Ink on white, used for measured values and terms."
+            title={translate("components:tooltip")}
+            note={translate("components:inkOnWhiteUsedForMeasuredValuesAnd")}
           >
             <Row>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline">0.7 s</Button>
+                  <Button variant="outline">
+                    {translate("components:07S")}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Silence between two lines, in seconds
+                  {translate("components:silenceBetweenTwoLinesInSeconds")}
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -704,14 +797,15 @@ export function Components() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="About tentative notes"
+                    aria-label={translate("components:aboutTentativeNotes")}
                   >
                     <InfoIcon />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Tentative notes are judgment calls. Other readings could work
-                  too.
+                  {translate(
+                    "components:tentativeNotesAreJudgmentCallsOtherReadingsCould",
+                  )}
                 </TooltipContent>
               </Tooltip>
             </Row>
@@ -719,27 +813,34 @@ export function Components() {
 
           <Showcase
             id="dialog"
-            title="Dialog"
-            note="Only where focus must be protected, such as discarding a take."
+            title={translate("components:dialog")}
+            note={translate("components:onlyWhereFocusMustBeProtectedSuchAs")}
           >
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline">Discard this take</Button>
+                <Button variant="outline">
+                  {translate("components:discardThisTake")}
+                </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent closeLabel={translate("common:close")}>
                 <DialogHeader>
-                  <DialogTitle>Discard this take?</DialogTitle>
+                  <DialogTitle>
+                    {translate("components:discardThisTake2")}
+                  </DialogTitle>
                   <DialogDescription>
-                    The recording and its review will be gone. MicMane doesn't
-                    keep a copy.
+                    {translate("components:theRecordingAndItsReviewWillBeGone")}
                   </DialogDescription>
                 </DialogHeader>
-                <DialogFooter>
+                <DialogFooter closeLabel={translate("common:close")}>
                   <DialogClose asChild>
-                    <Button variant="ghost">Keep it</Button>
+                    <Button variant="ghost">
+                      {translate("components:keepIt")}
+                    </Button>
                   </DialogClose>
                   <DialogClose asChild>
-                    <Button variant="destructive">Discard take</Button>
+                    <Button variant="destructive">
+                      {translate("components:discardTake")}
+                    </Button>
                   </DialogClose>
                 </DialogFooter>
               </DialogContent>
@@ -748,34 +849,48 @@ export function Components() {
 
           <Showcase
             id="sheet"
-            title="Sheet"
-            note="On phones, notes and navigation arrive from the edge."
+            title={translate("components:sheet")}
+            note={translate(
+              "components:onPhonesNotesAndNavigationArriveFromThe",
+            )}
           >
             <Row>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline">Open notes</Button>
+                  <Button variant="outline">
+                    {translate("components:openNotes")}
+                  </Button>
                 </SheetTrigger>
-                <SheetContent side="bottom">
+                <SheetContent
+                  closeLabel={translate("common:close")}
+                  side="bottom"
+                >
                   <SheetHeader>
-                    <SheetTitle>Notes</SheetTitle>
+                    <SheetTitle>{translate("review:editorNotes")}</SheetTitle>
                     <SheetDescription>
-                      Six notes across five foundations.
+                      {translate("components:sixNotesAcrossFiveFoundations")}
                     </SheetDescription>
                   </SheetHeader>
                   <p className="px-4 pb-6 text-ink-2">
-                    Each note is pinned to the second it refers to.
+                    {translate("components:eachNoteIsPinnedToTheSecondIt")}
                   </p>
                 </SheetContent>
               </Sheet>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline">Open menu</Button>
+                  <Button variant="outline">
+                    {translate("publicWebsite:sitenavOpenMenu")}
+                  </Button>
                 </SheetTrigger>
-                <SheetContent side="right">
+                <SheetContent
+                  closeLabel={translate("common:close")}
+                  side="right"
+                >
                   <SheetHeader>
-                    <SheetTitle>MicMane</SheetTitle>
-                    <SheetDescription>Navigation</SheetDescription>
+                    <SheetTitle>{translate("common:markMicmane")}</SheetTitle>
+                    <SheetDescription>
+                      {translate("components:navigation")}
+                    </SheetDescription>
                   </SheetHeader>
                 </SheetContent>
               </Sheet>
@@ -784,42 +899,54 @@ export function Components() {
 
           <Showcase
             id="progress"
-            title="Progress"
-            note="A glass bead filling a sunken track, for work that takes a while."
+            title={translate("components:progress")}
+            note={translate("components:aGlassBeadFillingASunkenTrackFor")}
           >
             <div className="grid max-w-md gap-4">
-              <Progress value={18} aria-label="Early" />
-              <Progress value={64} aria-label="Midway" />
-              <Progress value={100} aria-label="Done" />
+              <Progress value={18} aria-label={translate("components:early")} />
+              <Progress
+                value={64}
+                aria-label={translate("components:midway")}
+              />
+              <Progress value={100} aria-label={translate("components:done")} />
             </div>
           </Showcase>
 
           <Showcase
             id="alert"
-            title="Alert"
-            note="Hairline for information, tinted for errors, graphite on dark ground."
+            title={translate("components:alert")}
+            note={translate(
+              "components:hairlineForInformationTintedForErrorsGraphiteOn",
+            )}
           >
             <div className="grid max-w-2xl gap-4">
               <Alert>
                 <InfoIcon />
-                <AlertTitle>Takes over a minute are trimmed</AlertTitle>
+                <AlertTitle>
+                  {translate("components:takesOverAMinuteAreTrimmed")}
+                </AlertTitle>
                 <AlertDescription>
-                  The coach reviews the middle minute. Timestamps refer to that
-                  excerpt.
+                  {translate(
+                    "components:theCoachReviewsTheMiddleMinuteTimestampsRefer",
+                  )}
                 </AlertDescription>
               </Alert>
               <Alert variant="destructive">
                 <OctagonXIcon />
-                <AlertTitle>The coach is busy right now</AlertTitle>
+                <AlertTitle>
+                  {translate("components:theCoachIsBusyRightNow")}
+                </AlertTitle>
                 <AlertDescription>
-                  Wait a minute and send the take again.
+                  {translate("components:waitAMinuteAndSendTheTakeAgain")}
                 </AlertDescription>
               </Alert>
               <Alert variant="graphite">
                 <MicIcon />
-                <AlertTitle>Microphone access is blocked</AlertTitle>
+                <AlertTitle>
+                  {translate("components:microphoneAccessIsBlocked")}
+                </AlertTitle>
                 <AlertDescription>
-                  Allow the microphone for this site in your browser's settings.
+                  {translate("components:allowTheMicrophoneForThisSiteInYour")}
                 </AlertDescription>
               </Alert>
             </div>
@@ -827,30 +954,32 @@ export function Components() {
 
           <Showcase
             id="accordion"
-            title="Accordion"
-            note="Questions and long explanations."
+            title={translate("components:accordion")}
+            note={translate("components:questionsAndLongExplanations")}
           >
             <Accordion type="single" collapsible className="max-w-2xl">
               <AccordionItem value="a">
                 <AccordionTrigger>
-                  Does MicMane score my voice?
+                  {translate("components:doesMicmaneScoreMyVoice")}
                 </AccordionTrigger>
                 <AccordionContent>
-                  No. You get notes on moments in your take, each with something
-                  to try next.
+                  {translate("components:noYouGetNotesOnMomentsInYour")}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="b">
-                <AccordionTrigger>Is my recording stored?</AccordionTrigger>
+                <AccordionTrigger>
+                  {translate("components:isMyRecordingStored")}
+                </AccordionTrigger>
                 <AccordionContent>
-                  No. It is sent to Deepgram and Mistral for the review and not
-                  kept by MicMane.
+                  {translate("components:noItIsSentToDeepgramAndMistral")}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="c">
-                <AccordionTrigger>Which languages work?</AccordionTrigger>
+                <AccordionTrigger>
+                  {translate("components:whichLanguagesWork")}
+                </AccordionTrigger>
                 <AccordionContent>
-                  English, with one speaker, for now.
+                  {translate("components:englishWithOneSpeakerForNow")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -858,43 +987,55 @@ export function Components() {
 
           <Showcase
             id="toast"
-            title="Toast"
-            note="Quiet confirmation from the corner."
+            title={translate("components:toast")}
+            note={translate("components:quietConfirmationFromTheCorner")}
           >
             <Row>
               <Button
                 variant="outline"
                 onClick={() =>
-                  toast.success("Your review is ready", {
-                    description: "6 notes on your take.",
-                  })
+                  toast.success(
+                    translate("review:tryreviewYourReviewIsReady"),
+                    {
+                      get description() {
+                        return translate("components:6NotesOnYourTake");
+                      },
+                    },
+                  )
                 }
               >
-                Success
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => toast("Take saved to this session")}
-              >
-                Neutral
+                {translate("components:success")}
               </Button>
               <Button
                 variant="outline"
                 onClick={() =>
-                  toast.error("The review couldn't be completed", {
-                    description: "Send the take again.",
-                  })
+                  toast(translate("components:takeSavedToThisSession"))
                 }
               >
-                Error
+                {translate("components:neutral")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  toast.error(
+                    translate("components:theReviewCouldnTBeCompleted"),
+                    {
+                      get description() {
+                        return translate("components:sendTheTakeAgain");
+                      },
+                    },
+                  )
+                }
+              >
+                {translate("components:error")}
               </Button>
             </Row>
           </Showcase>
 
           <Showcase
             id="skeleton"
-            title="Skeleton"
-            note="Holds the review's shape while it loads: a timecode and a line."
+            title={translate("components:skeleton")}
+            note={translate("components:holdsTheReviewSShapeWhileItLoads")}
           >
             <div className="grid gap-8">
               {[0.75, 0.5].map((w, i) => (
@@ -917,19 +1058,21 @@ export function Components() {
 
           <Showcase
             id="separator"
-            title="Separator"
-            note="Rows and sections separate by spacing. A line marks a pane split or a scroll edge; a free-standing separator fades out at both ends."
+            title={translate("components:separator")}
+            note={translate("components:rowsAndSectionsSeparateBySpacingALine")}
           >
             <div className="max-w-md">
-              <p className="text-sm">Rate of speech</p>
+              <p className="text-sm">
+                {translate("common:foundationsRateOfSpeech")}
+              </p>
               <Separator className="my-3" />
-              <p className="text-sm">Volume</p>
+              <p className="text-sm">{translate("common:foundationsVolume")}</p>
               <div className="mt-4 flex h-5 items-center gap-3 text-sm">
                 <span>00:04.7</span>
                 <Separator orientation="vertical" />
-                <span>Pauses</span>
+                <span>{translate("common:foundationsPauses")}</span>
                 <Separator orientation="vertical" />
-                <span>Strength</span>
+                <span>{translate("review:editorStrength")}</span>
               </div>
             </div>
           </Showcase>
@@ -951,6 +1094,7 @@ function Showcase({
   note: string;
   children: ReactNode;
 }) {
+  useTranslation();
   return (
     <section aria-labelledby={id} className={cn(SPREAD, "scroll-mt-20")}>
       <div className={LEFT}>
@@ -976,10 +1120,16 @@ function Showcase({
 }
 
 function CoverTop({ no }: { no: string }) {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   return (
     <>
       <span className="font-wide text-[0.9375rem] font-extrabold tracking-[-0.02em]">
-        MicMane
+        {translate("common:markMicmane")}
       </span>
       <span className="font-mono text-[0.6875rem] text-on-graphite-muted tabular">
         {no}
@@ -989,19 +1139,26 @@ function CoverTop({ no }: { no: string }) {
 }
 
 function CoverTitle({ title }: { title: string }) {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   return (
     <span className="min-w-0">
       <span className="block font-wide text-[1.5rem] leading-none font-extrabold tracking-[-0.03em]">
         {title}
       </span>
       <span className="mt-2 block font-mono text-[0.75rem] text-on-graphite-muted tabular">
-        Take 1 · 0:15
+        {translate("components:take1015")}
       </span>
     </span>
   );
 }
 
 function Row({ children }: { children: ReactNode }) {
+  useTranslation();
   return <div className="flex flex-wrap items-center gap-3">{children}</div>;
 }
 
@@ -1012,6 +1169,7 @@ function SwatchRow({
   label: string;
   items: [string, string][];
 }) {
+  useTranslation();
   return (
     <div>
       <p className="mb-3 text-[0.75rem] leading-5 font-semibold text-ink-3">
@@ -1038,6 +1196,7 @@ function SwatchRow({
 }
 
 function TypeRow({ meta, children }: { meta: string; children: ReactNode }) {
+  useTranslation();
   return (
     <div className="grid gap-2 md:grid-cols-[10rem_minmax(0,1fr)] md:items-baseline md:gap-6">
       <p className="text-[0.75rem] leading-5 text-ink-3">{meta}</p>
@@ -1047,6 +1206,12 @@ function TypeRow({ meta, children }: { meta: string; children: ReactNode }) {
 }
 
 function ScrubberDemo() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   const [t, setT] = useState(4.7);
   return (
     <div className="max-w-2xl">
@@ -1055,10 +1220,10 @@ function ScrubberDemo() {
           <span className="text-ink">{formatTime(t)}</span> /{" "}
           {formatTime(TAKE.duration, false)}
         </span>
-        <span>Arrow keys move 0.1 s</span>
+        <span>{translate("components:arrowKeysMove01S")}</span>
       </div>
       <Slider
-        aria-label="Scrub"
+        aria-label={translate("components:scrub")}
         min={0}
         max={TAKE.duration}
         step={0.1}
@@ -1066,7 +1231,11 @@ function ScrubberDemo() {
         onValueChange={([v]) => setT(v)}
       />
       <div className="mt-6 max-w-xs">
-        <Slider aria-label="Disabled scrubber" defaultValue={[40]} disabled />
+        <Slider
+          aria-label={translate("components:disabledScrubber")}
+          defaultValue={[40]}
+          disabled
+        />
       </div>
     </div>
   );

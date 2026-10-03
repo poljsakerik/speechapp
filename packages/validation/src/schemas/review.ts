@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import type { ValidationMessage } from "./messages.ts";
 
 export const audioTypes = [
   "audio/wav",
@@ -15,13 +16,13 @@ export const maxRecordingBytes = 25 * 1024 * 1024;
 
 /** The `review.create` form: the recording as its only field. */
 export const reviewUploadSchema = v.pipe(
-  v.instance(FormData, "A multipart audio file is required"),
+  v.instance(FormData, "validation:invalidUpload" satisfies ValidationMessage),
   v.check(
     (form) => [...form.keys()].length === 1,
-    "Send the recording as the only field",
+    "validation:invalidUpload" satisfies ValidationMessage,
   ),
   v.transform((form) => form.get("file")),
-  v.instance(File, "A file is required"),
+  v.instance(File, "validation:recordingRequired" satisfies ValidationMessage),
 );
 
 /**
@@ -29,13 +30,19 @@ export const reviewUploadSchema = v.pipe(
  * type. Parse with `abortPipeEarly` so the first issue names the problem.
  */
 export const recordingSchema = v.pipe(
-  v.blob(),
+  v.blob("validation:recordingRequired" satisfies ValidationMessage),
   // Recorders label takes with codec parameters, e.g. "audio/webm;codecs=opus".
   v.transform(
     (blob) =>
       new Blob([blob], { type: blob.type.split(";")[0].trim().toLowerCase() }),
   ),
-  v.mimeType(audioTypes, "Unsupported audio format"),
-  v.minSize(1, "Empty recording"),
-  v.maxSize(maxRecordingBytes, "Recording exceeds 25 MB"),
+  v.mimeType(
+    audioTypes,
+    "validation:recordingFormat" satisfies ValidationMessage,
+  ),
+  v.minSize(1, "validation:recordingEmpty" satisfies ValidationMessage),
+  v.maxSize(
+    maxRecordingBytes,
+    "validation:recordingTooLarge" satisfies ValidationMessage,
+  ),
 );

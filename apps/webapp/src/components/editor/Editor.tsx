@@ -1,3 +1,4 @@
+import { COMMON_NS, REVIEW_NS, formatNumber } from "@/core/i18n";
 import { ListIcon, PauseIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
 import {
   useCallback,
@@ -7,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   FOUNDATIONS,
@@ -59,6 +61,7 @@ export function Editor({
   action,
   className,
 }: EditorProps) {
+  const { t: translate } = useTranslation([COMMON_NS, REVIEW_NS]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [time, setTime] = useState(0);
@@ -144,7 +147,8 @@ export function Editor({
       )}
       onKeyDown={(event) => {
         const target = event.target as HTMLElement;
-        if (target.closest("[role=slider], button, input, a")) return;
+        if (target.closest(translate("review:editorRoleSliderButtonInputA")))
+          return;
         if (event.key === " " || event.key === "k") {
           event.preventDefault();
           void toggle();
@@ -172,10 +176,10 @@ export function Editor({
           onClick={() => void toggle()}
           aria-label={
             playing
-              ? "Pause the take"
+              ? translate("review:editorPauseTheTake")
               : time >= take.duration - 0.05
-                ? "Replay the take"
-                : "Play the take"
+                ? translate("review:editorReplayTheTake")
+                : translate("review:editorPlayTheTake")
           }
         >
           {playing ? (
@@ -211,8 +215,12 @@ export function Editor({
             {/* Label column */}
             <div className="border-r border-line bg-paper">
               <div className="h-7" />
-              <RowLabel className="h-11">Words</RowLabel>
-              <RowLabel className="h-14">Take</RowLabel>
+              <RowLabel className="h-11">
+                {translate("review:editorWords")}
+              </RowLabel>
+              <RowLabel className="h-14">
+                {translate("review:editorTake")}
+              </RowLabel>
               <ToggleGroup
                 type="multiple"
                 value={layers}
@@ -220,7 +228,7 @@ export function Editor({
                 orientation="vertical"
                 spacing={0}
                 className="w-full gap-0! bg-transparent! p-0!"
-                aria-label="Foundation layers"
+                aria-label={translate("review:editorFoundationLayers")}
               >
                 {FOUNDATIONS.map((f) => {
                   const verdict = verdictOf(f.key);
@@ -230,7 +238,15 @@ export function Editor({
                       value={f.key}
                       variant="layer"
                       className="h-[46px]! w-full rounded-none!"
-                      aria-label={`${f.label} layer${verdict ? `, ${VERDICT_LABEL[verdict]}` : ""}`}
+                      aria-label={translate(
+                        verdict
+                          ? "review:feedbackLayerVerdict"
+                          : "review:feedbackLayer",
+                        {
+                          foundation: f.label,
+                          verdict: verdict ? VERDICT_LABEL[verdict] : "",
+                        },
+                      )}
                     >
                       <span
                         data-swatch
@@ -261,7 +277,7 @@ export function Editor({
               <div className="relative h-7 border-b border-line">
                 <Ruler duration={take.duration} />
                 <Slider
-                  aria-label="Scrub the take"
+                  aria-label={translate("review:editorScrubTheTake")}
                   min={0}
                   max={take.duration}
                   step={0.1}
@@ -329,6 +345,7 @@ function RowLabel({
   children: ReactNode;
   className?: string;
 }) {
+  useTranslation();
   return (
     <div
       className={cn(
@@ -342,6 +359,7 @@ function RowLabel({
 }
 
 function Ruler({ duration }: { duration: number }) {
+  useTranslation();
   const ticks = Array.from({ length: Math.floor(duration) + 1 }, (_, i) => i);
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
@@ -377,6 +395,7 @@ function Monitor({
   time: number;
   active?: Finding;
 }) {
+  useTranslation();
   const segment =
     [...take.segments].reverse().find((s) => s.start <= time + 0.05) ??
     take.segments[0];
@@ -435,6 +454,7 @@ function CaptionTrack({
   time: number;
   pct: (t: number) => string;
 }) {
+  useTranslation();
   return (
     <div className="relative h-11">
       {take.segments.map((s) => {
@@ -463,6 +483,7 @@ function CaptionTrack({
 }
 
 function Waveform({ take, time }: { take: Take; time: number }) {
+  useTranslation();
   const path = useMemo(() => {
     const n = take.peaks.length;
     return take.peaks
@@ -521,6 +542,7 @@ function Lane({
   onPin,
   pct,
 }: LaneProps) {
+  const { t: translate } = useTranslation([COMMON_NS, REVIEW_NS]);
   const f = FOUNDATION_BY_KEY[foundationKey];
   return (
     <div
@@ -544,7 +566,19 @@ function Lane({
               key={n.id}
               type="button"
               onClick={() => onPin(n)}
-              aria-label={`${formatTime(n.at)} · ${f.label} · ${n.kind === "strength" ? "strength" : "to improve"}${n.uncertainty === "tentative" ? ", tentative" : ""}`}
+              aria-label={translate(
+                n.uncertainty === "tentative"
+                  ? "review:feedbackPinTentative"
+                  : "review:feedbackPin",
+                {
+                  time: formatTime(n.at),
+                  foundation: f.label,
+                  kind:
+                    n.kind === "strength"
+                      ? translate("review:editorStrength")
+                      : translate("review:editorToImprove2"),
+                },
+              )}
               className={cn(
                 "absolute top-1/2 z-10 grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full opacity-0 transition-[opacity,transform] duration-500 group-data-awake/editor:opacity-100 hover:scale-110",
               )}
@@ -579,6 +613,7 @@ export function Pin({
   active?: boolean;
   size?: number;
 }) {
+  useTranslation();
   const r = size / 2 - 1.5;
   return (
     <svg
@@ -627,6 +662,7 @@ export function LaneSignal({
   pct: (t: number) => string;
   labels?: boolean;
 }) {
+  const { t: translate } = useTranslation([COMMON_NS, REVIEW_NS]);
   const f = FOUNDATION_BY_KEY[foundationKey];
   const H = LANE_H;
   const mid = H / 2;
@@ -647,7 +683,12 @@ export function LaneSignal({
           return (
             <div
               key={s.id}
-              title={`${s.speakingRate.toFixed(1)} syllables per second, including silence`}
+              title={translate("review:feedbackRateTitle", {
+                rate: formatNumber(s.speakingRate, {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                }),
+              })}
               className="absolute rounded-[2px]"
               style={{
                 left: pct(s.start),
@@ -662,7 +703,12 @@ export function LaneSignal({
                   className="absolute top-1/2 right-1.5 hidden -translate-y-1/2 font-mono text-[0.5625rem] whitespace-nowrap tabular lg:block"
                   style={{ color: f.ink }}
                 >
-                  {s.speakingRate.toFixed(1)} syll/s
+                  {translate("review:feedbackRate", {
+                    rate: formatNumber(s.speakingRate, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    }),
+                  })}
                 </span>
               )}
             </div>
@@ -759,7 +805,12 @@ export function LaneSignal({
                   className="absolute top-1/2 right-1 hidden -translate-y-1/2 font-mono text-[0.5625rem] whitespace-nowrap tabular xl:block"
                   style={{ color: f.ink }}
                 >
-                  {d.toFixed(1)} s
+                  {translate("review:feedbackSeconds", {
+                    seconds: formatNumber(d, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    }),
+                  })}
                 </span>
               )}
             </div>
@@ -785,7 +836,7 @@ export function LaneSignal({
       ))}
       {labels && foundationKey === "tonality" && (
         <span className="absolute top-1/2 right-2 hidden -translate-y-1/2 rounded-[2px] bg-surface px-1 text-[0.5625rem] text-ink-3 lg:block">
-          heard, not measured
+          {translate("review:editorHeardNotMeasured")}
         </span>
       )}
     </>
@@ -799,6 +850,7 @@ function Leader({
   finding: Finding;
   pct: (t: number) => string;
 }) {
+  useTranslation();
   const f = FOUNDATION_BY_KEY[finding.foundation];
   const index = FOUNDATIONS.findIndex((x) => x.key === finding.foundation);
   // From the caption track down to the pin's lane centre.
@@ -819,6 +871,7 @@ function Leader({
 }
 
 function NoteBody({ finding }: { finding: Finding }) {
+  const { t: translate } = useTranslation([COMMON_NS, REVIEW_NS]);
   return (
     <div className="space-y-3 text-[0.8125rem] leading-[1.55]">
       <p className="text-ink">{finding.observation}</p>
@@ -826,7 +879,7 @@ function NoteBody({ finding }: { finding: Finding }) {
       <div className="rounded-md border border-line bg-paper px-3 py-2.5">
         <p className="mb-1 flex items-center gap-1.5 text-[0.6875rem] font-semibold text-ink">
           <span className="size-1.5 rounded-full bg-ink" />
-          Next take
+          {translate("review:editorNextTake")}
         </p>
         <p className="text-ink">{finding.practice}</p>
       </div>
@@ -843,6 +896,7 @@ function NoteRow({
   active: boolean;
   onSelect: () => void;
 }) {
+  const { t: translate } = useTranslation([COMMON_NS, REVIEW_NS]);
   const f = FOUNDATION_BY_KEY[finding.foundation];
   return (
     <li
@@ -877,8 +931,11 @@ function NoteRow({
           >
             {f.label}
             <span className="font-normal text-ink-3">
-              {finding.kind === "strength" ? "Strength" : "To improve"}
-              {finding.uncertainty === "tentative" && " · tentative"}
+              {finding.kind === "strength"
+                ? translate("review:editorStrength")
+                : translate("review:editorToImprove2")}
+              {finding.uncertainty === "tentative" &&
+                translate("review:editorTentative2")}
             </span>
           </span>
           {!active && (
@@ -908,6 +965,7 @@ function NotesRail({
   active?: Finding;
   onSelect: (f: Finding) => void;
 }) {
+  const { t: translate } = useTranslation([COMMON_NS, REVIEW_NS]);
   // Keep the active note, including its next-take line, in view inside the rail only.
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
@@ -928,7 +986,7 @@ function NotesRail({
       {/* Desktop: the full rail */}
       <aside
         className="relative hidden bg-paper md:block"
-        aria-label="Review notes"
+        aria-label={translate("review:editorReviewNotes")}
       >
         <div className="absolute inset-0 flex flex-col">
           <div className="border-b border-line px-4 py-4">
@@ -937,7 +995,9 @@ function NotesRail({
             </p>
             {review.nextTake && (
               <p className="mt-2 text-[0.8125rem] font-semibold text-ink">
-                Next take: {review.nextTake}
+                {translate("review:feedbackNextTake", {
+                  practice: review.nextTake,
+                })}
               </p>
             )}
           </div>
@@ -960,7 +1020,7 @@ function NotesRail({
             ))}
             {findings.length === 0 && (
               <li className="px-4 py-6 text-[0.8125rem] text-ink-3">
-                All layers are hidden. Turn one back on to see its notes.
+                {translate("review:editorAllLayersAreHiddenTurnOneBackOn")}
               </li>
             )}
             {/* End space, so even the last note can scroll up to a row boundary. */}
@@ -996,7 +1056,7 @@ function NotesRail({
           </div>
         ) : (
           <p className="px-4 py-4 text-[0.8125rem] text-ink-3">
-            All layers are hidden.
+            {translate("review:editorAllLayersAreHidden")}
           </p>
         )}
         <Sheet>
@@ -1006,15 +1066,19 @@ function NotesRail({
               className="h-12 w-full justify-start rounded-none border-t border-line px-4"
             >
               <ListIcon />
-              All notes
+              {translate("review:editorAllNotes")}
               <Badge variant="secondary" className="ml-auto">
                 {findings.length}
               </Badge>
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-[80svh] gap-0">
+          <SheetContent
+            closeLabel={translate("common:close")}
+            side="bottom"
+            className="max-h-[80svh] gap-0"
+          >
             <SheetHeader className="border-b border-line">
-              <SheetTitle>Notes</SheetTitle>
+              <SheetTitle>{translate("review:editorNotes")}</SheetTitle>
               <SheetDescription>{review.overall}</SheetDescription>
             </SheetHeader>
             <ol className="overflow-y-auto">

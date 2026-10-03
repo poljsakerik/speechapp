@@ -1,3 +1,6 @@
+import type { FindingEvidence } from "@micmane/validation/feedback";
+import { formatList, t, t as translate } from "../core/i18n/index.ts";
+import { assessmentCopy, findingCopy } from "./coaching.ts";
 import { FOUNDATION_BY_KEY, type FoundationKey } from "./foundations.ts";
 
 export type Word = { text: string; start: number; end: number };
@@ -74,30 +77,29 @@ export type Review = {
   findings: Finding[];
 };
 
-const ISSUE_NAMES: Record<FoundationKey, string> = {
-  rate: "rate-of-speech",
-  volume: "volume",
-  pitch_melody: "pitch",
-  tonality: "tonality",
-  pauses: "pause",
-};
-const COUNTS = ["", "one", "two", "three", "four"];
-
 /** An empty findings list is not evidence that every foundation was assessed. */
 export function emptyReviewMessage(assessments: Assessment[]): string {
-  const assessed = assessments
-    .filter((a) => a.verdict !== "uncertain")
-    .map((a) => ISSUE_NAMES[a.foundation]);
+  const assessed = [
+    ...new Set(
+      assessments
+        .filter((a) => a.verdict !== "uncertain")
+        .map((a) => a.foundation),
+    ),
+  ];
   if (!assessed.length)
-    return "There wasn’t enough reliable evidence to assess this take.";
-  const others = COUNTS[5 - assessed.length];
-  const rest =
-    others === "one"
-      ? " The other fundamental hasn’t been assessed."
-      : others
-        ? ` The other ${others} fundamentals haven’t been assessed.`
-        : "";
-  return `No ${assessed.join(" or ")} issues were flagged.${rest}`;
+    return translate("review:reviewThereWasnTEnoughReliableEvidenceToAssess");
+  const remaining = 5 - assessed.length;
+  const foundations = formatList(
+    assessed.map((key) => translate(`review:issue_${key}`)),
+    "disjunction",
+  );
+  return translate(
+    remaining ? "review:reviewEmptyRemaining" : "review:reviewEmpty",
+    {
+      foundations,
+      count: remaining,
+    },
+  );
 }
 
 const VERDICTS: Verdict[] = ["effective", "mixed", "needs_work", "uncertain"];
@@ -117,8 +119,9 @@ function timeSpan(start: unknown, end: unknown): [number, number] | undefined {
 }
 
 /**
- * Normalize the model's JSON review (speechapp/coach.py). The model is not
- * validated, so anything that cannot be tied to a real segment is dropped.
+ * Normalize evidence from the review service, retaining support for imported
+ * legacy reviews. Translation getters keep an existing review in the current
+ * locale. Findings that cannot be tied to a real segment are dropped.
  */
 export function normalizeReview(raw: unknown, segments: Segment[]): Review {
   const data = (raw ?? {}) as Record<string, unknown>;
@@ -132,13 +135,25 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
     const verdict = VERDICTS.includes(item.verdict as Verdict)
       ? (item.verdict as Verdict)
       : "uncertain";
-    assessments.push({ foundation, verdict, summary: text(item.summary) });
+    assessments.push({
+      foundation,
+      verdict,
+      get summary() {
+        return item.summaryCode
+          ? assessmentCopy(foundation, text(item.summaryCode))
+          : text(item.summary);
+      },
+    });
     const raws = Array.isArray(item.findings)
       ? (item.findings as Record<string, unknown>[])
       : [];
     raws.forEach((f, index) => {
       const segment = byId.get(text(f.segment_id));
-      const observation = text(f.observation);
+      const copy = () =>
+        findingCopy(text(f.rule_id), (f.evidence ?? {}) as FindingEvidence);
+      const observation = f.evidence
+        ? copy()?.observation
+        : text(f.observation);
       if (!segment || !observation) return;
       const range = timeSpan(f.start, f.end);
       const covered =
@@ -170,9 +185,15 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
         ruleId: text(f.rule_id),
         kind: f.kind === "strength" ? "strength" : "improvement",
         uncertainty: f.uncertainty === "clear" ? "clear" : "tentative",
-        observation,
-        why: text(f.why_it_matters),
-        practice: text(f.practice),
+        get observation() {
+          return f.evidence ? copy()!.observation : text(f.observation);
+        },
+        get why() {
+          return f.evidence ? copy()!.why : text(f.why_it_matters);
+        },
+        get practice() {
+          return f.evidence ? copy()!.practice : text(f.practice);
+        },
         at: span?.[0] ?? segment.start,
         ...(span ? { span } : {}),
         ...(suggestions.length ? { suggestions } : {}),
@@ -197,14 +218,24 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
       )
     ) {
       previous.span[1] = finding.span[1];
-    } else
-      joined.push(
-        previous
-          ? { ...finding, id: `${finding.id}-part-${joined.length}` }
-          : finding,
-      );
+    } else {
+      // Rename the existing object rather than spreading it: spreading would
+      // evaluate translation getters and freeze a split note in one language.
+      if (previous) finding.id = `${finding.id}-part-${joined.length}`;
+      joined.push(finding);
+    }
   }
-  return { overall: text(data.overall), assessments, findings: joined };
+  return {
+    get overall() {
+      return "mainMessage" in data
+        ? text(data.mainMessage)
+          ? t("review:overall_message", { message: text(data.mainMessage) })
+          : t("review:overall_default")
+        : text(data.overall);
+    },
+    assessments,
+    findings: joined,
+  };
 }
 
 export function formatTime(seconds: number, precise = true): string {

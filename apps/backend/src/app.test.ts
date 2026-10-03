@@ -46,7 +46,7 @@ test("health and upload contract", async (context) => {
         hearing: undefined,
       },
       timings: {},
-      review: { overall: "test", assessments: [] },
+      review: { mainMessage: "test", assessments: [] },
     };
   });
   context.after(() => app.close());
@@ -67,7 +67,13 @@ test("health and upload contract", async (context) => {
   };
 
   assert.equal((await upload("other", "audio/mpeg")).status, 400);
-  assert.equal((await upload("file", "text/plain")).status, 415);
+  const unsupported = await upload("file", "text/plain");
+  assert.equal(unsupported.status, 415);
+  assert.equal(
+    ((await unsupported.json()) as { error: { message: string } }).error
+      .message,
+    "validation:recordingFormat",
+  );
   assert.equal((await upload("file", "audio/mpeg", "")).status, 422);
 
   const extraField = new FormData();
@@ -124,4 +130,25 @@ test("health and upload contract", async (context) => {
   assert.equal(data.audio, undefined, "the browser already has the recording");
   assert.equal(data.rateDiagnostics.status, "reviewed");
   assert.deepEqual(received, Buffer.from("abc"));
+});
+
+test("service failures return machine-readable errors without upstream prose", async (context) => {
+  const app = buildApp(async () => {
+    throw new Error("private upstream diagnostic");
+  });
+  context.after(() => app.close());
+  const base = await app.listen({ port: 0, host: "127.0.0.1" });
+  const form = new FormData();
+  form.append("file", new Blob(["abc"], { type: "audio/mpeg" }), "take.mp3");
+  const response = await fetch(`${base}/trpc/review.create`, {
+    method: "POST",
+    body: form,
+  });
+  assert.equal(response.status, 502);
+  const body = await response.text();
+  assert.doesNotMatch(
+    body,
+    /private upstream diagnostic|Review service unavailable|stack/,
+  );
+  assert.equal(JSON.parse(body).error.message, "BAD_GATEWAY");
 });

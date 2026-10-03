@@ -1,4 +1,6 @@
+import { COMMON_NS } from "@/core/i18n";
 import { cn } from "@micmane/ui/lib/utils";
+import { useTranslation } from "react-i18next";
 
 /**
  * Placeholder mark: a microphone wearing a mane. Replace with the designed
@@ -13,6 +15,7 @@ const MANE = [
 ];
 
 export function Mark({ className }: { className?: string }) {
+  useTranslation();
   const strands = Array.from({ length: 9 }, (_, i) => -120 + i * 30);
   return (
     <svg
@@ -55,11 +58,12 @@ export function Mark({ className }: { className?: string }) {
 }
 
 export function Wordmark({ className }: { className?: string }) {
+  const { t: translate } = useTranslation([COMMON_NS]);
   return (
     <span className={cn("inline-flex items-center gap-2 text-ink", className)}>
       <Mark />
       <span className="font-wide text-[1.0625rem] font-extrabold tracking-[-0.02em]">
-        MicMane
+        {translate("common:markMicmane")}
       </span>
     </span>
   );
