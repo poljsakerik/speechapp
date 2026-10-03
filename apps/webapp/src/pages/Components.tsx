@@ -160,7 +160,7 @@ export function Components() {
           <Showcase
             id="tokens"
             title="Color"
-            note="A near-white canvas and graphite inks. Each foundation is a pair: pastel for fields, deep ink for text. Orange glass is the one warm light, for what is live."
+            note="A near-white canvas and graphite inks. Each foundation is a pair: pastel for fields, deep ink for text. Orange glass is the one warm light, for play controls and whatever is live."
           >
             <div className="grid gap-10">
               <SwatchRow
@@ -334,7 +334,7 @@ export function Components() {
           <Showcase
             id="note"
             title="Note"
-            note="Sits under the line it is about and quotes its words in the same highlighter: foundation and rule, the observation, why it matters, and one thing to try. Every note and every phrase in it can be played."
+            note="Sits under the line it is about and quotes its words in the same highlighter: foundation and rule, why it matters, and one thing to try. Every note and every phrase in it can be played."
           >
             <ul className="grid max-w-[38rem] gap-1">
               {REVIEW_FIXTURE.review.findings.slice(0, 2).map((f, i) => (
@@ -434,7 +434,7 @@ export function Components() {
               <Row>
                 <Button>Try a free review</Button>
                 <Button variant="outline">
-                  <PlayIcon />
+                  <PlayIcon className="fill-glass text-glass" />
                   See an example
                   <span className="font-mono text-[0.75rem] text-ink-3 tabular">
                     0:15

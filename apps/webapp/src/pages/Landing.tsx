@@ -60,7 +60,12 @@ function Hero() {
   // The example plays where it can be read: bring the sheet up, then start the take.
   const seeExample = () => {
     if (playing) return void toggle();
-    sheetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    sheetRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+      block: "start",
+    });
     void (started ? toggle() : playFrom(0));
   };
 
@@ -229,11 +234,6 @@ function Hero() {
               }
             />
           </div>
-          <p className="mt-4 text-[0.8125rem] leading-5 text-ink-3">
-            Press a timecode or a note to hear that passage. The live review
-            checks rate of speech for now; the other four foundations are shown
-            as they will read.
-          </p>
         </div>
       </div>
     </section>
@@ -606,7 +606,8 @@ function Record() {
           </h2>
           <p className={cn(LEAD, "mt-6")}>
             Thirty seconds to a minute, on your phone or laptop. The free review
-            checks rate of speech and pins its notes to the second.
+            listens for all five foundations and pins its notes to your own
+            words.
           </p>
           <Button asChild size="lg" className="mt-8">
             <Link to="/upload">Try a free review</Link>

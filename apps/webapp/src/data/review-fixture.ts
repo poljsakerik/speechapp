@@ -63,6 +63,21 @@ const raw = {
             },
           ],
         },
+        {
+          segment_id: "s3",
+          group_id: "strength-0",
+          rule_id: "RATE_SLOWS_FOR_POINT",
+          kind: "strength",
+          uncertainty: "tentative",
+          observation:
+            "You slow right down on “It's saying no.”, to about 75% of your usual pace.",
+          why_it_matters:
+            "Slowing down on what matters is a verbal highlight: it tells the listener this is the part to focus on.",
+          practice:
+            "Keep this. In your next take, find the line that matters most and give it the same room.",
+          start: 8.26,
+          end: 9.24,
+        },
       ],
     },
     {
@@ -90,8 +105,24 @@ const raw = {
       foundation: "pitch_melody",
       verdict: "effective",
       summary:
-        "Your voice moves between notes; no monotone stretch was detected.",
-      findings: [],
+        "Your voice moves freely between high and low notes throughout this take. The marked stretches move the most.",
+      findings: [
+        {
+          segment_id: "s4",
+          group_id: "strength-0",
+          rule_id: "PITCH_MELODY",
+          kind: "strength",
+          uncertainty: "tentative",
+          observation:
+            "Your voice moves freely between high and low notes through this stretch.",
+          why_it_matters:
+            "Melody tells listeners what matters and makes your message easier to remember, the way a song is.",
+          practice:
+            "Keep this range, and bring the same movement to the stretches where your voice settles on one note.",
+          start: 10.44,
+          end: 12.31,
+        },
+      ],
     },
     {
       foundation: "tonality",
@@ -100,19 +131,19 @@ const raw = {
         "Your voice sounds flat in places; a little more feeling would help the words land.",
       findings: [
         {
-          segment_id: "s3",
+          segment_id: "s2",
           group_id: "0",
           rule_id: "TONE_FLAT",
           kind: "improvement",
           uncertainty: "tentative",
           observation:
-            "Your voice sounds flat here, while the words call for conviction.",
+            "Your voice sounds flat here, while the words call for concern.",
           why_it_matters:
             "Listeners connect with the feeling in your voice, not only with the words.",
           practice:
             "Decide what this passage should feel like, let your face show it, and say it again.",
-          start: 8.26,
-          end: 9.24,
+          start: 5.71,
+          end: 7.56,
         },
       ],
     },
@@ -163,6 +194,36 @@ const raw = {
               text: "tonight,",
             },
           ],
+        },
+        {
+          segment_id: "s2",
+          group_id: "strength-0",
+          rule_id: "PAUSE_BUILDS_ANTICIPATION",
+          kind: "strength",
+          uncertainty: "clear",
+          observation:
+            "You pause for 0.7 seconds just before “It's saying no.”",
+          why_it_matters:
+            "Holding back what comes next makes the listener lean in for it.",
+          practice:
+            "Keep it. Try the same pause before your next answer or reveal.",
+          start: 7.29,
+          end: 7.56,
+        },
+        {
+          segment_id: "s3",
+          group_id: "strength-0",
+          rule_id: "PAUSE_BUILDS_ANTICIPATION",
+          kind: "strength",
+          uncertainty: "clear",
+          observation:
+            "You pause for 0.7 seconds just before “It's saying no.”",
+          why_it_matters:
+            "Holding back what comes next makes the listener lean in for it.",
+          practice:
+            "Keep it. Try the same pause before your next answer or reveal.",
+          start: 8.26,
+          end: 9.24,
         },
       ],
     },

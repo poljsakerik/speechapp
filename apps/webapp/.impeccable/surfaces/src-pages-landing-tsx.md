@@ -20,7 +20,7 @@ Recorded adaptations (2026-10-02, after the finish review):
 Founder copy rules (2026-10-02):
 - Sell the outcome: unlock your voice, become confident, reach your potential, learn and get better. Covers are brand texture, never a feature in copy.
 - The hero stays sparse: headline, one line, two buttons, cover, example. Anything that competes with listening to the example (credits, verdict tables, badges, explanatory captions) is out.
-- The hero cover is promotional: all five foundation colours, no dashed outlines or empty ridges. Real take covers colour each line by its first strength and leave lines without one as a dashed outline, so covers fill up as you practise.
+- The hero cover is promotional: all five foundation colours, no dashed outlines or empty ridges. Real take covers draw a ridge only for lines that showed a strength, stacked up from the bottom, so a take with few strengths is a low stack and covers fill up as you practise. No dashed outlines.
 - Honesty about the example (synthetic voice, notes written by hand) lives in the footer and the "Illustration" label in the retake panel.
 
 ## Direction contract

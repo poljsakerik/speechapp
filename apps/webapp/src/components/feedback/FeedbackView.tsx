@@ -16,7 +16,6 @@ import {
   type ReactNode,
 } from "react";
 
-import { Pin } from "@/components/editor/Editor";
 import {
   FOUNDATIONS,
   FOUNDATION_BY_KEY,
@@ -61,6 +60,11 @@ export const RULES: Record<string, { label: string }> = {
   PITCH_VARIETY: { label: "Monotone stretch" },
   PITCH_HIGH: { label: "Stuck high" },
   PITCH_LOW: { label: "Stuck low" },
+  RATE_SLOWS_FOR_POINT: { label: "Slows down for the point" },
+  PAUSE_LETS_IT_LAND: { label: "Pause that lets it land" },
+  PAUSE_BUILDS_ANTICIPATION: { label: "Pause that builds anticipation" },
+  TONE_EXPRESSIVE: { label: "Expressive voice" },
+  PITCH_MELODY: { label: "Melodic stretch" },
 };
 
 const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {
@@ -83,7 +87,7 @@ const READING_LINE = 0.42;
 // Words are matched by where they start: the recognizer sometimes stretches a word's end over the next one.
 const within = (word: Word, span: [number, number]) =>
   word.start >= span[0] - 0.02 && word.start < span[1] - 0.01;
-/** The silence between two lines, as space: 8px steps, longer pauses breathe more. */
+/** The silence between two lines, as space alone: 8px steps, longer pauses breathe more. */
 const breath = (seconds: number) =>
   8 * Math.round(2 + Math.min(seconds, 4) * 6);
 const passage = (f: Finding): [number, number] => f.span ?? [f.at, f.at + 2];
@@ -128,13 +132,20 @@ export function FeedbackView({
   );
   // The page shows every note with one in focus, or one foundation's notes on their own.
   const [lens, setLens] = useState<Lens>("all");
+  // And either everything, only what to work on, or only what already works.
+  const [kind, setKind] = useState<"all" | Finding["kind"]>("all");
+  const ofKind = useMemo(
+    () =>
+      kind === "all" ? allFindings : allFindings.filter((f) => f.kind === kind),
+    [allFindings, kind],
+  );
   const findings = useMemo(
     () =>
-      lens === "all"
-        ? allFindings
-        : allFindings.filter((f) => f.foundation === lens),
-    [allFindings, lens],
+      lens === "all" ? ofKind : ofKind.filter((f) => f.foundation === lens),
+    [ofKind, lens],
   );
+  const strengths = allFindings.filter((f) => f.kind === "strength").length;
+  const toWorkOn = allFindings.length - strengths;
   const rows = useMemo(() => {
     const result: Row[] = [];
     take.segments.forEach((segment, i) => {
@@ -259,9 +270,13 @@ export function FeedbackView({
       setFollow(false);
       // The note opens on the next paint; bring it into view once it has.
       requestAnimationFrame(() =>
-        document
-          .querySelector(`[data-note="${note.id}"]`)
-          ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+        document.querySelector(`[data-note="${note.id}"]`)?.scrollIntoView({
+          block: "center",
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+            .matches
+            ? "instant"
+            : "smooth",
+        }),
       );
     },
     [findings, noteIndex],
@@ -455,7 +470,10 @@ export function FeedbackView({
                   style={{
                     left: pct(from),
                     width: pct(to - from),
-                    background: foundation.fill,
+                    // Filled for a strength, open for something to work on, as the pins are.
+                    background:
+                      f.kind === "strength" ? foundation.fill : undefined,
+                    boxShadow: `inset 0 0 0 1.5px ${foundation.fill}`,
                   }}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={() => playNote(f)}
@@ -567,10 +585,11 @@ export function FeedbackView({
             <h1 className="font-wide text-[clamp(2rem,3.4vw,3.25rem)] leading-[0.98] font-extrabold tracking-[-0.03em] text-balance">
               Notes on your take
             </h1>
-            <p className="mt-4 font-mono text-[0.75rem] leading-5 text-ink-3 tabular">
-              {formatTime(take.duration, false)} · {lines}{" "}
-              {lines === 1 ? "line" : "lines"} · {allFindings.length}{" "}
-              {allFindings.length === 1 ? "note" : "notes"}
+            <p className="mt-4 text-[0.8125rem] leading-5 text-ink-3 [&>span]:font-mono [&>span]:text-[0.75rem] [&>span]:tabular">
+              <span>{formatTime(take.duration, false)}</span> ·{" "}
+              <span>{lines}</span> {lines === 1 ? "line" : "lines"} ·{" "}
+              <span>{toWorkOn}</span> to work on · <span>{strengths}</span>{" "}
+              {strengths === 1 ? "strength" : "strengths"}
             </p>
             {!allFindings.length && (
               <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
@@ -597,7 +616,11 @@ export function FeedbackView({
                     !reviewed && unreviewed.length > 1 && "max-sm:hidden",
                   )}
                 >
-                  <Swatch foundation={f} reviewed={reviewed} />
+                  <Swatch
+                    foundation={f}
+                    reviewed={reviewed}
+                    working={assessment?.verdict === "effective"}
+                  />
                   <p
                     className={cn(
                       "text-[0.875rem] leading-5 font-semibold",
@@ -641,7 +664,11 @@ export function FeedbackView({
                             style={{
                               left: pct(from),
                               width: pct(to - from),
-                              background: f.fill,
+                              // Filled for a strength, open for something to work on, as the pins are.
+                              background:
+                                n.kind === "strength"
+                                  ? f.fill
+                                  : "var(--surface)",
                               boxShadow: `inset 0 0 0 1px ${f.ink}`,
                             }}
                           />
@@ -685,21 +712,39 @@ export function FeedbackView({
               className="mb-10 flex flex-wrap items-center gap-2"
             >
               <LensButton
-                pressed={lens === "all"}
-                onClick={() => setLens("all")}
+                pressed={kind === "all"}
+                onClick={() => setKind("all")}
                 count={allFindings.length}
               >
                 All notes
               </LensButton>
+              <LensButton
+                pressed={kind === "improvement"}
+                onClick={() => setKind("improvement")}
+                count={toWorkOn}
+                mark="improvement"
+              >
+                To work on
+              </LensButton>
+              <LensButton
+                pressed={kind === "strength"}
+                onClick={() => setKind("strength")}
+                count={strengths}
+                mark="strength"
+              >
+                Strengths
+              </LensButton>
+              <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
               {FOUNDATIONS.map((f) => {
-                const count = allFindings.filter(
+                const count = ofKind.filter(
                   (n) => n.foundation === f.key,
                 ).length;
                 return (
                   <LensButton
                     key={f.key}
                     pressed={lens === f.key}
-                    onClick={() => setLens(f.key)}
+                    // Pressing the foundation in view again shows every foundation.
+                    onClick={() => setLens(lens === f.key ? "all" : f.key)}
                     count={count}
                     foundation={f}
                   >
@@ -763,12 +808,6 @@ export function FeedbackView({
                     lens={lens}
                     markId={markId}
                   />
-                  {row.end - row.start >= 0.25 && (
-                    <span className="flex items-center gap-2 self-center font-mono text-[0.625rem] text-ink-3 tabular max-sm:hidden">
-                      <span className="h-px w-3 bg-line-strong" />
-                      {(row.end - row.start).toFixed(1)} s
-                    </span>
-                  )}
                 </li>
               ),
             )}
@@ -799,9 +838,12 @@ const notReviewed = (summary?: string) =>
 function Swatch({
   foundation,
   reviewed,
+  working = false,
 }: {
   foundation?: (typeof FOUNDATIONS)[number];
   reviewed: boolean;
+  /** Filled when the foundation is working as it is, open when there is something to work on. */
+  working?: boolean;
 }) {
   return (
     <span
@@ -813,8 +855,8 @@ function Swatch({
       style={
         reviewed && foundation
           ? {
-              background: foundation.fill,
-              boxShadow: `inset 0 0 0 1px ${foundation.ink}`,
+              background: working ? foundation.fill : "var(--surface)",
+              boxShadow: `inset 0 0 0 ${working ? 1 : 1.5}px ${foundation.ink}`,
             }
           : undefined
       }
@@ -830,22 +872,35 @@ function LensButton({
   onClick,
   count,
   foundation,
+  mark,
   children,
 }: {
   pressed: boolean;
   onClick: () => void;
   count: number;
   foundation?: (typeof FOUNDATIONS)[number];
+  /** The mark this kind of note leaves on the words: a band for a strength, a line for something to work on. */
+  mark?: Finding["kind"];
   children: ReactNode;
 }) {
   return (
     <button
       type="button"
       aria-pressed={pressed}
-      disabled={!count}
+      // A pressed chip stays live at zero, so it can always be released.
+      disabled={!count && !pressed}
       onClick={onClick}
       className="flex h-8 items-center gap-2 rounded-[3px] px-2.5 text-[0.8125rem] font-medium text-ink-2 shadow-[inset_0_0_0_1px_var(--line-strong)] transition-colors hover:bg-sunken hover:text-ink disabled:pointer-events-none disabled:text-ink-3 disabled:opacity-60 disabled:shadow-[inset_0_0_0_1px_var(--line)] aria-pressed:bg-ink aria-pressed:text-paper aria-pressed:shadow-none"
     >
+      {mark && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "w-3.5 rounded-[1px] bg-current",
+            mark === "strength" ? "h-2.5 opacity-25" : "h-0.5 self-end mb-2",
+          )}
+        />
+      )}
       {foundation && (
         <span
           aria-hidden="true"
@@ -953,6 +1008,23 @@ function Line({
     [take.segments],
   );
 
+  const entry = (note: Finding) => {
+    return (
+      <Note
+        key={note.id}
+        note={note}
+        quote={quoteOf(note, words)}
+        // A note opens on the line it was picked on, or else on the line it begins on.
+        open={note.id === focusId && (focusAt ?? note.segmentId) === segment.id}
+        marked={note.id === markId}
+        onOpen={() => onOpenNote(note, segment.id)}
+        onPlay={() => onPlayNote(note, segment.id)}
+        onPlaySpan={onPlaySpan}
+        onHover={onHover}
+      />
+    );
+  };
+
   return (
     <li ref={ref} className={cn(ROW, "relative")}>
       <Rails
@@ -994,31 +1066,7 @@ function Line({
           ))}
         </p>
         {notes.length > 0 && (
-          <ul className="mt-4 grid max-w-[38rem] gap-1">
-            {notes.map((note) => (
-              <Note
-                key={note.id}
-                note={note}
-                quote={quoteOf(note, words)}
-                // A note opens on the line it was picked on, or else on the line it begins on.
-                open={
-                  note.id === focusId &&
-                  (focusAt ?? note.segmentId) === segment.id
-                }
-                marked={note.id === markId}
-                lines={
-                  rails.find((rail) => rail.note === note) &&
-                  rails.find((rail) => rail.note === note)!.last -
-                    rails.find((rail) => rail.note === note)!.first +
-                    1
-                }
-                onOpen={() => onOpenNote(note, segment.id)}
-                onPlay={() => onPlayNote(note, segment.id)}
-                onPlaySpan={onPlaySpan}
-                onHover={onHover}
-              />
-            ))}
-          </ul>
+          <ul className="mt-4 grid max-w-[38rem] gap-1">{notes.map(entry)}</ul>
         )}
       </div>
     </li>
@@ -1059,7 +1107,7 @@ function Rails({
             tabIndex={-1}
             disabled={!onOpen}
             aria-label={`${foundation.short}: ${label}, lines ${rail.first + 1} to ${rail.last + 1}`}
-            title={`${foundation.short} · ${label} · ${rail.last - rail.first + 1} lines`}
+            title={`${foundation.short} · ${label}`}
             onClick={() => onOpen?.(rail.note)}
             onPointerEnter={() => onHover?.(rail.note.id)}
             onPointerLeave={() => onHover?.(null)}
@@ -1073,11 +1121,14 @@ function Rails({
             )}
             style={{
               left: rail.lane * 6,
+              // Colour is a strength's: its bar wears its ink at rest too. Work stays grey until in focus.
               background: focused
                 ? foundation.ink
-                : lens === "all"
-                  ? "var(--line-strong)"
-                  : `color-mix(in oklch, ${foundation.ink} 40%, transparent)`,
+                : rail.note.kind === "strength"
+                  ? `color-mix(in oklch, ${foundation.ink} 55%, transparent)`
+                  : lens === "all"
+                    ? "var(--line-strong)"
+                    : `color-mix(in oklch, ${foundation.ink} 40%, transparent)`,
             }}
           />
         );
@@ -1117,8 +1168,10 @@ function Words({
   onOpen: (f: Finding) => void;
 }) {
   const marks = run.findings;
-  // Only one note is ever coloured on a word: the one in focus. With a single foundation
-  // in view its other notes keep a lighter wash of the same colour.
+  // Colour on the words means a strength: a band in its foundation's fill, like a highlighter
+  // (keep this), the way a cover fills with colour as strengths are earned. Something to work
+  // on is never a band: it is a dark line under the words, like an editor's mark, which takes
+  // its foundation's ink only while its note is in focus.
   const focus = marks.find((f) => f.id === markId);
   const shown = focus ? [focus] : lens === "all" ? [] : marks;
   const words = run.words.map((word, i) => {
@@ -1181,30 +1234,40 @@ function Words({
   });
   if (!marks.length) return words;
 
-  const fill = shown.length
-    ? FOUNDATION_BY_KEY[shown[0].foundation].fill
-    : undefined;
+  // The note in focus has its words to itself: other notes' marks on them step back.
+  const strength = focus
+    ? focus.kind === "strength"
+      ? focus
+      : undefined
+    : marks.find((f) => f.kind === "strength");
+  const work = focus
+    ? focus.kind === "improvement"
+      ? focus
+      : undefined
+    : marks.find((f) => f.kind === "improvement");
+  const band =
+    strength &&
+    (strength === focus
+      ? FOUNDATION_BY_KEY[strength.foundation].fill
+      : `color-mix(in oklch, ${FOUNDATION_BY_KEY[strength.foundation].fill} 65%, transparent)`);
+  const line =
+    work &&
+    (work === focus ? FOUNDATION_BY_KEY[work.foundation].ink : "var(--ink)");
   // Pressing a marked phrase opens its note without playing it; pressing again moves to the next note on the same words.
   const at = marks.findIndex((f) => f.id === markId);
   return (
     <span
       onClick={() => onOpen(marks[(at + 1) % marks.length])}
       className={cn(
-        "cursor-pointer rounded-[0.14em] transition-[text-decoration-color] duration-150 [box-decoration-break:clone]",
-        // Noted but not in focus: one quiet underline, whatever the note is about.
-        !fill &&
-          "underline decoration-line-strong decoration-2 underline-offset-[0.3em] hover:decoration-ink-3",
+        "cursor-pointer rounded-[0.14em] [box-decoration-break:clone]",
+        line && "underline underline-offset-[0.3em]",
+        line && (work === focus ? "decoration-[3px]" : "decoration-2"),
       )}
-      style={
-        fill
-          ? {
-              background: highlighter(
-                focus ? fill : `color-mix(in oklch, ${fill} 50%, transparent)`,
-              ),
-              mixBlendMode: "multiply",
-            }
-          : undefined
-      }
+      style={{
+        background: band ? highlighter(band) : undefined,
+        mixBlendMode: band ? "multiply" : undefined,
+        textDecorationColor: line,
+      }}
     >
       {words}
     </span>
@@ -1228,12 +1291,71 @@ function PauseMark({ seconds, noted }: { seconds: number; noted: boolean }) {
   );
 }
 
+/**
+ * The pin on a review note says which kind it is at a glance: a filled disc with a tick for
+ * a strength, an open ring with an upward arrow for something to work on. Dashed when tentative.
+ */
+function KindPin({
+  kind,
+  tentative,
+  color,
+  active,
+}: {
+  kind: Finding["kind"];
+  tentative: boolean;
+  color: string;
+  active?: boolean;
+}) {
+  const strength = kind === "strength";
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+      {active && (
+        <circle
+          cx="11"
+          cy="11"
+          r="10"
+          fill="none"
+          stroke={color}
+          strokeOpacity="0.35"
+        />
+      )}
+      <circle
+        cx="11"
+        cy="11"
+        r="7"
+        fill={strength ? color : "var(--surface)"}
+        stroke={color}
+        strokeWidth="1.5"
+        strokeDasharray={tentative ? "3.4 2.1" : undefined}
+      />
+      {strength ? (
+        <path
+          d="M7.9 11.2l2.1 2.1 4.1-4.4"
+          fill="none"
+          stroke="var(--surface)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path
+          d="M11 14.2V8M8.4 10.4 11 7.8l2.6 2.6"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+}
+
 export function Note({
   note,
   quote,
   open = true,
   marked = open,
-  lines,
   onOpen,
   onPlay,
   onPlaySpan,
@@ -1246,8 +1368,6 @@ export function Note({
   open?: boolean;
   /** Its words are coloured in the line right now. */
   marked?: boolean;
-  /** How many lines the note runs over, when more than one. */
-  lines?: number;
   /** Pressing the entry opens or closes it; it never plays. */
   onOpen?: () => void;
   /** The play control on the right plays the passage. */
@@ -1259,12 +1379,13 @@ export function Note({
   const tentative = note.uncertainty === "tentative";
   const label =
     RULES[note.ruleId]?.label ??
-    (note.kind === "strength" ? "Strength" : "To improve");
+    // An unnamed rule still gets a plain name; its pin says which kind it is.
+    "Note";
   return (
     <li
       data-note={open ? note.id : undefined}
       className={cn(
-        "grid scroll-mt-28 grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2",
+        "grid scroll-mt-28 grid-cols-[1.375rem_minmax(0,1fr)] gap-x-2",
         open && "py-2",
       )}
       onPointerEnter={() => onHover?.(note.id)}
@@ -1272,12 +1393,11 @@ export function Note({
     >
       {/* The pin is centred on the label line, so it reads as that line's bullet. */}
       <span className="flex h-6 items-center justify-center">
-        <Pin
+        <KindPin
           kind={note.kind}
           tentative={tentative}
           color={f.ink}
           active={marked}
-          size={12}
         />
       </span>
       <div className="relative min-w-0">
@@ -1286,7 +1406,7 @@ export function Note({
           onClick={onOpen}
           aria-expanded={open}
           className="group/note block w-full rounded-sm pr-16 text-left"
-          aria-label={`${f.label}, ${label}${tentative ? ", tentative" : ""}: ${note.observation}`}
+          aria-label={`${note.kind === "strength" ? "Strength" : "To work on"}: ${f.label}, ${label}${tentative ? ", tentative" : ""}. ${note.observation}`}
         >
           <span className="flex flex-wrap items-baseline gap-x-2 text-[0.8125rem] leading-6">
             <span className="font-semibold" style={{ color: f.ink }}>
@@ -1300,13 +1420,7 @@ export function Note({
             >
               {label}
             </span>
-            {(tentative || lines) && (
-              <span className="text-ink-3">
-                {[tentative && "tentative", lines && `${lines} lines`]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-            )}
+            {tentative && <span className="text-ink-3">tentative</span>}
           </span>
           {open && quote && (
             <span className="mt-1 block text-[0.8125rem] leading-5 font-semibold text-ink">
@@ -1316,11 +1430,6 @@ export function Note({
               >
                 {quote}
               </span>
-            </span>
-          )}
-          {open && (
-            <span className="mt-2 block text-[0.9375rem] leading-6 font-medium text-ink">
-              {note.observation}
             </span>
           )}
         </button>
@@ -1338,7 +1447,7 @@ export function Note({
           {formatTime(passage(note)[0], false)}
         </button>
         {open && note.why && (
-          <p className="mt-1 text-[0.8125rem] leading-5 text-ink-3">
+          <p className="mt-2 text-[0.875rem] leading-5 text-ink-2">
             {note.why}
           </p>
         )}
