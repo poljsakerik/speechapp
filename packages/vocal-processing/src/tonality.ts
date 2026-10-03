@@ -15,6 +15,14 @@
  * emotion labels are too unreliable (an exact-emotion rule flagged 27-54% of
  * Vinh's teaching). Passages are 10-30 s because one sentence is too little
  * speech to judge a voice by. Adjacent flagged passages form one highlight.
+ *
+ * The strength is the opposite: a voice rated clearly expressive (4) or vivid
+ * (5) where the words call for feeling, and rated above the speaker's usual
+ * passage in the same take (TONE_EXPRESSIVE). A strength is a passage that
+ * stands out. For most speakers every expressive passage does: 3-5% of
+ * untrained talks are rated 4 or 5. For the coach 96% is, so only his vivid
+ * passages are marked, and `usual` lets the summary say the voice is
+ * expressive throughout instead of marking the whole take.
  */
 import type { JsonCompletion, Word } from "./types.ts";
 
@@ -37,6 +45,11 @@ export type VoiceRating = (
 ) => Promise<number>;
 
 export type ToneRule = "TONE_FLAT";
+export const TONE_STRENGTHS = [
+  // A clearly expressive voice where the words call for feeling.
+  "TONE_EXPRESSIVE",
+] as const;
+export type ToneStrength = (typeof TONE_STRENGTHS)[number];
 export type Passage = {
   id: string;
   first: number;
@@ -61,16 +74,22 @@ export type ToneMark = {
   expected: Emotion[];
   expressiveness: number;
 };
+/** Adjacent expressive passages, the feelings their words call for and the highest expressiveness heard. */
+export type ToneStrengthMark = Omit<ToneMark, "rule"> & { rule: ToneStrength };
 export type TonalityAnalysis = {
   passages: PassageTone[];
   marks: ToneMark[];
+  strengths: ToneStrengthMark[];
+  /** The take's median rating: how expressive this speaker usually sounds here. */
+  usual?: number;
   reliable: boolean;
 };
-export const TONALITY_VERSION = 3;
+export const TONALITY_VERSION = 4;
 export const DEFAULT_TONALITY_CONFIG = {
   minPassageSeconds: 10, // Sentences are joined until a passage is this long...
   maxPassageSeconds: 30, // ...and a run-on sentence is cut here.
   flatScore: 2, // The voice is flat when rated this or lower: 1 = flat, blank; 2 = mostly flat; 3 = ordinary.
+  expressiveScore: 4, // A strength when rated this or higher: 4 = clearly expressive; 5 = vivid.
 };
 export type TonalityConfig = typeof DEFAULT_TONALITY_CONFIG;
 
@@ -236,7 +255,7 @@ export function parseFits(
   return fits;
 }
 
-/** Flag flat voice where the words call for feeling. */
+/** Flag flat voice where the words call for feeling, and note an expressive one there. */
 export function detectTonality(
   ps: Passage[],
   ratings: number[],
@@ -253,32 +272,58 @@ export function detectTonality(
       flat: ratings[i] <= c.flatScore && !expected.includes("neutral"),
     };
   });
-  const marks: ToneMark[] = [];
-  judged.forEach((p, i) => {
-    if (!p.flat) return;
-    const last = marks.at(-1);
-    if (last && judged[i - 1]?.flat) {
-      Object.assign(last, {
+  const marks: ToneMark[] = [],
+    strengths: ToneStrengthMark[] = [];
+  // Adjacent passages that qualify form one highlight; `extreme` keeps its least or most expressive rating.
+  const join = <M extends ToneMark | ToneStrengthMark>(
+    out: M[],
+    qualifies: (p: PassageTone) => boolean,
+    rule: M["rule"],
+    extreme: (a: number, b: number) => number,
+  ) =>
+    judged.forEach((p, i) => {
+      if (!qualifies(p)) return;
+      const last = out.at(-1);
+      if (last && i && last.last === judged[i - 1].last) {
+        Object.assign(last, {
+          last: p.last,
+          end: p.end,
+          text: `${last.text} ${p.text}`,
+          expected: [...new Set([...last.expected, ...p.fits])],
+          expressiveness: extreme(last.expressiveness, p.expressiveness),
+        });
+        return;
+      }
+      out.push({
+        first: p.first,
         last: p.last,
+        start: p.start,
         end: p.end,
-        text: `${last.text} ${p.text}`,
-        expected: [...new Set([...last.expected, ...p.fits])],
-        expressiveness: Math.min(last.expressiveness, p.expressiveness),
-      });
-      return;
-    }
-    marks.push({
-      first: p.first,
-      last: p.last,
-      start: p.start,
-      end: p.end,
-      text: p.text,
-      rule: "TONE_FLAT",
-      expected: p.fits,
-      expressiveness: p.expressiveness,
+        text: p.text,
+        rule,
+        expected: p.fits,
+        expressiveness: p.expressiveness,
+      } as M);
     });
-  });
-  return { passages: judged, marks, reliable: ps.length > 0 };
+  join(marks, (p) => p.flat, "TONE_FLAT", Math.min);
+  // The lower median, so half or more of the take is rated at least this.
+  const usual = [...ratings].sort((a, b) => a - b)[(ratings.length - 1) >> 1];
+  join(
+    strengths,
+    (p) =>
+      p.expressiveness >= c.expressiveScore &&
+      p.expressiveness > usual &&
+      p.fits.some((e) => e !== "neutral"),
+    "TONE_EXPRESSIVE",
+    Math.max,
+  );
+  return {
+    passages: judged,
+    marks,
+    strengths,
+    usual,
+    reliable: ps.length > 0,
+  };
 }
 
 /** The whole tonality review: passages, the voice's expressiveness per passage, and the expected emotions from the words. */
@@ -291,7 +336,8 @@ export async function reviewTonality(
   config: Partial<TonalityConfig> = {},
 ): Promise<TonalityAnalysis> {
   const ps = passages(words, config);
-  if (!ps.length) return { passages: [], marks: [], reliable: false };
+  if (!ps.length)
+    return { passages: [], marks: [], strengths: [], reliable: false };
   const clips = ps.map((p) =>
     samples.subarray(
       Math.floor(p.start * sampleRate),

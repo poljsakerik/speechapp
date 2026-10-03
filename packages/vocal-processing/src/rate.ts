@@ -18,6 +18,12 @@
  * - Sustained speed, for the obvious cases: 15 s of speaking (or the whole
  *   clip) at 8 syllables/s or more, or 3 or less. Everyday speech from four
  *   speakers stayed between 3.3 and 7.0.
+ *
+ * And one strength, the course's "verbal highlight": a phrase the prediction
+ * says to slow down on, spoken at 62% or less of the speaker's usual phrase
+ * pace (RATE_SLOWS_FOR_POINT). The coach's own "make sure you slow down", which
+ * he follows with "Notice how that bit there just seemed critical", is at 43%.
+ * His teaching has 0.6 of these a minute, untrained talks 0.06-0.13.
  */
 import {
   measurePace,
@@ -44,6 +50,17 @@ export type Span = {
   text: string;
 };
 export type Suggestion = Span & { direction: "slow_down" | "speed_up" };
+export const RATE_STRENGTHS = [
+  // A key phrase spoken far slower than the speaker's usual pace: a verbal highlight.
+  "RATE_SLOWS_FOR_POINT",
+] as const;
+export type RateStrength = (typeof RATE_STRENGTHS)[number];
+/** Adjacent highlighted phrases form one span; `focus` is the slowest, at `pace` (log2 of its pace over the speaker's median phrase). */
+export type RateStrengthMark = Span & {
+  rule: RateStrength;
+  pace: number;
+  focus: Span;
+};
 export type RateMark = Span & {
   rule: RateRule;
   /** Syllables per second of speaking over the marked span. */
@@ -54,6 +71,8 @@ export type RateMark = Span & {
 export type RateAnalysis = {
   pace?: PaceProfile;
   marks: RateMark[];
+  /** Key phrases slowed down for, outside any marked passage. */
+  strengths: RateStrengthMark[];
   speakingRate?: number;
   articulationRate?: number;
   /** False when there is too little usable speech to judge. */
@@ -68,7 +87,7 @@ export type RateAnalysis = {
   /** Judged passages: mean relative pace of key and setup phrases, and whether the passage was flagged. */
   passages: (Span & { keyPace: number; setupPace: number; flagged: boolean })[];
 };
-export const RATE_VERSION = 22;
+export const RATE_VERSION = 23;
 /** Rates are syllables/second of speaking; durations are seconds of speaking. */
 export const DEFAULT_RATE_CONFIG = {
   passagePhrases: 12, // About 30 s of speech.
@@ -77,6 +96,7 @@ export const DEFAULT_RATE_CONFIG = {
   fastRate: 8,
   slowRate: 3,
   maxSyllableSeconds: 1, // Longer than this is not speech: music or noise the word timing absorbed.
+  highlightPace: -0.7, // log2 of a phrase's pace over the speaker's median phrase: 62% of their usual pace.
 };
 export type RateConfig = typeof DEFAULT_RATE_CONFIG;
 
@@ -107,6 +127,7 @@ export function detectRate(
   )
     return {
       marks: [],
+      strengths: [],
       reliable: false,
       contrast: false,
       phrases: [],
@@ -158,7 +179,7 @@ export function detectRate(
     phrases: [],
     passages: [],
   };
-  if (!reliable) return { ...base, marks: [] };
+  if (!reliable) return { ...base, marks: [], strengths: [] };
 
   // Sustained speed: slide a window of speaking time across the words;
   // overlapping windows that cross the same threshold form one passage.
@@ -273,9 +294,37 @@ export function detectRate(
       suggestions,
     });
   }
+  // A key phrase spoken far slower than usual is a highlight, unless a mark already covers it.
+  const strengths: RateStrengthMark[] = [];
+  let previous = -2;
+  phrases.forEach((p, k) => {
+    if (
+      p.score >= 0 ||
+      p.pace > c.highlightPace ||
+      marks.some((m) => m.first <= p.last && p.first <= m.last)
+    )
+      return;
+    const last = strengths.at(-1),
+      focus = span(p.from, p.to);
+    if (last && previous === k - 1)
+      Object.assign(
+        last,
+        span(position.get(last.first)!, p.to),
+        p.pace < last.pace ? { pace: p.pace, focus } : {},
+      );
+    else
+      strengths.push({
+        ...focus,
+        rule: "RATE_SLOWS_FOR_POINT",
+        pace: p.pace,
+        focus,
+      });
+    previous = k;
+  });
   return {
     ...base,
     contrast: judged.length > 0,
+    strengths,
     marks: marks.sort((a, b) => a.start - b.start),
     passages: judged,
     phrases: phrases.map(({ first, last, start, end, text, score, pace }) => ({

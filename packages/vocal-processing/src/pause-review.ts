@@ -7,8 +7,15 @@
  *
  * No fixed syllable counts or durations decide anything: without a model the
  * pause review is not assessed.
+ *
+ * What the model reads isn't what a listener hears, so with an audio model its
+ * two commonest findings are kept only where they also sound that way
+ * (pause-hearing.ts): a pause that breaks the thought must sound hesitant, and
+ * a missing pause must sound like the words run on.
  */
 import { createHash } from "node:crypto";
+import type { AudioJudgment } from "./gemini.ts";
+import { hearPause, hearsRunOn, type Audio } from "./pause-hearing.ts";
 import {
   pauseAfterWords,
   timed,
@@ -223,6 +230,11 @@ export type PauseReview = {
   reliable: boolean;
   status: "reviewed" | "no timing" | "no model" | "unusable reply";
   marked: MarkedPause[];
+  /** Whether breaks and missing pauses were also heard; if not, they are the text model's alone. */
+  heard?: boolean;
+  /** How many places the text model faulted, and how many of them were kept. */
+  read?: number;
+  kept?: number;
 };
 
 const RULES: Record<Exclude<Verdict, "fits"> | "missing", PauseRule> = {
@@ -235,13 +247,16 @@ const RULES: Record<Exclude<Verdict, "fits"> | "missing", PauseRule> = {
 /**
  * Review every pause in a take. `recognized` is the recognizer's timing for the
  * same words when `words` were re-aligned. Findings of one kind close together
- * (within a sentence or so) form one highlight.
+ * (within a sentence or so) form one highlight. With `hear`, breaks and missing
+ * pauses are kept only where they sound like one; if a hearing fails, the text
+ * model's findings stand.
  */
 export async function reviewPause(
   words: Word[],
   pauses: Pause[],
   complete?: JsonCompletion,
   recognized?: Word[],
+  hear?: { audio: Audio; judge: AudioJudgment },
 ): Promise<PauseReview> {
   if (!timed(words))
     return { marks: [], reliable: false, status: "no timing", marked: [] };
@@ -290,7 +305,7 @@ export async function reviewPause(
     ),
   );
   const unsure = marked.filter((p) => !sure.has(p.after)).map((p) => p.after);
-  const points: { at: number; rule: PauseRule }[] = [
+  const read: { at: number; rule: PauseRule }[] = [
     ...marked.flatMap((p, k) =>
       review.verdicts[k] && review.verdicts[k] !== "fits" && sure.has(p.after)
         ? [
@@ -305,6 +320,32 @@ export async function reviewPause(
       .filter((i) => !unsure.some((u) => Math.abs(u - i) <= 1))
       .map((at) => ({ at, rule: RULES.missing })),
   ].sort((a, b) => a.at - b.at);
+  let points = read,
+    heard = false;
+  if (hear) {
+    const seconds = new Map(marked.map((p) => [p.after, p.seconds]));
+    try {
+      const sounds = await Promise.all(
+        read.map(async ({ at, rule }) =>
+          rule === "PAUSE_UNNECESSARY"
+            ? (await hearPause(
+                words,
+                at,
+                seconds.get(at)!,
+                hear.audio,
+                hear.judge,
+              )) === "hesitant"
+            : rule === "PAUSE_NECESSARY"
+              ? hearsRunOn(words, at, hear.audio, hear.judge)
+              : true,
+        ),
+      );
+      points = read.filter((_, i) => sounds[i]);
+      heard = true;
+    } catch {
+      /* the text model's findings stand */
+    }
+  }
   const marks: PauseMark[] = [];
   for (const rule of Object.values(RULES)) {
     const groups: number[][] = [];
@@ -335,5 +376,8 @@ export async function reviewPause(
     reliable: true,
     status: "reviewed",
     marked,
+    heard,
+    read: read.length,
+    kept: points.length,
   };
 }

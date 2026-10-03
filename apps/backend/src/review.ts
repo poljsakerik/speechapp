@@ -16,12 +16,20 @@ import {
 import { predictPacing } from "@micmane/vocal-processing/pacing";
 import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause";
 import { reviewPause } from "@micmane/vocal-processing/pause-review";
+import {
+  faulted,
+  findPauseStrengths,
+  PAUSE_STRENGTH_VERSION,
+  type PauseStrengthMark,
+} from "@micmane/vocal-processing/pause-strength";
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses";
 import {
+  DEFAULT_PITCH_CONFIG,
   detectPitch,
   PITCH_VERSION,
   trackPitchInSteps,
   type PitchMark,
+  type PitchStrengthMark,
 } from "@micmane/vocal-processing/pitch";
 import {
   listenForPitch,
@@ -32,6 +40,7 @@ import {
   RATE_VERSION,
   syllables,
   type RateMark,
+  type RateStrengthMark,
 } from "@micmane/vocal-processing/rate";
 import {
   reviewTonality,
@@ -39,6 +48,7 @@ import {
   tonalityConfig,
   type Emotion,
   type ToneMark,
+  type ToneStrengthMark,
 } from "@micmane/vocal-processing/tonality";
 import {
   detectVolume,
@@ -218,19 +228,82 @@ export function flatObservation(expected: Emotion[]): string {
     : toneCopy.TONE_FLAT.observation;
 }
 
+type Copy = { observation: string; why_it_matters: string; practice: string };
+/** Words in quotes, without the full stop or comma recognition put after the last one. */
+const quoted = (text: string) => `“${text.replace(/[.,;:]+$/, "")}”`;
+const quote = (words: Word[], first: number, last: number) =>
+  quoted(
+    words
+      .slice(first, last + 1)
+      .map((w) => w.text)
+      .join(" "),
+  );
+
+/**
+ * What a speaker did well, and why it works, in the lessons' terms. Each
+ * strength names what was measured or heard there; the reason is the one the
+ * course gives for the technique.
+ */
+const strengthCopy = {
+  // Vinh's rate lesson: slowing down on what matters is a verbal highlight.
+  RATE_SLOWS_FOR_POINT: (m: RateStrengthMark): Copy => ({
+    observation: `You slow right down on ${quoted(m.focus.text)}, to about ${Math.round((100 * 2 ** m.pace) / 5) * 5}% of your usual pace.`,
+    why_it_matters:
+      "Slowing down on what matters is a verbal highlight: it tells the listener this is the part to focus on.",
+    practice:
+      "Keep this. In your next take, find the line that matters most and give it the same room.",
+  }),
+  // Vinh's pause lesson: a pause gives people time to process what you just said.
+  PAUSE_LETS_IT_LAND: (m: PauseStrengthMark, words: Word[]): Copy => ({
+    observation: `You stop for ${m.seconds.toFixed(1)} seconds after ${quote(words, m.first, m.at)} and let it land.`,
+    why_it_matters:
+      "The silence gives the listener time to process the point before you move on.",
+    practice: "Keep this pause. Give your next key point the same beat.",
+  }),
+  PAUSE_BUILDS_ANTICIPATION: (m: PauseStrengthMark, words: Word[]): Copy => ({
+    observation: `You pause for ${m.seconds.toFixed(1)} seconds just before ${quote(words, m.at + 1, m.last)}.`,
+    why_it_matters:
+      "Holding back what comes next makes the listener lean in for it.",
+    practice: "Keep it. Try the same pause before your next answer or reveal.",
+  }),
+  // Vinh's tonality lesson: the emotion underneath the voice is what listeners connect with.
+  TONE_EXPRESSIVE: (m: ToneStrengthMark): Copy => {
+    const feelings = m.expected
+      .filter((e) => e !== "neutral")
+      .slice(0, 2)
+      .map((e) => FEELING[e]);
+    return {
+      observation: `Your voice is ${m.expressiveness >= 5 ? "vivid" : "clearly expressive"} here, where the words call for ${feelings.join(" and ")}.`,
+      why_it_matters:
+        "Listeners connect with the feeling in your voice, not only with the words; here they can hear that you mean it.",
+      practice:
+        "Keep this. Notice what your face is doing here, and bring it to the flatter passages.",
+    };
+  },
+  // Vinh's pitch lesson: melody makes a message memorable, the way a song is.
+  PITCH_MELODY: (): Copy => ({
+    observation:
+      "Your voice moves freely between high and low notes through this stretch.",
+    why_it_matters:
+      "Melody tells listeners what matters and makes your message easier to remember, the way a song is.",
+    practice:
+      "Keep this range, and bring the same movement to the stretches where your voice settles on one note.",
+  }),
+};
+
 /** One finding per segment a mark covers; the shared group ID lets the app rejoin them into one highlight. */
-function findingsFor<R extends string>(
-  segments: Segment[],
-  marks: {
+function findingsFor<
+  M extends {
     start: number;
     end: number;
-    rule: R;
+    rule: string;
     suggestions?: RateMark["suggestions"];
-  }[],
-  text: Record<
-    R,
-    { observation: string; why_it_matters: string; practice: string }
-  >,
+  },
+>(
+  segments: Segment[],
+  marks: M[],
+  copyOf: (mark: M) => Copy,
+  kind: "improvement" | "strength" = "improvement",
 ) {
   return marks.flatMap((mark, markIndex) =>
     segments.flatMap((segment) => {
@@ -242,11 +315,12 @@ function findingsFor<R extends string>(
       return [
         {
           segment_id: segment.id,
-          group_id: String(markIndex),
+          group_id:
+            kind === "strength" ? `strength-${markIndex}` : String(markIndex),
           rule_id: mark.rule,
-          kind: "improvement",
+          kind,
           uncertainty: "tentative",
-          ...text[mark.rule],
+          ...copyOf(mark),
           start: covered[0].start,
           end: covered[covered.length - 1].end,
           text: phrase,
@@ -272,13 +346,19 @@ function findingsFor<R extends string>(
 /**
  * Pauses are judged only with pauses measured from the audio and a model
  * review; otherwise they are not assessed. Each finding names its words.
+ * Strengths are pauses that let a point land or build anticipation.
  */
 export function pauseAssessment(
   segments: Segment[],
   marks: PauseMark[] | undefined,
   words: Word[] = [],
+  strengths: PauseStrengthMark[] = [],
 ) {
-  const findings = findingsFor(segments, marks ?? [], pauseCopy).map((f) => {
+  const findings = findingsFor(
+    segments,
+    marks ?? [],
+    (m) => pauseCopy[m.rule],
+  ).map((f) => {
     const mark = marks![Number(f.group_id)];
     const direction = (
       {
@@ -294,6 +374,14 @@ export function pauseAssessment(
       .map((w) => ({ direction, start: w.start, end: w.end, text: w.text }));
     return { ...f, uncertainty: "clear", suggestions };
   });
+  findings.push(
+    ...findingsFor(
+      segments,
+      marks ? strengths : [],
+      (m) => strengthCopy[m.rule](m, words),
+      "strength",
+    ).map((f) => ({ ...f, suggestions: [] })),
+  );
   return {
     foundation: "pauses" as const,
     verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
@@ -322,7 +410,7 @@ export function volumeAssessment(
       : marks.length
         ? "Your voice drops or trails off in a few places."
         : "No drop in volume or trailing off was detected in this take.",
-    findings: findingsFor(segments, marks ?? [], volumeCopy),
+    findings: findingsFor(segments, marks ?? [], (m) => volumeCopy[m.rule]),
   };
 }
 
@@ -363,11 +451,23 @@ export function measureVolume(
 export function pitchAssessment(
   segments: Segment[],
   marks: PitchMark[] | undefined,
+  strengths: PitchStrengthMark[] = [],
+  /** Whether the melody of the whole take moves as much as a lively stretch must. */
+  lively = false,
 ) {
-  const findings = findingsFor(segments, marks ?? [], pitchCopy).map((f) => {
-    const { how, fix } = marks![Number(f.group_id)];
-    return how ? { ...f, observation: how, practice: fix! } : f;
-  });
+  const findings = [
+    ...findingsFor(segments, marks ?? [], (m) => pitchCopy[m.rule]).map((f) => {
+      const { how, fix } = marks![Number(f.group_id)];
+      return how ? { ...f, observation: how, practice: fix! } : f;
+    }),
+    // A lively melody is measured, so it is as sure as the measurement.
+    ...findingsFor(
+      segments,
+      marks ? strengths : [],
+      strengthCopy.PITCH_MELODY,
+      "strength",
+    ).map((f) => ({ ...f, uncertainty: "clear" })),
+  ];
   return {
     foundation: "pitch_melody" as const,
     verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
@@ -375,7 +475,9 @@ export function pitchAssessment(
       ? "There is not enough voiced speech to judge pitch in this take."
       : marks.length
         ? "Your voice stays on one note, or stays too high or low, in a few places."
-        : "Your voice moves between notes; no monotone stretch was detected.",
+        : lively
+          ? `Your voice moves freely between high and low notes throughout this take.${strengths.length ? " The marked stretches move the most." : ""}`
+          : "Your voice moves between notes; no monotone stretch was detected.",
     findings,
   };
 }
@@ -387,11 +489,22 @@ export function pitchAssessment(
 export function tonalityAssessment(
   segments: Segment[],
   marks: ToneMark[] | undefined,
+  strengths: ToneStrengthMark[] = [],
+  /** Whether the speaker's usual passage in this take is already expressive. */
+  expressive = false,
 ) {
-  const findings = findingsFor(segments, marks ?? [], toneCopy).map((f) => ({
-    ...f,
-    observation: flatObservation(marks![Number(f.group_id)].expected),
-  }));
+  const findings = [
+    ...findingsFor(segments, marks ?? [], (m) => toneCopy[m.rule]).map((f) => ({
+      ...f,
+      observation: flatObservation(marks![Number(f.group_id)].expected),
+    })),
+    ...findingsFor(
+      segments,
+      marks ? strengths : [],
+      strengthCopy.TONE_EXPRESSIVE,
+      "strength",
+    ),
+  ];
   return {
     foundation: "tonality" as const,
     verdict: !marks ? "uncertain" : marks.length ? "mixed" : "effective",
@@ -399,7 +512,9 @@ export function tonalityAssessment(
       ? "Tonality could not be assessed for this take."
       : marks.length
         ? "Your voice sounds flat in places; a little more feeling would help the words land."
-        : "No flat stretch was detected; your voice carries some expression.",
+        : expressive
+          ? `Your voice is expressive throughout this take.${strengths.length ? " The marked passages are the most vivid." : ""}`
+          : "No flat stretch was detected; your voice carries some expression.",
     findings,
   };
 }
@@ -409,8 +524,17 @@ export function rateReview(
   marks: RateMark[],
   message = "",
   status: "reviewed" | "uncertain" = "reviewed",
+  strengths: RateStrengthMark[] = [],
 ) {
-  const findings = findingsFor(segments, marks, copy);
+  const findings = [
+    ...findingsFor(segments, marks, (m) => copy[m.rule]),
+    ...findingsFor(
+      segments,
+      strengths,
+      strengthCopy.RATE_SLOWS_FOR_POINT,
+      "strength",
+    ),
+  ];
   return {
     overall: message
       ? `Your main message: ${message}`
@@ -576,7 +700,25 @@ export async function reviewAudio(audio: Buffer) {
           pauses,
           openaiCompletion(),
           transcript === recognized ? undefined : recognized,
+          // Breaks and missing pauses count only where they also sound like one.
+          decoded && process.env.GEMINI_API_KEY
+            ? { audio: decoded, judge: geminiJudgment() }
+            : undefined,
         )
+      : Promise.resolve(undefined),
+  );
+  // Alongside it, the pauses that do real work: proposed from the text, kept if they sound deliberate.
+  const praising = timed(
+    "pauseStrengths",
+    pauses && decoded
+      ? findPauseStrengths(
+          transcript,
+          pauses,
+          decoded,
+          openaiCompletion(),
+          process.env.GEMINI_API_KEY ? geminiJudgment() : undefined,
+          transcript === recognized ? undefined : recognized,
+        ).catch(() => undefined)
       : Promise.resolve(undefined),
   );
   // While the models answer, measure what needs only the audio. Pitch is tracked in steps so their requests keep moving.
@@ -596,13 +738,15 @@ export async function reviewAudio(audio: Buffer) {
         )
       : Promise.resolve(undefined),
   );
-  const [pacing, heard, tone, pause, measured] = await Promise.all([
-    predicting,
-    listening,
-    toning,
-    reviewing,
-    measuring,
-  ]);
+  const [pacing, heard, tone, pause, measured, pauseStrengths] =
+    await Promise.all([
+      predicting,
+      listening,
+      toning,
+      reviewing,
+      measuring,
+      praising,
+    ]);
   const segments = segmentWords(transcript);
   const analysis = detectRate(transcript, {}, pauses, pacing);
   // Without the waveform, silence cannot be told from speech; without the prediction, contrast is unjudged.
@@ -613,7 +757,22 @@ export async function reviewAudio(audio: Buffer) {
   const marks = decoded && analysis.reliable ? analysis.marks : [];
   const toneMarks = tone?.reliable ? onto(tone.marks, transcript) : undefined;
   const pauseMarks = pause?.reliable ? pause.marks : undefined;
-  const rate = rateReview(segments, marks, "", status);
+  const rateStrengths =
+    decoded && analysis.reliable
+      ? analysis.strengths.filter(
+          (s) => !faulted(s, pauseMarks, ["PAUSE_UNNECESSARY"]),
+        )
+      : [];
+  const kept = (pauseStrengths ?? []).filter(
+    (s) =>
+      !faulted(s, pauseMarks, [
+        "PAUSE_UNNECESSARY",
+        "PAUSE_TOO_SHORT",
+        "PAUSE_TOO_LONG",
+      ]),
+  );
+  const toneStrengths = tone?.reliable ? onto(tone.strengths, transcript) : [];
+  const rate = rateReview(segments, marks, "", status, rateStrengths);
   const volumeMarks = measured?.volume;
   // Pitch movement is measured inside the spoken words; what Gemini heard counts only where the measurement agrees.
   const melody =
@@ -627,17 +786,29 @@ export async function reviewAudio(audio: Buffer) {
       measured?.track,
     );
   const pitchMarks = melody && melody.reliable ? melody.marks : undefined;
+  const pitchStrengths = melody && melody.reliable ? melody.strengths : [];
   const review = {
     ...rate,
     assessments: rate.assessments.map((a) =>
       a.foundation === "pauses"
-        ? pauseAssessment(segments, pauseMarks, transcript)
+        ? pauseAssessment(segments, pauseMarks, transcript, kept)
         : a.foundation === "volume"
           ? volumeAssessment(segments, volumeMarks)
           : a.foundation === "tonality"
-            ? tonalityAssessment(segments, toneMarks)
+            ? tonalityAssessment(
+                segments,
+                toneMarks,
+                toneStrengths,
+                (tone?.usual ?? 0) >= tonalityConfig().expressiveScore,
+              )
             : a.foundation === "pitch_melody"
-              ? pitchAssessment(segments, pitchMarks)
+              ? pitchAssessment(
+                  segments,
+                  pitchMarks,
+                  pitchStrengths,
+                  !!melody &&
+                    (melody.spread ?? 0) >= DEFAULT_PITCH_CONFIG.melodySpread,
+                )
               : a,
     ),
   };
@@ -651,13 +822,17 @@ export async function reviewAudio(audio: Buffer) {
       articulationRate: analysis.articulationRate,
       pacing,
       marks,
+      strengths: rateStrengths,
     },
     pauseDiagnostics: {
       version: PAUSE_VERSION,
       status: pauseMarks ? ("reviewed" as const) : ("uncertain" as const),
       review: pause?.status,
+      heard: pause?.heard,
       pauses,
       marks: pauseMarks ?? [],
+      strengthVersion: PAUSE_STRENGTH_VERSION,
+      strengths: pauseMarks ? kept : [],
     },
     volumeDiagnostics: {
       version: VOLUME_VERSION,
@@ -669,11 +844,13 @@ export async function reviewAudio(audio: Buffer) {
       status: toneMarks ? ("reviewed" as const) : ("uncertain" as const),
       passages: tone && onto(tone.passages, transcript),
       marks: toneMarks ?? [],
+      strengths: toneStrengths,
     },
     pitchDiagnostics: {
       version: PITCH_VERSION,
       status: pitchMarks ? ("reviewed" as const) : ("uncertain" as const),
       marks: pitchMarks ?? [],
+      strengths: pitchStrengths,
       spread: melody ? melody.spread : undefined,
       heard,
     },

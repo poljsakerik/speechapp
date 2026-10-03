@@ -1,6 +1,6 @@
 # MicMane
 
-Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review evaluates all five for uploaded takes: **rate of speech**, **pauses**, **volume**, **tonality** and **pitch & melody**. The landing page shows a hand-written sample review.
+Speech coaching for the five foundations taught in `videos/`: rate, volume, pitch/melody, tonality, and pauses. The live review evaluates all five for uploaded takes: **rate of speech**, **pauses**, **volume**, **tonality** and **pitch & melody**. Besides what to improve, it points out what the speaker does sincerely well on rate, pauses, tonality and pitch ([strengths](#strengths)). The landing page shows a hand-written sample review.
 
 ## Workspace
 
@@ -109,6 +109,7 @@ The pause review works like a speaking coach marking up a recording. Timing only
 - **Parts:** the take is reviewed in parts of about 120 words, cut at pauses, with the whole transcript as context in every request. One request for a whole take made the verdicts swing between runs (6 to 37 "breaks" on the same take); in parts, the bad take gets 40–45 findings per run, and a finding recurs in another run 54–79% of the time. Counts and recurrence are steadiest where the mistakes are clear (the bad take, 79%) and least steady on good speech (the retake, 9–19 findings, 55%), whose borderline findings come and go. The parts run in parallel.
 - **Complete replies:** a reply must judge every pause and every stretch in its part; the pause that ends a part belongs to that part. An incomplete part is asked once more, then the review is not assessed: a skipped stretch is not evidence that it needs no pause.
 - **Timing check:** a finding is dropped where the aligned and the recognizer's word timing disagree about which words a pause sits between, since the aligner occasionally moves a short word across a silence ("Here we ‖ go.").
+- **Heard, not only read:** a transcript with pause lengths can't tell a pause held for effect from one spent searching for words, or a sentence that rushes on from one the voice clearly finishes. So the two commonest findings are kept only where Gemini, hearing the moment with about 6 s of lead-in, agrees (`pause-hearing.ts`): a pause that breaks a thought must sound hesitant, and a missing pause must sound like the words run on. Too short and too long stay the text model's call. Without `GEMINI_API_KEY`, or if a hearing fails, the text model's findings stand and `pauseDiagnostics.heard` is false.
 - **No fallback rules:** without decodable audio, a model or a usable reply, pauses are reported as not assessed.
 
 Results, three runs each:
@@ -135,6 +136,16 @@ pnpm eval:pause --run run-1   # replies cached per take and run label
 ```
 
 A demonstration can rightly get several findings (two places to pause in one run-on), so a finding is correct when it falls inside an annotated span of the same kind. Version 3 finds the annotated mistakes 6/6 in each of three runs, including the uncoached reading ("Pause after 'son,'" or "'Legion,'") and the slow greeting ("Don't stop after 'It's'"). Clean takes report findings per minute instead of pass/fail. A perfect score would be suspicious: skilled speakers hesitate too, and the lessons' edits remove real pauses.
+
+With listening (`pnpm eval:pause --run run-1 --listen`), over the same three runs:
+
+|                                                        | Read only           | Read and heard      |
+| ------------------------------------------------------ | ------------------- | ------------------- |
+| Annotated mistakes found                               | 6/6 each            | 5/6, 6/6, 5/6       |
+| Findings on clean takes, per minute                    | 6.1-6.7             | 1.6-2.3             |
+| Findings in flawed takes that are inside an annotation | 13/17, 15/19, 15/17 | 10/12, 14/16, 13/13 |
+
+The two misses are the student's uncoached reading in one run (heard as clear enough) and the slow greeting in another (its stops are acted, and heard as deliberate). On whole recordings, hearing keeps about half of what the text model faults: 3.6 of 7.5 places a minute in the coach's lessons, 5.6 of 8.4 in the user's poorer take and 1.7 of 3.8 in its good retake. Of the breaks alone, 74% of the poorer take's sound hesitant, 27% of the retake's and 14-35% of the coach's.
 
 ## Volume
 
@@ -293,6 +304,64 @@ pnpm eval:pitch --listen   # adds Gemini; replies are cached per chunk next to e
 ```
 
 The report is `recordings-pitch-development/pitch-benchmark.json`; matching works as for rate.
+
+## Strengths
+
+A review also points out what the speaker does sincerely well: not passages that merely pass, but ones that look like the course coach at his best. Each strength is pinned to the words where it happened, says what was measured or heard there and why it works, in the lesson's own terms, and its practice note is to keep it and use it again. Strengths are findings with `kind: "strength"`; they don't change a foundation's verdict, which still describes problems. Each foundation lists its strengths in an `as const` array (Node's type stripping doesn't support TypeScript `enum`), and the diagnostics carry them as `strengths`.
+
+| Foundation | Strengths                                                            | Found where                                                                                                                                                                                                                                                              | Why it works                                                                                              |
+| ---------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Rate       | `RATE_STRENGTHS`: `RATE_SLOWS_FOR_POINT`                             | A phrase the pacing prediction says to slow down on, spoken at 62% or less of the speaker's median phrase pace, outside any rate mark and with no broken-up pause inside it                                                                                              | Slowing down on what matters is a verbal highlight: it tells the listener what to focus on                |
+| Pauses     | `PAUSE_STRENGTHS`: `PAUSE_LETS_IT_LAND`, `PAUSE_BUILDS_ANTICIPATION` | A pause of 0.6 s or more that a text model places right after a line meant to land, or right before a set-up reveal or answer, and that Gemini hears as deliberate rather than hesitant; the pause review doesn't fault it. At most two a minute, the longest-held first | The silence gives the listener time to process the point; holding back what comes next makes them lean in |
+| Tonality   | `TONE_STRENGTHS`: `TONE_EXPRESSIVE`                                  | A passage Gemini rates 4 (clearly expressive) or 5 (vivid) where the words call for feeling, and above the take's own median rating                                                                                                                                      | Listeners connect with the feeling in the voice, not only the words                                       |
+| Pitch      | `PITCH_STRENGTHS`: `PITCH_MELODY`                                    | The liveliest 10 s windows with a pitch standard deviation of 4.5 semitones or more inside the speaker's normal register, apart from each other and at most one per minute of speaking, minus any pitch mark or badly distracting problem Gemini heard                   | Melody tells listeners what matters and makes the message easier to remember, the way a song is           |
+
+Volume has none. Recorded level can't be told from microphone gain, Gemini can't hear projection, and holding volume through a sentence is what everyday speech already does, so there's nothing sincerely great to measure.
+
+**Standouts, not norms.** A strength is a moment to point at. The first version marked everything above each bar, and on one of the coach's own videos one tonality strength covered 90% of the take and one pitch strength 75%. Now a tonality passage must be rated above the speaker's usual passage in the same take, and pitch and pause strengths are the strongest few per minute. When the whole take clears the bar, the foundation's summary says so ("Your voice is expressive throughout this take. The marked passages are the most vivid.") instead of the highlight.
+
+What was tried and dropped, so it isn't tried again:
+
+- **Pauses from text alone.** The text model praised 36-42% of held pauses, in the coach's lessons and untrained talks alike, including obvious searching ("where he said, you know, [2.4 s]"). Listening to each candidate in context separates them: Gemini heard 90% of the coach's candidates as deliberate and 1% as hesitant, against 41% and 18% for untrained speakers. Duration doesn't help: untrained speakers' held pauses are longer than the coach's.
+- **Pitch lifted on the point.** Measured, the coach's key phrases (pacing −2) rise no more than his setup phrases, also with sentence declination taken out. Gemini's own list of pitch highlights gave about one per 30 s chunk for everyone. How much the melody moves over 10 s is what separates him: his windows' median is 4.2-4.7 semitones per lesson, untrained talks' 2.7-3.6 (one 4.2).
+
+### Strength benchmark
+
+`benchmarks/strength-development.json` takes the coach's five whole lessons as the reference for great delivery, with three kinds of evidence in source time:
+
+- **Moments he performs and then names:** "make sure you slow down", followed by "Notice how that bit there just seemed critical", and two pauses, each followed by "Notice how you're processing…".
+- **His deliberate mistakes**, which must not be praised for that foundation: the slow and rushed greetings, the constant-pace demonstrations, "3 out of 10", the blank face, the filler-laden and run-on examples.
+- **Students before and after his coaching:** the rate lesson's reading, the tonality lesson's romantic passage and the Gladiator lines.
+
+Music, sketches, students and demonstrations are left out of his rates (`notTeaching`). The eval also runs on any other recordings, by group.
+
+```sh
+pnpm eval:strengths /path/to/recordings.json [--run repeat-1] [--report out.json]
+# recordings.json lists { name, group, audio, transcript, source? }: a PCM WAV, its Deepgram JSON and, for a
+# lesson decoded whole from its video, the video's file name, which links it to the recipe.
+```
+
+One run with the standout rules (the first version's figures, everything above the bar, in brackets):
+
+| Group                                          | Minutes | Rate (per min) | Pauses (per min) | Tonality (share of speech) | Pitch (share of speech) |
+| ---------------------------------------------- | ------- | -------------- | ---------------- | -------------------------- | ----------------------- |
+| Coach, teaching only                           | 19      | 0.63           | 1.7 (4.2)        | 26% (96%)                  | 8% (62%)                |
+| One of the coach's YouTube videos              | 2.4     | 0.82           | 0                | 25% (90%)                  | 7% (75%)                |
+| 16 untrained talks, used to set the thresholds | 80      | 0.14           | 1.2 (1.3)        | 5%                         | 2% (4%)                 |
+| 5 untrained talks, held out                    | 46      | 0.06           | 1.2 (1.1)        | 3%                         | 1% (2%)                 |
+| A good retake of one talk                      | 4.2     | 0.24           | 1.9 (2.2)        | 0%                         | 6% (11%)                |
+| The original, poorer take of that talk         | 4.6     | 0.22           | 1.7              | 18%                        | 0%                      |
+
+- The three moments the coach names are found.
+- None of the 12 deliberate mistakes is praised. Before the standout rule, the passage that straddles the end of the blank face was. A pause is scored by the word it follows, so the pauses before a demonstration begins ("Imagine I started it like this. [1.6 s] Hi,") don't count as praising it.
+- Coached pairs: the Gladiator lines get one pause strength after coaching and none before, and the tonality student's reading goes from 0% to 36% praised. The rate lesson's student gets no rate strength in either reading.
+- The budgets flatten the pause and pitch gap between the coach and untrained speakers: what still separates them there is the summary and the issues. The YouTube video has no pause strength because it has no pause over 0.5 s: the edit cut them.
+- The retake gets more pause and pitch strengths than the original take, but less tonality: Gemini rates the original take's voice more expressive.
+- The user's five short voice-pack readings get no pitch or tonality strength. A clip of one passage has nothing to stand out from; if it is expressive or lively, the summary says so.
+
+The thresholds are few and coarse: 62% of the usual pace, 0.6 s, Gemini's own "clearly expressive", the coach's typical melody, and one or two strengths a minute. They were set by looking at the coach's lessons and the 16 design talks; the 5 held-out talks were measured once at the end. Speech allows many good deliveries, so the target is a clear gap between the coach and untrained speakers, not a perfect score. The coach's lessons are edited, and jump cuts remove pauses, so his pause rate is a floor. The standout rules were added after seeing one YouTube video light up; they use no figure from it, and it is listed above for what it is, one more recording.
+
+**Cost.** Pause strengths add one text-model request per 120-word part, the same as the pause review, plus a Gemini call with about 9 s of audio per proposed pause: roughly $0.005-0.01 per minute of speech. The two pause requests run in parallel and each part sends the whole transcript, so takes over about 10 minutes can hit a 200k tokens-per-minute limit. Either can then fail: the pause review is reported as not assessed, and pause strengths are left out. Hearing the pause review's breaks and missing pauses adds one such Gemini call per place the text model faults, about 4-10 a minute.
 
 ## Research and evaluation
 

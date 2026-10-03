@@ -33,6 +33,18 @@
  * the same problem there, even as minor (severity 3): measurement decides,
  * the listener explains.
  *
+ * The strength is a melody that moves (PITCH_MELODY): 10 s of speaking with a
+ * pitch standard deviation of 4.5 semitones or more, within the speaker's
+ * normal register. 4.5 is the course coach's typical teaching (his windows'
+ * median is 4.2-4.7 semitones per lesson); untrained talks' medians are
+ * 2.7-3.6, one 4.2. A strength is a stretch to point at, not a description of
+ * the whole take: 62% of the coach's teaching clears the bar, so only the
+ * liveliest windows are marked, at most one per minute of speaking and apart
+ * from each other, and the take's `spread` lets the summary say the melody
+ * moves throughout.
+ * Stretches with a measured mark or a badly distracting heard problem are cut
+ * out of it, so a squeak or a sing-song isn't praised.
+ *
  * Only frames inside spoken words count, so music and noise between words
  * don't add movement. A word is never credited with more than 1 s per
  * syllable, as in rate.
@@ -44,6 +56,13 @@ import { syllables } from "./syllables.ts";
 import type { Word } from "./types.ts";
 
 export type PitchRule = "PITCH_VARIETY" | "PITCH_HIGH" | "PITCH_LOW";
+export const PITCH_STRENGTHS = [
+  // 10 s of speaking whose melody moves as much as the coach's typical teaching.
+  "PITCH_MELODY",
+] as const;
+export type PitchStrength = (typeof PITCH_STRENGTHS)[number];
+/** `spread` is the pitch standard deviation of its liveliest window, in semitones. */
+export type PitchStrengthMark = Span & { rule: PitchStrength; spread: number };
 /**
  * Measured on the mark's most extreme window: `spread` is its pitch standard
  * deviation and `shift` its median pitch above the speaker's normal (below if
@@ -59,14 +78,17 @@ export type PitchMark = Span & {
 /** `reliable` is false when there is too little voiced speech to judge; `spread` is the whole take's. */
 export type PitchAnalysis = {
   marks: PitchMark[];
+  strengths: PitchStrengthMark[];
   reliable: boolean;
   spread?: number;
 };
-export const PITCH_VERSION = 5;
+export const PITCH_VERSION = 7;
 /** Durations are seconds of speaking; spreads and shifts are semitones. */
 export const DEFAULT_PITCH_CONFIG = {
   windowSeconds: 10,
   minSpread: 2.6, // Hincks (2005): PVQ 0.15.
+  melodySpread: 4.5, // The course coach's typical 10 s of teaching.
+  melodyPerMinute: 1, // At most this many lively stretches are named per minute of speaking, the liveliest first.
   registerShift: 7,
   squeakSeconds: 5, // A shorter stretch counts as high only an octave up: excited speech reaches 10 semitones for a moment.
   squeakShift: 12,
@@ -110,7 +132,7 @@ export function detectPitch(
         w.end! > w.start!,
     );
   if (timed.length < 2 || timed.length !== words.length)
-    return { marks: [], reliable: false };
+    return { marks: [], strengths: [], reliable: false };
   pitch ??= trackPitch(samples, sampleRate);
   // Each word's speaking time and its voiced frames, in semitones.
   const ws = timed.map((w) => {
@@ -127,7 +149,7 @@ export function detectPitch(
   const total = ws.reduce((s, w) => s + w.seconds, 0),
     all = ws.flatMap((w) => w.notes);
   if (total < c.minSpeechSeconds || all.length * HOP < c.minVoicedSeconds)
-    return { marks: [], reliable: false };
+    return { marks: [], strengths: [], reliable: false };
   const normal = median(all);
 
   // Windows of speaking time, one starting at each word; a shorter clip is
@@ -136,7 +158,7 @@ export function detectPitch(
   // marks of one rule form one stretch. Every `windowSeconds` window is judged
   // for all three rules; `squeakSeconds` windows only for a jump an octave up.
   type Stuck = {
-    rule: PitchRule;
+    rule: PitchRule | PitchStrength;
     from: number;
     to: number;
     spread: number;
@@ -148,7 +170,7 @@ export function detectPitch(
   let judged = false;
   const slide = (
     seconds: number,
-    judge: (spread: number, shift: number) => PitchRule | undefined,
+    judge: (spread: number, shift: number) => Stuck["rule"] | undefined,
   ) => {
     const window = Math.min(seconds, total);
     for (
@@ -181,7 +203,9 @@ export function detectPitch(
         ? "PITCH_LOW"
         : spread < c.minSpread
           ? "PITCH_VARIETY"
-          : undefined,
+          : spread >= c.melodySpread
+            ? "PITCH_MELODY"
+            : undefined,
   );
   slide(c.squeakSeconds, (_, shift) =>
     shift >= c.squeakShift ? "PITCH_HIGH" : undefined,
@@ -231,7 +255,9 @@ export function detectPitch(
       });
   }
   const stuck: Stuck[] = [];
-  for (const hit of hits.sort((x, y) => x.from - y.from)) {
+  for (const hit of hits
+    .filter((h) => h.rule !== "PITCH_MELODY")
+    .sort((x, y) => x.from - y.from)) {
     const last = stuck.findLast((m) => m.rule === hit.rule);
     const extreme =
       hit.rule === "PITCH_VARIETY"
@@ -266,13 +292,14 @@ export function detectPitch(
       .map((w) => w.text)
       .join(" "),
   });
-  // A stretch stuck high or low isn't also called monotone: register marks are
-  // cut out of monotone marks, leaving the monotone parts on either side.
-  const register = stuck.filter((m) => m.rule !== "PITCH_VARIETY");
-  const marks = stuck.flatMap((m) => {
-    if (m.rule !== "PITCH_VARIETY") return [m];
-    let parts = [{ from: m.from, to: m.to }];
-    for (const r of register)
+  /** The parts of [from, to] outside every range in `cuts`. */
+  const outside = (
+    from: number,
+    to: number,
+    cuts: { from: number; to: number }[],
+  ) => {
+    let parts = [{ from, to }];
+    for (const r of cuts)
       parts = parts.flatMap((p) =>
         r.to < p.from || p.to < r.from
           ? [p]
@@ -281,14 +308,57 @@ export function detectPitch(
               { from: r.to + 1, to: p.to },
             ].filter((q) => q.from <= q.to),
       );
-    return parts.map((p) => ({ ...m, ...p }));
-  });
+    return parts;
+  };
+  // A stretch stuck high or low isn't also called monotone: register marks are
+  // cut out of monotone marks, leaving the monotone parts on either side.
+  const register = stuck.filter((m) => m.rule !== "PITCH_VARIETY");
+  const marks = stuck.flatMap((m) =>
+    m.rule === "PITCH_VARIETY"
+      ? outside(m.from, m.to, register).map((p) => ({ ...m, ...p }))
+      : [m],
+  );
+  // A lively melody is praised only where nothing is wrong with the pitch:
+  // marks and badly distracting heard stretches are cut out of it. A strength
+  // is a stretch to point at, so the liveliest windows are taken first, apart
+  // from each other, up to `melodyPerMinute` of speaking.
+  const problems = [
+    ...marks,
+    ...heard
+      .filter((h) => h.severity <= c.maxSeverity)
+      .map(cover)
+      .filter((i) => i.length)
+      .map((i) => ({ from: i[0], to: i.at(-1)! })),
+  ];
+  const most = Math.max(1, Math.round((total / 60) * c.melodyPerMinute));
+  const peaks: { from: number; to: number; spread: number }[] = [];
+  for (const hit of hits
+    .filter((h) => h.rule === "PITCH_MELODY")
+    .sort((x, y) => y.spread - x.spread)) {
+    if (peaks.length >= most) break;
+    if (peaks.some((p) => hit.from <= p.to && p.from <= hit.to)) continue;
+    const [clear] = outside(hit.from, hit.to, problems).filter(
+      (p) =>
+        ws.slice(p.from, p.to + 1).reduce((n, w) => n + w.notes.length, 0) *
+          HOP >=
+        c.minVoicedSeconds,
+    );
+    if (clear) peaks.push({ ...clear, spread: hit.spread });
+  }
+  const strengths = peaks
+    .sort((x, y) => x.from - y.from)
+    .map((p) => ({
+      ...span(p.from, p.to),
+      rule: "PITCH_MELODY" as const,
+      spread: p.spread,
+    }));
   return {
+    strengths,
     marks: marks
       .sort((x, y) => x.from - y.from)
       .map(({ rule, from, to, spread, shift, how, fix }) => ({
         ...span(from, to),
-        rule,
+        rule: rule as PitchRule,
         spread,
         shift,
         ...(how ? { how, fix } : {}),

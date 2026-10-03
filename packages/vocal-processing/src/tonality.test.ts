@@ -255,3 +255,42 @@ test("a failed review sends no further audio and cancels what is in flight", asy
   assert.equal(calls, 4);
   assert.ok(textSignal[0].aborted);
 });
+
+test("an expressive passage that stands out from the speaker's usual is a strength", () => {
+  const ps = passages(words(60));
+  const fits = new Map<string, Emotion[]>([
+    ["p1", ["happy", "neutral"]],
+    ["p2", ["surprised"]],
+    ["p3", ["neutral"]],
+    ["p4", ["sad"]],
+  ]);
+  // An untrained speaker: mostly flat or ordinary, so each expressive passage stands out, and adjacent ones form one.
+  const untrained = detectTonality(ps, [4, 5, 3, 3], fits);
+  assert.equal(untrained.usual, 3);
+  assert.deepEqual(
+    untrained.strengths.map((s) => [
+      s.rule,
+      s.first,
+      s.last,
+      s.expected,
+      s.expressiveness,
+    ]),
+    [["TONE_EXPRESSIVE", 0, 29, ["happy", "neutral", "surprised"], 5]],
+  );
+  // A speaker who is expressive throughout: only what rises above that is marked,
+  // and a calm passage isn't praised for feeling it doesn't call for.
+  const skilled = detectTonality(ps, [4, 5, 5, 4], fits);
+  assert.equal(skilled.usual, 4);
+  assert.deepEqual(
+    skilled.strengths.map((s) => [s.first, s.last, s.expected]),
+    [[15, 29, ["surprised"]]],
+  );
+  const even = detectTonality(ps, [4, 4, 4, 4], fits);
+  assert.deepEqual([even.usual, even.strengths], [4, []]);
+  assert.deepEqual(
+    detectTonality(ps, [4, 5, 3, 3], fits, {
+      expressiveScore: 5,
+    }).strengths.map((s) => [s.first, s.last]),
+    [[15, 29]],
+  );
+});

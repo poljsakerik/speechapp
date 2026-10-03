@@ -8,7 +8,7 @@
  * speakers hesitate too, and the lessons' jump cuts remove real pauses.
  * Model replies are cached per take and run label.
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { loadAnnotation, loadCorpus } from "../src/benchmark.ts";
@@ -20,6 +20,8 @@ import {
   pauseAfterWords,
   type PauseRule,
 } from "../src/pause.ts";
+import { decodeWav } from "../src/pauses.ts";
+import { cachedJudgment } from "./cache.ts";
 import { cachedCompletion, loadTake } from "./take-audio.ts";
 
 const RULES: PauseRule[] = [
@@ -35,6 +37,8 @@ const { values, positionals } = parseArgs({
     "recognizer-timing": { type: "boolean", default: false },
     report: { type: "string" },
     run: { type: "string", default: "default" },
+    // Keep breaks and missing pauses only where the audio model hears one (needs GEMINI_API_KEY; replies are cached).
+    listen: { type: "boolean", default: false },
   },
 });
 const root = resolve(
@@ -79,6 +83,15 @@ for (const take of takes) {
       pauses,
       complete,
       values["recognizer-timing"] ? undefined : original,
+      values.listen
+        ? {
+            audio: decodeWav(readFileSync(`${base}.${take.audioExtension}`)),
+            judge: cachedJudgment(
+              join(root, take.base, "..", ".cache"),
+              values.run,
+            ),
+          }
+        : undefined,
     );
     if (!review.reliable) throw new Error(`pause review ${review.status}`);
     const gold = annotation.marks.filter((m) => m.foundationType === "pauses");

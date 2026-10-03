@@ -221,3 +221,52 @@ test("a pause the two timings place at different words gets no finding", () => {
     [4, 8],
   );
 });
+
+test("with an audio model, a break must sound hesitant and a missing pause must sound like running on", async () => {
+  const audio = { samples: new Float32Array(16000 * 12), sampleRate: 16000 };
+  const read = reply((id) => ["breaks", "too_long", "breaks"][id], [12]);
+  /** Hears each pause and each place without one as told; the prompt says which is asked. */
+  const judge =
+    (pause: (prompt: string) => string, moment: string) =>
+    async ({ prompt }: { prompt: string }) =>
+      prompt.includes("pauses for") ? { pause: pause(prompt) } : { moment };
+  const heard = await reviewPause(t.words, t.pauses, read, undefined, {
+    audio,
+    judge: judge(
+      (p) => (p.includes('"We looked"') ? "hesitant" : "deliberate"),
+      "clear",
+    ),
+  });
+  assert.deepEqual(
+    heard.marks.map((m) => [m.rule, m.at]),
+    // The second break sounds deliberate and the stretch sounds clear; too long is the text model's call.
+    [
+      ["PAUSE_UNNECESSARY", [1]],
+      ["PAUSE_TOO_LONG", [4]],
+    ],
+  );
+  assert.deepEqual([heard.heard, heard.read, heard.kept], [true, 4, 2]);
+  const runsOn = await reviewPause(t.words, t.pauses, read, undefined, {
+    audio,
+    judge: judge(() => "ordinary", "runs_on"),
+  });
+  assert.deepEqual(
+    runsOn.marks.map((m) => [m.rule, m.at]),
+    [
+      ["PAUSE_TOO_LONG", [4]],
+      ["PAUSE_NECESSARY", [12]],
+    ],
+  );
+  // If the audio model fails, the text model's findings stand, and the review says they were not heard.
+  const unheard = await reviewPause(t.words, t.pauses, read, undefined, {
+    audio,
+    judge: async () => {
+      throw new Error("Gemini unavailable");
+    },
+  });
+  assert.deepEqual(
+    [unheard.marks.length, unheard.heard, unheard.reliable],
+    [4, false, true],
+  );
+  assert.equal((await reviewPause(t.words, t.pauses, read)).heard, false);
+});

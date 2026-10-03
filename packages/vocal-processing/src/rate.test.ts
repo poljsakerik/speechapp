@@ -220,3 +220,47 @@ test("a passage needs at least two key and two setup phrases to judge", () => {
     "nothing was judged, so this is not a clean assessment",
   );
 });
+
+/** Five-word sentences, the words of sentence k lasting `seconds[k]`, scored `scores[k]`. */
+function sentences(seconds: number[], scores: number[]) {
+  let t = 0;
+  const words = seconds.flatMap((s) =>
+    Array.from({ length: 5 }, (_, i) => {
+      const start = t;
+      t += s;
+      return { text: i === 4 ? "day." : "day", start, end: t };
+    }),
+  );
+  return { words, pacing: { phrases: pacingPhrases(words), scores } };
+}
+
+test("a key phrase spoken far slower than the speaker's usual pace is a strength", () => {
+  // Key phrases at 0.4 s a word against a usual 0.17: 43% of the usual pace, as in the coach's "make sure you slow down".
+  const slowed = passage(0.4, 0.17);
+  const { strengths } = detectRate(slowed.words, {}, [], slowed.pacing);
+  assert.equal(strengths.length, 6);
+  assert.ok(strengths.every((s) => s.rule === "RATE_SLOWS_FOR_POINT"));
+  assert.deepEqual([strengths[0].focus.first, strengths[0].focus.last], [0, 4]);
+  assert.ok(Math.abs(2 ** strengths[0].pace - 0.17 / 0.4) < 0.01);
+  // 68% of the usual pace is a slower phrase, not a highlight.
+  const modest = passage(0.25, 0.17);
+  assert.deepEqual(
+    detectRate(modest.words, {}, [], modest.pacing).strengths,
+    [],
+  );
+  assert.deepEqual(
+    detectRate(slowed.words).strengths,
+    [],
+    "needs a prediction",
+  );
+});
+test("a slowed phrase the prediction calls setup isn't a strength, and adjacent highlights form one", () => {
+  const seconds = [
+    0.17, 0.4, 0.4, 0.17, 0.17, 0.17, 0.17, 0.17, 0.4, 0.17, 0.17, 0.17,
+  ];
+  const scores = [2, -2, -1, 2, 0, 2, -1, 2, 1, 2, 0, 2];
+  const t = sentences(seconds, scores);
+  const { strengths } = detectRate(t.words, {}, [], t.pacing);
+  assert.equal(strengths.length, 1, "the slow setup phrase is not praised");
+  assert.deepEqual([strengths[0].first, strengths[0].last], [5, 14]);
+});

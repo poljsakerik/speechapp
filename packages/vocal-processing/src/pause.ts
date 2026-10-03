@@ -25,7 +25,7 @@ export type PauseMark = {
   rule: PauseRule;
   at: number[];
 };
-export const PAUSE_VERSION = 3;
+export const PAUSE_VERSION = 4;
 /** Any silence this long is a pause, as in findPauses; shorter gaps are mostly consonant closures. */
 export const PAUSE_SECONDS = 0.2;
 
