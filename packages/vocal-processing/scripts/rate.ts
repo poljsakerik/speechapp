@@ -2,8 +2,8 @@
 import { readFileSync } from "node:fs";
 import { alignWords, loadAligner, resample } from "../src/align.ts";
 import { transcribe, wordsFromDeepgram } from "../src/deepgram.ts";
+import { mapDelivery, pacingOf } from "../src/delivery-map.ts";
 import { openaiCompletion } from "../src/openai.ts";
-import { predictPacing } from "../src/pacing.ts";
 import { decodeWav, findPauses } from "../src/pauses.ts";
 import { detectRate } from "../src/rate.ts";
 
@@ -19,7 +19,9 @@ const response = path.endsWith(".json")
   ? JSON.parse(file.toString("utf8"))
   : await transcribe(file);
 let words = wordsFromDeepgram(response);
-const pacing = await predictPacing(words, openaiCompletion());
+const map = await mapDelivery(words, openaiCompletion());
+if (!map) throw new Error("The delivery map is incomplete");
+const pacing = pacingOf(map);
 const wav = path.endsWith(".wav") ? decodeWav(file) : undefined;
 const pauses = wav && findPauses(wav.samples, wav.sampleRate);
 if (wav)

@@ -58,23 +58,29 @@ export async function loadTake(root: string, take: Take, align = true) {
   return { base, original, words, text, pauses, audioHash };
 }
 
-/** Model replies cached by request, model settings and run label, so benchmark reruns are reproducible. */
+/**
+ * Model replies cached by request, model settings and run label, so benchmark
+ * reruns are reproducible. A request made again in the same run is another
+ * reading (delivery-map.ts merges several) and is cached as its own reply.
+ */
 export function cachedCompletion(
   dir: string,
   complete: JsonCompletion,
   settings: unknown,
 ): JsonCompletion {
+  const asked = new Map<string, number>();
   return async (request) => {
     // The provider's cache key doesn't change the reply, so saved replies stay valid.
+    const key = JSON.stringify({
+      request: { ...request, cacheKey: undefined },
+      settings,
+    });
+    const reading = asked.get(key) ?? 0;
+    asked.set(key, reading + 1);
     const file = join(
       dir,
       `reply-${createHash("sha256")
-        .update(
-          JSON.stringify({
-            request: { ...request, cacheKey: undefined },
-            settings,
-          }),
-        )
+        .update(reading ? `${key}#${reading}` : key)
         .digest("hex")}.json`,
     );
     if (existsSync(file)) return JSON.parse(readFileSync(file, "utf8"));

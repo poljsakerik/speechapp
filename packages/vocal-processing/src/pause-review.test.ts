@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { Place } from "./delivery-map.ts";
 import type { AudioJudgment } from "./gemini.ts";
-import {
-  confirmedPauses,
-  parseReview,
-  reviewParts,
-  reviewPause,
-  reviewRequest,
-  stretches,
-} from "./pause-review.ts";
-import type { JsonCompletion } from "./types.ts";
+import { confirmedPauses, pausesMet, reviewPause } from "./pause-review.ts";
 
 /** Words of 0.2 s; `gaps` maps a word index to the measured silence after it. */
 function take(texts: string[], gaps: Record<number, number>) {
@@ -26,6 +19,9 @@ function take(texts: string[], gaps: Record<number, number>) {
   });
   return { words, pauses };
 }
+/** A map of `length` words with a phrase ending after each of `ends`. */
+const mapped = (length: number, ends: Record<number, Place>) =>
+  Array.from({ length }, (_, i) => ends[i] ?? null);
 const t = take(
   "We looked at the data. It was clear that the plan had worked well for everyone involved.".split(
     " ",
@@ -37,184 +33,146 @@ const marked = [
   { after: 4, seconds: 3.4 },
   { after: 8, seconds: 0.7 },
 ];
-const ids = (user: string) =>
-  [...user.matchAll(/P(\d+)(?=[,\n ]|$)/g)].map((m) => Number(m[1]));
-/** A reply giving each pause in the request `verdict(id)` and no special work, and offering `missing` for every stretch it is asked about. */
-const reply =
-  (verdict: (id: number) => string, missing: number[] = []): JsonCompletion =>
-  async ({ user }) => {
-    const asked = user.split("Review only")[1];
-    return {
-      pauses: [...new Set(ids(asked.split("\n")[0]))].map((id) => ({
-        id,
-        verdict: verdict(id),
-        work: "ordinary",
-      })),
-      stretches: [...asked.matchAll(/S(\d+):/g)].map((m) => ({
-        id: Number(m[1]),
-        pause_after: missing,
-      })),
-    };
-  };
+// A pause is needed after "data." and after "worked", and fits after "clear".
+const places = mapped(17, { 4: "needed", 7: "optional", 12: "needed" });
+const rules = (review: Awaited<ReturnType<typeof reviewPause>>) =>
+  review.marks.map((m) => [m.rule, m.at]);
 
-test("every real pause is marked in place with its length, and every stretch without one is listed", () => {
-  const { user } = reviewRequest(t.words, marked, () => 1);
-  assert.match(user, /1:looked \[P0 0\.6s\] 2:at/);
-  assert.match(user, /4:data\. \[P1 3\.4s\] 5:It/);
-  assert.deepEqual(stretches(t.words, marked), [
-    [0, 1],
-    [2, 4],
-    [5, 8],
-    [9, 16],
-  ]);
-  assert.match(user, /S3: words 9-16, 1\.6s, 8 syllables/);
-});
-
-test("a reply must judge every pause and stretch asked about; missing pauses must sit inside a stretch", () => {
-  const fits = [0, 1, 2].map((id) => ({ id, verdict: "fits" })),
-    none = [0, 1, 2].map((id) => ({ id, pause_after: [] }));
-  assert.equal(
-    parseReview(t.words, marked, {
-      pauses: [{ id: 0, verdict: "fits" }],
-      stretches: [...none, { id: 3, pause_after: [] }],
-    }),
-    undefined,
-  );
-  assert.equal(
-    parseReview(t.words, marked, { pauses: fits, stretches: none }),
-    undefined,
-    "stretch 3 is not judged",
-  );
-  const ok = parseReview(t.words, marked, {
-    pauses: fits,
-    stretches: [...none, { id: 3, pause_after: [12, 16, 4, 2.5] }],
-  });
-  assert.deepEqual(
-    ok?.missing,
-    [12],
-    "16 ends the stretch, 4 is outside it, 2.5 is not a word",
-  );
-});
-
-test("long takes are reviewed in parts that never split a stretch", () => {
-  const long = take(
-    Array.from({ length: 300 }, (_, i) => `w${i}`),
-    Object.fromEntries(Array.from({ length: 29 }, (_, k) => [k * 10 + 9, 0.5])),
-  );
-  const pauses = Array.from({ length: 29 }, (_, k) => ({
-    after: k * 10 + 9,
-    seconds: 0.5,
-  }));
-  const parts = reviewParts(long.words, pauses);
-  assert.deepEqual(parts, [
-    [0, 119],
-    [120, 239],
-    [240, 299],
-  ]);
-  // The pause that ends a part is judged there, so every pause is judged exactly once.
-  const asked = parts.flatMap((part) =>
-    ids(
-      reviewRequest(long.words, pauses, () => 1, part)
-        .user.split("Review only")[1]
-        .split("\n")[0],
-    ),
-  );
-  assert.deepEqual(
-    asked,
-    pauses.map((_, k) => k),
-  );
-});
-
-test("a pause at a part boundary is judged", async () => {
-  const long = take(
-    Array.from({ length: 125 }, (_, i) => `w${i}`),
-    { 119: 0.8 },
-  );
-  const review = await reviewPause(
-    long.words,
-    long.pauses,
-    reply(() => "breaks"),
-  );
-  assert.deepEqual(
-    review.marks.map((m) => [m.rule, m.at]),
-    [["PAUSE_UNNECESSARY", [119]]],
-  );
-});
-
-test("findings name their words and group by kind; a fitting pause yields nothing", async () => {
-  const review = await reviewPause(
-    t.words,
-    t.pauses,
-    reply((id) => ["breaks", "too_long", "fits"][id], [12]),
-  );
+test("a pause inside a phrase breaks it, a needed place without one misses it, and a silence of seconds is too long", async () => {
+  const review = await reviewPause(t.words, t.pauses, places);
   assert.equal(review.status, "reviewed");
+  assert.deepEqual(rules(review), [
+    ["PAUSE_UNNECESSARY", [1]],
+    ["PAUSE_TOO_LONG", [4]],
+    ["PAUSE_UNNECESSARY", [8]],
+    ["PAUSE_NECESSARY", [12]],
+  ]);
   assert.deepEqual(
-    review.marks.map((m) => [m.rule, m.at]),
+    review.marked.map((p) => [p.after, +p.seconds.toFixed(1)]),
+    marked.map((p) => [p.after, p.seconds]),
+  );
+  // What the speaker did at each place needing a pause: the measure two takes are compared on.
+  assert.deepEqual(
+    review.places!.map((p) => [p.at, p.place, p.outcome]),
     [
-      ["PAUSE_UNNECESSARY", [1]],
-      ["PAUSE_TOO_LONG", [4]],
-      ["PAUSE_NECESSARY", [12]],
+      [4, "needed", "paused"],
+      [12, "needed", "missed"],
     ],
   );
+  assert.deepEqual(pausesMet(review.places!), { met: 1, of: 2 });
+  // The same take against the same map always reads the same.
+  assert.deepEqual(await reviewPause(t.words, t.pauses, places), review);
+});
+
+test("a pause where one fits yields nothing, and a stop too short to hear inside a phrase is not a break", async () => {
+  const fits = await reviewPause(
+    t.words,
+    t.pauses,
+    mapped(17, { 1: "optional", 4: "optional", 8: "optional" }),
+    { config: { longSeconds: 5 } },
+  );
+  assert.deepEqual(fits.marks, []);
+  const brief = take(
+    t.words.map((w) => w.text),
+    { 2: 0.25, 4: 0.5 },
+  );
   assert.deepEqual(
-    (
-      await reviewPause(
-        t.words,
-        t.pauses,
-        reply(() => "fits"),
-      )
-    ).marks,
-    [],
+    rules(await reviewPause(brief.words, brief.pauses, places)),
+    [["PAUSE_NECESSARY", [12]]],
   );
 });
 
-test("without a model or a usable reply, pauses are not assessed rather than judged by fixed rules", async () => {
-  assert.equal((await reviewPause(t.words, t.pauses)).status, "no model");
+test("a moment to hold is missed, too short with only a breath, or held", async () => {
+  const outcome = async (seconds: number) => {
+    const held = take(
+      t.words.map((w) => w.text),
+      seconds ? { 4: seconds } : {},
+    );
+    const review = await reviewPause(
+      held.words,
+      held.pauses,
+      mapped(17, { 4: "land" }),
+    );
+    return [review.places![0].outcome, review.marks[0]?.rule];
+  };
+  assert.deepEqual(await outcome(0), ["missed", "PAUSE_NECESSARY"]);
+  assert.deepEqual(await outcome(0.3), ["short", "PAUSE_TOO_SHORT"]);
+  assert.deepEqual(await outcome(0.5), ["paused", undefined]);
+  assert.deepEqual(await outcome(1.2), ["held", undefined]);
+});
+
+test("passing place after place where a pause fits is a run-on, even when none of them needs one", async () => {
+  const texts = Array.from({ length: 40 }, (_, i) => `w${i}`);
+  // A phrase ends every fourth word; none is marked as needed.
+  const optional = mapped(
+    40,
+    Object.fromEntries(
+      Array.from({ length: 9 }, (_, k) => [k * 4 + 3, "optional" as const]),
+    ),
+  );
+  const rushed = take(texts, {});
+  assert.deepEqual(
+    rules(await reviewPause(rushed.words, rushed.pauses, optional)),
+    // The middle of the nine places passed.
+    [["PAUSE_NECESSARY", [19]]],
+  );
+  // One pause on the way, and neither half is a run-on.
+  const once = take(texts, { 15: 0.5 });
+  assert.deepEqual(
+    rules(await reviewPause(once.words, once.pauses, optional)),
+    [],
+  );
+  // A place in the run that needs a pause is a finding of its own.
+  const needed = [...optional];
+  needed[7] = "needed";
+  assert.deepEqual(
+    (await reviewPause(rushed.words, rushed.pauses, needed)).marks.flatMap(
+      (m) => m.at,
+    ),
+    [7, 19],
+  );
+});
+
+test("findings of one kind close together form one highlight", async () => {
+  const choppy = take(
+    t.words.map((w) => w.text),
+    { 0: 0.5, 2: 0.5, 5: 0.5 },
+  );
+  const review = await reviewPause(choppy.words, choppy.pauses, mapped(17, {}));
+  assert.deepEqual(rules(review), [["PAUSE_UNNECESSARY", [0, 2, 5]]]);
+  assert.equal(review.marks[0].text, "We looked at the data. It was clear");
+});
+
+test("without a map of the take's words, pauses are not assessed rather than judged by fixed rules", async () => {
+  assert.equal((await reviewPause(t.words, t.pauses)).status, "no map");
   assert.equal(
-    (
-      await reviewPause(t.words, t.pauses, async () => {
-        throw new Error("offline");
-      })
-    ).reliable,
+    (await reviewPause(t.words, t.pauses, places.slice(1))).reliable,
     false,
   );
   assert.equal(
     (
-      await reviewPause(t.words, t.pauses, async () => ({
-        pauses: [],
-        stretches: [],
-      }))
+      await reviewPause(
+        [{ text: "untimed" }, { text: "words" }],
+        [],
+        [null, null],
+      )
     ).status,
-    "unusable reply",
-  );
-  // An incomplete reply is asked again once.
-  let calls = 0;
-  const flaky: JsonCompletion = async (request) =>
-    ++calls === 1
-      ? { pauses: [], stretches: [] }
-      : reply(() => "fits")(request);
-  assert.equal(
-    (await reviewPause(t.words, t.pauses, flaky)).status,
-    "reviewed",
-  );
-  assert.equal(calls, 2);
-  // A take without any pause is still one stretch the model must judge.
-  const unbroken = take(
-    "We looked at the data and it was clear that it worked".split(" "),
-    {},
-  );
-  assert.equal(
-    (
-      await reviewPause(unbroken.words, unbroken.pauses, async () => ({
-        pauses: [],
-        stretches: [],
-      }))
-    ).status,
-    "unusable reply",
+    "no timing",
   );
 });
 
-test("a pause the two timings place at different words gets no finding", () => {
+test("words the map doesn't cover are not assessed", async () => {
+  // A later take of the text: "at the data." is new to it, so its pauses and places are left alone.
+  const carried = places.map((p, i) => (i >= 1 && i <= 4 ? undefined : p));
+  const review = await reviewPause(t.words, t.pauses, carried);
+  assert.deepEqual(rules(review), [
+    ["PAUSE_UNNECESSARY", [8]],
+    ["PAUSE_NECESSARY", [12]],
+  ]);
+  assert.deepEqual(pausesMet(review.places!), { met: 0, of: 1 });
+});
+
+test("a pause the two timings place at different words gets no finding", async () => {
   const recognized = t.words.map((w, i) =>
     i === 2 ? { ...w, start: w.start - 0.5 } : w,
   );
@@ -222,70 +180,84 @@ test("a pause the two timings place at different words gets no finding", () => {
     confirmedPauses(t.words, recognized, marked).map((p) => p.after),
     [4, 8],
   );
+  const review = await reviewPause(t.words, t.pauses, places, { recognized });
+  assert.deepEqual(
+    rules(review).map(([rule]) => rule),
+    ["PAUSE_TOO_LONG", "PAUSE_UNNECESSARY", "PAUSE_NECESSARY"],
+  );
+  // Nor does a place next to it count for or against the speaker.
+  const beside = await reviewPause(
+    t.words,
+    t.pauses,
+    mapped(17, { 2: "needed" }),
+    { recognized },
+  );
+  assert.deepEqual(pausesMet(beside.places!), { met: 0, of: 0 });
 });
 
-test("with an audio model, a break must sound hesitant and a missing pause must sound like running on", async () => {
-  const audio = { samples: new Float32Array(16000 * 12), sampleRate: 16000 };
-  const read = reply((id) => ["breaks", "too_long", "breaks"][id], [12]);
-  /** Hears each listed pause as `pause(its line)` and each place without one as `moment`. */
-  const judge =
-    (pause: (line: string) => string, moment: string): AudioJudgment =>
-    async ({ prompt }) => ({
-      moments: [...prompt.matchAll(/^(\d+)\. .*$/gm)].map((m) => ({
-        id: Number(m[1]),
-        sound: m[0].includes("pauses for") ? pause(m[0]) : moment,
-      })),
-    });
-  const heard = await reviewPause(t.words, t.pauses, read, undefined, {
-    audio,
-    judge: judge(
-      (line) => (line.includes('"We looked"') ? "hesitant" : "deliberate"),
-      "clear",
-    ),
+/** Hears each listed pause as `pause(its line)` and each place without one as `moment`. */
+const judge =
+  (pause: (line: string) => string, moment: string): AudioJudgment =>
+  async ({ prompt }) => ({
+    moments: [...prompt.matchAll(/^(\d+)\. .*$/gm)].map((m) => ({
+      id: Number(m[1]),
+      sound: m[0].includes("pauses for") ? pause(m[0]) : moment,
+    })),
   });
-  assert.deepEqual(
-    heard.marks.map((m) => [m.rule, m.at]),
-    // The second break sounds deliberate and the stretch sounds clear; too long is the text model's call.
-    [
-      ["PAUSE_UNNECESSARY", [1]],
-      ["PAUSE_TOO_LONG", [4]],
-    ],
-  );
-  assert.deepEqual([heard.heard, heard.read, heard.kept], [true, 4, 2]);
-  const runsOn = await reviewPause(t.words, t.pauses, read, undefined, {
-    audio,
-    judge: judge(() => "ordinary", "runs_on"),
+const audio = { samples: new Float32Array(16000 * 12), sampleRate: 16000 };
+
+test("with an audio model, a break must sound hesitant, a missing pause like running on, and a long silence not deliberate", async () => {
+  const heard = await reviewPause(t.words, t.pauses, places, {
+    hear: {
+      audio,
+      judge: judge(
+        (line) => (line.includes('"We looked"') ? "hesitant" : "deliberate"),
+        "clear",
+      ),
+    },
   });
+  // The second break and the long silence sound deliberate, and the voice finishes the thought after "worked".
+  assert.deepEqual(rules(heard), [["PAUSE_UNNECESSARY", [1]]]);
+  assert.deepEqual([heard.heard, heard.read, heard.kept], [true, 4, 1]);
   assert.deepEqual(
-    runsOn.marks.map((m) => [m.rule, m.at]),
-    [
-      ["PAUSE_TOO_LONG", [4]],
-      ["PAUSE_NECESSARY", [12]],
-    ],
+    heard.places!.map((p) => p.outcome),
+    ["paused", "clear"],
   );
-  // If the audio model fails, the text model's findings stand, and the review says they were not heard.
-  const unheard = await reviewPause(t.words, t.pauses, read, undefined, {
-    audio,
-    judge: async () => {
-      throw new Error("Gemini unavailable");
+  assert.deepEqual(pausesMet(heard.places!), { met: 2, of: 2 });
+  const runsOn = await reviewPause(t.words, t.pauses, places, {
+    hear: { audio, judge: judge(() => "ordinary", "runs_on") },
+  });
+  assert.deepEqual(rules(runsOn), [
+    ["PAUSE_TOO_LONG", [4]],
+    ["PAUSE_NECESSARY", [12]],
+  ]);
+  // If the audio model fails, the map's findings stand, and the review says they were not heard.
+  const unheard = await reviewPause(t.words, t.pauses, places, {
+    hear: {
+      audio,
+      judge: async () => {
+        throw new Error("Gemini unavailable");
+      },
     },
   });
   assert.deepEqual(
     [unheard.marks.length, unheard.heard, unheard.reliable],
     [4, false, true],
   );
-  assert.equal((await reviewPause(t.words, t.pauses, read)).heard, false);
+  assert.equal((await reviewPause(t.words, t.pauses, places)).heard, false);
+  // Findings that need no hearing are kept as read.
+  const kept = await reviewPause(t.words, t.pauses, places, {
+    hear: { audio, judge: judge(() => "deliberate", "clear") },
+    config: { breakSounds: [], missingMustRunOn: false },
+  });
+  assert.deepEqual(kept.kept, 3, "only the long silence was heard");
 });
 
 test("moments close together are heard in one request", async () => {
-  const audio = { samples: new Float32Array(16000 * 12), sampleRate: 16000 };
   const prompts: string[] = [];
-  const review = await reviewPause(
-    t.words,
-    t.pauses,
-    reply((id) => ["breaks", "fits", "breaks"][id], [12]),
-    undefined,
-    {
+  const review = await reviewPause(t.words, t.pauses, places, {
+    config: { longSeconds: 5 },
+    hear: {
       audio,
       judge: async ({ prompt }) => {
         prompts.push(prompt);
@@ -298,7 +270,7 @@ test("moments close together are heard in one request", async () => {
         };
       },
     },
-  );
+  });
   assert.equal(prompts.length, 1);
   assert.match(
     prompts[0],
@@ -309,4 +281,5 @@ test("moments close together are heard in one request", async () => {
     /3\. At .* the speaker goes on without a real pause\./,
   );
   assert.equal(review.kept, 3);
+  assert.deepEqual(review.hearing, { moments: 3, clips: 1 });
 });

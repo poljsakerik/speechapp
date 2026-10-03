@@ -1,10 +1,10 @@
 /**
- * How well a group of speakers' pace follows the text-based pacing prediction,
+ * How well a group of speakers' pace follows the delivery map's pace scores,
  * and how often the contrast check flags their passages. Skilled speakers
  * should agree more and be flagged less than untrained ones, but not
  * perfectly: speech allows several valid paces.
  *
- *   node scripts/eval-pacing.ts recordings.json [--report out.json]
+ *   node scripts/eval-pacing.ts recordings.json [--report out.json] [--run label] [--readings n]
  *
  * recordings.json lists { name, group, audio, transcript }: a PCM WAV and its
  * Deepgram JSON response. Paths are relative to the list file.
@@ -21,14 +21,19 @@ import {
   type Aligner,
 } from "../src/align.ts";
 import { wordsFromDeepgram } from "../src/deepgram.ts";
-import { predictPacing } from "../src/pacing.ts";
+import { mapDelivery, pacingOf } from "../src/delivery-map.ts";
+import { openaiCompletion, rateModelSettings } from "../src/openai.ts";
 import { decodeWav, findPauses } from "../src/pauses.ts";
 import { RATE_VERSION, detectRate } from "../src/rate.ts";
-import { cachedCompletion } from "./cache.ts";
+import { cachedCompletion } from "./take-audio.ts";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { report: { type: "string" } },
+  options: {
+    report: { type: "string" },
+    run: { type: "string", default: "default" },
+    readings: { type: "string", default: "1" },
+  },
 });
 if (!positionals[0])
   throw new Error(
@@ -66,6 +71,7 @@ const correlation = (a: number[], b: number[]) => {
   );
   return d ? a.reduce((s, x, i) => s + (x - ma) * (b[i] - mb), 0) / d : 0;
 };
+const settings = { ...rateModelSettings(), run: values.run };
 let aligner: Aligner | undefined;
 const rows: {
   name: string;
@@ -105,7 +111,11 @@ for (const r of recordings) {
     words,
     {},
     pauses,
-    await predictPacing(original, cachedCompletion(cache)),
+    await mapDelivery(
+      original,
+      cachedCompletion(cache, openaiCompletion(settings), settings),
+      { readings: Number(values.readings) },
+    ).then((map) => map && pacingOf(map)),
   );
   if (!analysis.reliable || analysis.phrases.length < 5) {
     console.log(`${r.name}: too little speech`);

@@ -1,5 +1,6 @@
 /**
- * Evaluate pause review on the annotated pause development benchmark.
+ * Evaluate pause review on the annotated pause development benchmark. Each
+ * take's delivery map is made from its own words, as for a first take.
  *
  * A demonstration can rightly get several findings, e.g. two places to pause
  * in one run-on, so a finding is correct when it falls inside an annotated span
@@ -12,9 +13,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { loadAnnotation, loadCorpus } from "../src/benchmark.ts";
+import {
+  DELIVERY_MAP_VERSION,
+  mapDelivery,
+  placesOf,
+} from "../src/delivery-map.ts";
 import { alignMarks, wordOffsets } from "../src/golden.ts";
 import { openaiCompletion, rateModelSettings } from "../src/openai.ts";
-import { reviewPause } from "../src/pause-review.ts";
+import { pausesMet, reviewPause } from "../src/pause-review.ts";
 import {
   PAUSE_VERSION,
   pauseAfterWords,
@@ -40,6 +46,9 @@ const { values, positionals } = parseArgs({
     run: { type: "string", default: "default" },
     // Keep breaks and missing pauses only where the audio model hears one (needs GEMINI_API_KEY; replies are cached).
     listen: { type: "boolean", default: false },
+    // Mark up the text with the recognizer's punctuation, and this many times (delivery-map.ts).
+    punctuation: { type: "boolean", default: false },
+    readings: { type: "string", default: "3" },
   },
 });
 const root = resolve(
@@ -65,6 +74,8 @@ let spans = 0,
   cleanFindings = 0,
   cleanMinutes = 0,
   failed = 0;
+// Places the map says need a pause, and how many got one, in clean and flawed takes.
+const needed = { clean: { met: 0, of: 0 }, flawed: { met: 0, of: 0 } };
 for (const take of takes) {
   try {
     const annotation = loadAnnotation(join(root, take.base));
@@ -83,24 +94,27 @@ for (const take of takes) {
       openaiCompletion(settings),
       settings,
     );
-    const review = await reviewPause(
-      words,
-      pauses,
-      complete,
-      values["recognizer-timing"] ? undefined : original,
-      values.listen
+    const map = await mapDelivery(words, complete, {
+      punctuation: values.punctuation,
+      readings: Number(values.readings),
+    });
+    if (!map) throw new Error("delivery map incomplete");
+    const fits = placesOf(map, words.length);
+    const review = await reviewPause(words, pauses, fits, {
+      recognized: values["recognizer-timing"] ? undefined : original,
+      hear: values.listen
         ? {
             audio: decodeWav(readFileSync(`${base}.${take.audioExtension}`)),
             judge: cachedJudgment(
               join(root, take.base, "..", ".cache"),
               values.run,
             ),
-            config: config.pauseHeard,
             hearing: config.hearing,
           }
         : undefined,
-      config.strengths && config.pauseStrength,
-    );
+      strength: config.strengths && config.pauseStrength,
+      config: config.pauseReview,
+    });
     if (!review.reliable) throw new Error(`pause review ${review.status}`);
     moments += review.hearing?.moments ?? 0;
     clips += review.hearing?.clips ?? 0;
@@ -121,6 +135,10 @@ for (const take of takes) {
       ),
     );
     const minutes = take.duration / 60;
+    const places = pausesMet(review.places ?? []),
+      group = needed[gold.length ? "flawed" : "clean"];
+    group.met += places.met;
+    group.of += places.of;
     if (gold.length) {
       spans += gold.length;
       found += goldFound.filter(Boolean).length;
@@ -138,7 +156,10 @@ for (const take of takes) {
         {
           model: `${settings.model}:${settings.effort}`,
           version: PAUSE_VERSION,
+          mapVersion: DELIVERY_MAP_VERSION,
           run: values.run,
+          map: fits,
+          places: review.places,
           pauses,
           marks: review.marks.map((m, i) => ({
             startAt: m.start,
@@ -167,6 +188,7 @@ for (const take of takes) {
       goldFound: goldFound.filter(Boolean).length,
       findings: review.marks.length,
       correct: hit.filter(Boolean).length,
+      placesMet: `${places.met}/${places.of}`,
       minutes,
     });
     const list = review.marks
@@ -176,7 +198,7 @@ for (const take of takes) {
       )
       .join("; ");
     console.log(
-      `${take.id}: ${gold.length ? `${goldFound.filter(Boolean).length}/${gold.length} annotated found, ${hit.filter(Boolean).length}/${review.marks.length} findings inside them` : `clean, ${review.marks.length} findings`}${list ? ` | ${list}` : ""}`,
+      `${take.id}: ${gold.length ? `${goldFound.filter(Boolean).length}/${gold.length} annotated found, ${hit.filter(Boolean).length}/${review.marks.length} findings inside them` : `clean, ${review.marks.length} findings`}, ${places.met}/${places.of} places met${list ? ` | ${list}` : ""}`,
     );
   } catch (error) {
     failed++;
@@ -192,6 +214,8 @@ const summary = {
   annotatedFound: `${found}/${spans}`,
   findingsInsideAnnotations: `${correct}/${findingsInFlawed}`,
   cleanFindingsPerMinute: +(cleanFindings / cleanMinutes).toFixed(2),
+  placesMetClean: `${needed.clean.met}/${needed.clean.of}`,
+  placesMetFlawed: `${needed.flawed.met}/${needed.flawed.of}`,
 };
 writeFileSync(
   values.report ? resolve(values.report) : join(root, "pause-benchmark.json"),
@@ -199,6 +223,7 @@ writeFileSync(
     {
       corpus: corpus.id,
       version: PAUSE_VERSION,
+      mapVersion: DELIVERY_MAP_VERSION,
       createdAt: new Date().toISOString(),
       model: settings,
       timing: values["recognizer-timing"] ? "recognizer" : "forced alignment",
@@ -211,6 +236,6 @@ writeFileSync(
   ) + "\n",
 );
 console.log(
-  `\nAnnotated mistakes found ${found}/${spans}; findings in flawed takes inside an annotation ${correct}/${findingsInFlawed}; clean takes ${cleanFindings} findings in ${cleanMinutes.toFixed(1)} min (${summary.cleanFindingsPerMinute}/min); ${failed} failed${values.listen ? `; ${moments} moments heard in ${clips} requests` : ""}. Development corpus, not held-out accuracy.`,
+  `\nAnnotated mistakes found ${found}/${spans}; findings in flawed takes inside an annotation ${correct}/${findingsInFlawed}; clean takes ${cleanFindings} findings in ${cleanMinutes.toFixed(1)} min (${summary.cleanFindingsPerMinute}/min); places needing a pause that got one: clean ${summary.placesMetClean}, flawed ${summary.placesMetFlawed}; ${failed} failed${values.listen ? `; ${moments} moments heard in ${clips} requests` : ""}. Development corpus, not held-out accuracy.`,
 );
 if (failed) process.exitCode = 1;

@@ -1,6 +1,6 @@
 /**
- * Every setting that decides what a review praises, and how pause findings
- * are heard, in one place, with environment overrides so they can change
+ * Every setting that decides what a review praises, and how pauses are
+ * measured and heard, in one place, with environment overrides so they can change
  * without a release.
  *
  * The defaults live with the code that uses them (DEFAULT_RATE_CONFIG and so
@@ -12,7 +12,7 @@
  * | --------------------------- | ------- | -------------------------------------------------------------------- |
  * | STRENGTHS                   | 1       | 0 reports no strengths at all                                        |
  * | STRENGTH_RATE_PACE_PERCENT  | 62      | A key phrase at this share of the usual pace, or slower              |
- * | STRENGTH_RATE_SCORE         | -1      | ...scored this or lower by the pacing prediction (-2 or -1)          |
+ * | STRENGTH_RATE_SCORE         | -1      | ...scored this or lower by the delivery map (-2 or -1)               |
  * | STRENGTH_PAUSE_SECONDS      | 0.6     | Shortest pause that can be a strength                                |
  * | STRENGTH_PAUSES_PER_MINUTE  | 2       | Most pause strengths named per minute                                |
  * | STRENGTH_PAUSES_AT_LEAST    | 2       | ...but a short take may have this many                               |
@@ -30,8 +30,8 @@
  */
 import { DEFAULT_HEARING_CONFIG, type HearingConfig } from "./pause-hearing.ts";
 import {
-  DEFAULT_PAUSE_HEARD_CONFIG,
-  type PauseHeardConfig,
+  DEFAULT_PAUSE_REVIEW_CONFIG,
+  type PauseReviewConfig,
 } from "./pause-review.ts";
 import {
   DEFAULT_PAUSE_STRENGTH_CONFIG,
@@ -49,8 +49,8 @@ export type ReviewConfig = {
   pitch: PitchConfig;
   tonality: TonalityConfig;
   pauseStrength: PauseStrengthConfig;
-  /** How the pause review's findings are checked against the audio. */
-  pauseHeard: PauseHeardConfig;
+  /** How a take's pauses are measured against its map and checked against the audio. */
+  pauseReview: PauseReviewConfig;
   hearing: HearingConfig;
   /**
    * Pause findings that undo a strength when they fall inside its words: a
@@ -168,13 +168,14 @@ export function reviewConfig(
         true,
       ),
     },
-    pauseHeard: {
+    pauseReview: {
+      ...DEFAULT_PAUSE_REVIEW_CONFIG,
       breakSounds: flag("PAUSE_HEAR_BREAKS", true)
-        ? DEFAULT_PAUSE_HEARD_CONFIG.breakSounds
+        ? DEFAULT_PAUSE_REVIEW_CONFIG.breakSounds
         : [],
       missingMustRunOn: flag(
         "PAUSE_HEAR_MISSING",
-        DEFAULT_PAUSE_HEARD_CONFIG.missingMustRunOn,
+        DEFAULT_PAUSE_REVIEW_CONFIG.missingMustRunOn,
       ),
     },
     hearing: {
