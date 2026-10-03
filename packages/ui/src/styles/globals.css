@@ -211,7 +211,7 @@
   background-image: var(--film);
 }
 
-/* Orange glass: the one warm light. Flat, lit only while something is live. */
+/* Orange glass: the one warm light, for play controls and whatever is live. */
 @utility glass-lit {
   background: var(--glass);
   box-shadow:
@@ -222,4 +222,73 @@
 @utility glass-dim {
   background: var(--graphite-line);
   box-shadow: 0 1px 2px oklch(0.2 0.005 60 / 0.3);
+}
+
+/* Album covers drawn from a take: the long soft drop of a sleeve on a table. */
+@utility cover-shadow {
+  box-shadow:
+    0 1px 2px oklch(0.2 0.005 60 / 0.12),
+    0 36px 70px -36px oklch(0.2 0.005 60 / 0.55);
+}
+
+/* A white booklet page: its edge and a soft lift. */
+@utility booklet-page {
+  border-radius: 10px;
+  background-color: var(--surface);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 1px 2px oklch(0.2 0.01 55 / 0.05),
+    0 24px 60px -36px oklch(0.25 0.005 60 / 0.3);
+}
+
+/* Each ridge rises from its baseline once, line by line, as the cover draws itself. */
+@keyframes ridge-rise {
+  from {
+    transform: scaleY(0.04);
+    opacity: 0;
+  }
+}
+.cover-ridge {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: ridge-rise 1100ms var(--ease-out) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-ridge {
+    animation: none;
+  }
+}
+
+/* An unpressed sleeve: its ridge outlines drift slowly, waiting for a voice. */
+@keyframes ghost-drift {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+.ghost-ridge {
+  animation: ghost-drift 3.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ghost-ridge {
+    animation: none;
+  }
+}
+
+/* The coach listening: a glass head reads along the recorded tape and back. */
+@keyframes tape-scan {
+  from {
+    left: 0%;
+  }
+  to {
+    left: var(--tape-end, 100%);
+  }
+}
+.tape-scan {
+  animation: tape-scan 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tape-scan {
+    animation: none;
+    left: 0;
+  }
 }

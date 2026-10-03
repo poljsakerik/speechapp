@@ -18,15 +18,9 @@ checks:
     name: TypeScript
     run: pnpm typecheck
     timeoutMs: 300000
-  # Changed files only: the repository has not been formatted wholesale, so
-  # `prettier --check .` would fail on files the change never touched.
   - id: prettier
-    name: Prettier (changed files)
-    run: |
-      base=$(git merge-base HEAD main 2>/dev/null || git rev-parse HEAD)
-      files=$({ git diff --name-only --diff-filter=ACMR "$base"; git ls-files --others --exclude-standard; } | sort -u)
-      [ -z "$files" ] && { echo "No changed files."; exit 0; }
-      printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 pnpm exec prettier --check --ignore-unknown
+    name: Prettier
+    run: pnpm format:check
     timeoutMs: 300000
   - id: build
     name: Build

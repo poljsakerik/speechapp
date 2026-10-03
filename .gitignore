@@ -18,3 +18,11 @@ apps/*/dist/
 /recordings
 recordings-archive-*/
 .voice-pack-*/
+/recordings-reference-*/
+.reference-*/
+
+/recordings-rate-*/
+/recordings-pause-*/
+/recordings-volume-*/
+/recordings-tonality-*/
+/recordings-pitch-*/

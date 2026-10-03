@@ -1,3 +1,8 @@
 pnpm-lock.yaml
-apps/webapp/src/routeTree.gen.ts
-.t3/agents/*/skills/
+**/routeTree.gen.ts
+# Managed by turbo
+AGENTS.md
+# Agent tooling
+.claude/
+.impeccable/
+.t3/

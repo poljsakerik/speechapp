@@ -1,4 +1,6 @@
-import { buildApp } from "./app.ts"
+import { buildApp } from "./app.ts";
+import { warmUp } from "./review.ts";
 
-const port = Number(process.env.PORT ?? 8000)
-await buildApp().listen({ port, host: "127.0.0.1" })
+warmUp();
+const port = Number(process.env.PORT ?? 8000);
+await buildApp().listen({ port, host: "127.0.0.1" });

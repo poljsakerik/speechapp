@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "pitch-development",
+  "foundation": "pitch_melody",
+  "purpose": "Development benchmark for pitch and melody: the course coach's natural teaching from the pitch lesson; his deliberate mistakes in other foundations, which keep their pitch movement except the quiet demonstration, where his voice drops to a low register; and the user's three readings of one paragraph (high, flat, good). The pitch lesson has no demonstration of a flat or stuck voice by the coach: it shows melody through music, the siren exercise and a student exercise. Provisional transcript/acoustic annotations; not independently listener-validated.",
+  "segmentation": "Cuts fall in silences between words. Takes keep their internal pauses and the audio is not normalized. Cut points were chosen from Deepgram nova-3 word times; review them by listening.",
+  "sources": [
+    {
+      "file": "04-Pitch & Melody.mp4",
+      "sha256": "d1dd330ea4317825c8ff71d93b0517a72a9c1ccc604a0d612d330d33dcd30bfd",
+      "foundation": "pitch_melody",
+      "takes": [
+        {
+          "id": "vinh_pitch-01",
+          "start": 6.8,
+          "end": 64.35,
+          "marks": []
+        },
+        {
+          "id": "vinh_pitch-02",
+          "start": 64.35,
+          "end": 136.6,
+          "marks": []
+        },
+        {
+          "id": "vinh_pitch-03",
+          "start": 146.2,
+          "end": 172.4,
+          "marks": []
+        },
+        {
+          "id": "vinh_pitch-04",
+          "start": 180.4,
+          "end": 194.6,
+          "marks": []
+        },
+        {
+          "id": "vinh_pitch-05",
+          "start": 213.6,
+          "end": 261.3,
+          "marks": []
+        },
+        {
+          "id": "vinh_pitch-06",
+          "start": 328.0,
+          "end": 352.5,
+          "marks": []
+        },
+        {
+          "id": "vinh_pitch-07",
+          "start": 377.2,
+          "end": 403.0,
+          "marks": []
+        }
+      ],
+      "excluded": [
+        {
+          "start": 136.6,
+          "end": 146.2,
+          "reason": "First piano track: music, no speech."
+        },
+        {
+          "start": 172.4,
+          "end": 180.4,
+          "reason": "Second piano track: music, no speech."
+        },
+        {
+          "start": 194.6,
+          "end": 213.6,
+          "reason": "Acted comedy sketch (\"He died, and then he just kinda respawned\")."
+        },
+        {
+          "start": 261.3,
+          "end": 328.0,
+          "reason": "The student's \"You talking to me?\" siren exercise with the coach's prompts, then deliberate filler sounds for the editor."
+        },
+        {
+          "start": 352.5,
+          "end": 377.2,
+          "reason": "The siren exercise, demonstrated: a deliberately exaggerated sweep from low to falsetto and back."
+        }
+      ]
+    },
+    {
+      "file": "02-Rate of Speech.mp4",
+      "sha256": "4e5e37c07b145dce4ff2dbf04d561d2e3e034dd689c638c760919f363e0a3550",
+      "foundation": "pitch_melody",
+      "takes": [
+        {
+          "id": "vinh_constant_pace-01",
+          "start": 94.045,
+          "end": 104.183,
+          "note": "Deliberately constant pace, a rate mistake. His pitch keeps moving, so pitch should not be flagged.",
+          "marks": []
+        },
+        {
+          "id": "vinh_constant_pace-02",
+          "start": 137.423,
+          "end": 151.8,
+          "note": "Deliberately predictable pace, a rate mistake. His pitch keeps moving, so pitch should not be flagged.",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "file": "03-Volume.mp4",
+      "sha256": "6164d27b9ab42e54797dba8666260cc6cb3831200ece87882a635b6e66fcfbc8",
+      "foundation": "pitch_melody",
+      "takes": [
+        {
+          "id": "vinh_low_volume-01",
+          "start": 42.65,
+          "end": 109.65,
+          "note": "Deliberate \"3 out of 10\" volume inside his normal speech. His voice drops to a low register for the whole demonstration, though it still moves.",
+          "marks": [
+            {
+              "start": 81.16,
+              "end": 99.6,
+              "rule": "PITCH_LOW",
+              "note": "\"Hi, everyone\" through \"this default volume?\" sits in a low register."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "05-Tonality.mp4",
+      "sha256": "0b9cebc1d5f4e2314c0463de1508e3ce8ef6b733c48d5fd0c2aaf0490bd9e0d7",
+      "foundation": "pitch_melody",
+      "takes": [
+        {
+          "id": "vinh_blank_face-01",
+          "start": 149.9,
+          "end": 175.2,
+          "note": "Deliberate \"blank face\", a tonality mistake that is mostly visual. His pitch movement stays within his teaching range, so pitch should not be flagged.",
+          "marks": []
+        }
+      ]
+    },
+    {
+      "kind": "practice",
+      "file": "Recording (40).m4a",
+      "sha256": "f30d057011178e55f76e1fc9ded7628e1cfe806445c751d380a7889c1d639c3f",
+      "foundation": "pitch_melody",
+      "takes": [
+        {
+          "id": "pitch_readings-01",
+          "start": 0,
+          "end": 35.349,
+          "note": "The user's three readings of one paragraph, kept together: a stuck register can only be judged against the speaker's normal voice in the same recording. The flat second reading has 8.5 s of speaking, under the 10 s monotone window, and sits between two moving readings.",
+          "marks": [
+            {
+              "start": 1.36,
+              "end": 10.72,
+              "rule": "PITCH_HIGH",
+              "note": "First reading: a sustained high register (about 372 Hz against 126 Hz in the good reading)."
+            },
+            {
+              "start": 11.52,
+              "end": 22.06,
+              "rule": "PITCH_VARIETY",
+              "note": "Second reading: little melodic movement (about 4 against 7.6 semitones of range in the good reading)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "practice",
+      "file": "Recording (40).m4a",
+      "sha256": "f30d057011178e55f76e1fc9ded7628e1cfe806445c751d380a7889c1d639c3f",
+      "foundation": "pitch_melody",
+      "takes": [
+        {
+          "id": "pitch_flat-01",
+          "start": 11.12,
+          "end": 22.775,
+          "note": "The second reading alone, as a short upload is judged: the voice-pack take pitch_melody-02.",
+          "marks": [
+            {
+              "start": 11.52,
+              "end": 22.06,
+              "rule": "PITCH_VARIETY",
+              "note": "Little melodic movement (about 4 against 7.6 semitones of range in the good reading)."
+            }
+          ]
+        },
+        {
+          "id": "pitch_good-01",
+          "start": 22.775,
+          "end": 35.349,
+          "note": "The third reading alone, the user's good take: the voice-pack take pitch_melody-03.",
+          "marks": []
+        }
+      ]
+    }
+  ]
+}

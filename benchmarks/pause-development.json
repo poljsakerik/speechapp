@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "pause-development",
+  "foundation": "pauses",
+  "purpose": "Development benchmark for pause feedback: the coach's deliberate pause mistakes, a student's before/after reading, and the coach's normal teaching as clean controls. Annotations chosen from the lessons before detector evaluation; not independently listener-validated.",
+  "segmentation": "Cuts fall in measured silences between words, at the same points as the rate benchmark where clips overlap. Takes keep their internal pauses and the audio is not normalized. The lessons are edited video: jump cuts shorten or remove some of the coach's pauses, so the clean takes are a strict test for missing-pause findings.",
+  "sources": [
+    {
+      "file": "06-Pause.mp4",
+      "sha256": "50f8459a9ba9b1e17f565f58e041e6580cbde13c8741f51bec909d2d7408599a",
+      "foundation": "pauses",
+      "takes": [
+        { "id": "vinh_pauses-01", "start": 19.195, "end": 105.313, "marks": [] },
+        { "id": "vinh_pauses-02", "start": 109.1, "end": 127.58, "marks": [] },
+        { "id": "vinh_pauses-03", "start": 145.248, "end": 179.195, "marks": [] },
+        { "id": "vinh_pauses-04", "start": 188.99, "end": 218.305, "marks": [] },
+        {
+          "id": "vinh_demo-01",
+          "start": 218.305,
+          "end": 227.11,
+          "marks": [{ "start": 218.305, "end": 227.11, "rule": "PAUSE_NECESSARY", "note": "Deliberately talks on without pausing, acting out a speaker who never gives the listener a chance to ask a question." }]
+        },
+        { "id": "vinh_pauses-05", "start": 227.11, "end": 247.67, "marks": [] },
+        {
+          "id": "student_pauses-01",
+          "start": 247.67,
+          "end": 263.575,
+          "marks": [{ "start": 247.67, "end": 263.575, "rule": "PAUSE_NECESSARY", "note": "Student's first Gladiator reading, before coaching. It has short gaps (0.2-0.5 s) but none long enough to let a line land; the coached reading pauses 1.5 s at the same places." }]
+        },
+        { "id": "vinh_pauses-06", "start": 263.575, "end": 273.885, "marks": [] },
+        { "id": "student_pauses-02", "start": 273.885, "end": 287.3, "marks": [], "note": "Student's coached Gladiator reading, up to the coach's spoken prompts. Long dramatic pauses, including some inside phrases, are the intended delivery." },
+        { "id": "vinh_pauses-07", "start": 301.625, "end": 385.78, "marks": [] }
+      ],
+      "excluded": [
+        { "start": 0, "end": 19.195, "reason": "Opening, with a 4 s break before the lesson proper" },
+        { "start": 105.313, "end": 109.1, "reason": "Filler-word demonstration: \"And so do you know what I mean? Like,\". Filler words are not part of this pause benchmark." },
+        { "start": 127.58, "end": 145.248, "reason": "Filler-laden example on purpose: \"I was, you know, getting through rate and, you know, ...\". Filler words are not part of this pause benchmark." },
+        { "start": 179.195, "end": 188.99, "reason": "Trailing off at sentence ends on purpose. This shows lost projection (volume), not a pause-timing pattern." },
+        { "start": 287.3, "end": 301.625, "reason": "End of the coached reading, overlapped by the coach's \"pause, hold, hold, go\" prompts" }
+      ]
+    },
+    {
+      "file": "02-Rate of Speech.mp4",
+      "sha256": "4e5e37c07b145dce4ff2dbf04d561d2e3e034dd689c638c760919f363e0a3550",
+      "foundation": "pauses",
+      "takes": [
+        { "id": "vinh_rate-01", "start": 6.86, "end": 29.435, "marks": [] },
+        {
+          "id": "vinh_demo-02",
+          "start": 29.435,
+          "end": 40.09,
+          "marks": [{ "start": 29.435, "end": 40.09, "rule": "PAUSE_UNNECESSARY", "note": "Deliberately slow greeting that stops after almost every word: \"Hi, [1.2 s] everyone. [2.7 s] ... I can't [2.1 s] wait\". About 80% of the clip is silence." }]
+        },
+        { "id": "vinh_rate-02", "start": 40.09, "end": 66.355, "marks": [] },
+        {
+          "id": "vinh_demo-03",
+          "start": 66.355,
+          "end": 75.398,
+          "marks": [{ "start": 67.91, "end": 75.398, "rule": "PAUSE_NECESSARY", "note": "Deliberately rushed greeting with no pause at any sentence end. The rate benchmark marks the same stretch as rushed; the introductory question is not marked." }]
+        },
+        { "id": "vinh_rate-03", "start": 75.398, "end": 94.045, "marks": [] },
+        {
+          "id": "vinh_demo-04",
+          "start": 94.045,
+          "end": 104.183,
+          "marks": [{ "start": 94.045, "end": 104.183, "rule": "PAUSE_NECESSARY", "note": "Deliberately constant delivery with no pause for 9 s; the words are at an everyday speed." }]
+        },
+        { "id": "vinh_rate-04", "start": 104.183, "end": 137.423, "marks": [] },
+        {
+          "id": "vinh_demo-05",
+          "start": 137.423,
+          "end": 151.8,
+          "marks": [{ "start": 137.423, "end": 151.8, "rule": "PAUSE_NECESSARY", "note": "Deliberately predictable delivery, with only a few brief gaps across 14 s." }]
+        },
+        { "id": "vinh_rate-05", "start": 151.8, "end": 230.93, "marks": [] },
+        { "id": "vinh_rate-06", "start": 309.357, "end": 334.539, "marks": [] }
+      ],
+      "excluded": [
+        { "start": 0, "end": 6.86, "reason": "Opening" },
+        { "start": 230.93, "end": 309.357, "reason": "\"Check this out.\" and the student's two readings, with the coach's \"Slower.\" prompt between them" }
+      ]
+    }
+  ]
+}

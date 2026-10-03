@@ -4,25 +4,50 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
+    "./align": "./src/align.ts",
     "./deepgram": "./src/deepgram.ts",
-    "./importance": "./src/importance.ts",
+    "./gemini": "./src/gemini.ts",
     "./openai": "./src/openai.ts",
-    "./rate": "./src/rate.ts"
+    "./pacing": "./src/pacing.ts",
+    "./pause": "./src/pause.ts",
+    "./pause-hearing": "./src/pause-hearing.ts",
+    "./pause-review": "./src/pause-review.ts",
+    "./pause-strength": "./src/pause-strength.ts",
+    "./pauses": "./src/pauses.ts",
+    "./pitch": "./src/pitch.ts",
+    "./pitch-listen": "./src/pitch-listen.ts",
+    "./rate": "./src/rate.ts",
+    "./review-config": "./src/review-config.ts",
+    "./tonality": "./src/tonality.ts",
+    "./volume": "./src/volume.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts",
     "test": "node --test --experimental-strip-types src/*.test.ts",
-    "importance": "node --env-file-if-exists=../../.env scripts/importance.ts",
-    "eval:importance": "node --env-file-if-exists=../../.env scripts/eval-importance.ts",
     "rate": "node --env-file-if-exists=../../.env scripts/rate.ts",
     "eval:rate": "node --env-file-if-exists=../../.env scripts/eval-rate.ts",
-    "import:voice-pack": "node --env-file-if-exists=../../.env scripts/import-voice-pack.ts"
+    "eval:pause": "node --env-file-if-exists=../../.env scripts/eval-pause.ts",
+    "import:voice-pack": "node --env-file-if-exists=../../.env scripts/import-voice-pack.ts",
+    "import:rate": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts",
+    "import:pause": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/pause-development.json",
+    "eval:volume": "node --env-file-if-exists=../../.env scripts/eval-volume.ts",
+    "import:volume": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/volume-development.json",
+    "import:tonality": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/tonality-development.json",
+    "eval:tonality": "node --env-file-if-exists=../../.env scripts/eval-tonality.ts",
+    "eval:pitch": "node --env-file-if-exists=../../.env scripts/eval-pitch.ts",
+    "eval:strengths": "node --env-file-if-exists=../../.env scripts/eval-strengths.ts",
+    "import:pitch": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/pitch-development.json"
   },
   "devDependencies": {
     "@micmane/eslint-config": "workspace:*",
     "@micmane/typescript-config": "workspace:*",
     "@types/node": "^26.6.3",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "cmu-pronouncing-dictionary": "^3.0.0",
+    "onnxruntime-node": "^1.30.0",
+    "pitchy": "^4.1.0"
   }
 }

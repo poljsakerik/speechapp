@@ -1,4 +1,4 @@
-import base from "./base.js"
-import reactHooks from "eslint-plugin-react-hooks"
+import reactHooks from "eslint-plugin-react-hooks";
+import base from "./base.js";
 
-export default [...base, reactHooks.configs.flat.recommended]
+export default [...base, reactHooks.configs.flat.recommended];
