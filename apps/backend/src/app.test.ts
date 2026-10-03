@@ -57,7 +57,7 @@ test("health and upload contract", async (context) => {
   assert.equal(health.status, 200);
   assert.deepEqual(
     ((await health.json()) as { result: { data: unknown } }).result.data,
-    { ok: true },
+    { ok: true, demo: false },
   );
 
   const upload = (field: string, type: string, body = "abc") => {

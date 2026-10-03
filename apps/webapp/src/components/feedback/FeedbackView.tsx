@@ -2,6 +2,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CornerDownRightIcon,
+  LoaderCircleIcon,
   LocateFixedIcon,
   PauseIcon,
   PlayIcon,
@@ -33,11 +34,14 @@ import {
   type Word,
 } from "@/lib/review";
 import { cn } from "@micmane/ui/lib/utils";
+import { useVoiceDemo, type VoiceDemoStatus } from "./useVoiceDemo";
 
 type FeedbackViewProps = {
   take: Take;
   review: Review;
   audioSrc: string;
+  /** Offer each passage to work on said the way its note asks, in the speaker's own voice. */
+  voiceDemo?: boolean;
   /** Shown at the end of the transport, e.g. a button to upload another take. */
   action?: ReactNode;
   /** Shown under the page. */
@@ -109,6 +113,7 @@ export function FeedbackView({
   take,
   review,
   audioSrc,
+  voiceDemo = false,
   action,
   footer,
   className,
@@ -197,12 +202,21 @@ export function FeedbackView({
     return () => cancelAnimationFrame(frame);
   }, [playing]);
 
+  // The take and a demo are never heard together: starting one stops the other.
+  const pauseTake = useCallback(() => {
+    stopAt.current = null;
+    audioRef.current?.pause();
+  }, []);
+  const demo = useVoiceDemo(audioSrc, take, allFindings, pauseTake);
+  const stopDemo = demo.stop;
+
   const play = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
+    stopDemo();
     setStarted(true);
     await audio.play().catch(() => setPlaying(false));
-  }, []);
+  }, [stopDemo]);
 
   const seek = useCallback(
     (t: number) => {
@@ -784,6 +798,8 @@ export function FeedbackView({
                   onOpenNote={openNote}
                   onPlayNote={playNote}
                   onPlaySpan={playSpan}
+                  demo={voiceDemo ? demo.state : undefined}
+                  onDemo={(f) => void demo.toggle(f)}
                   onHover={setHovered}
                 />
               ) : (
@@ -943,6 +959,9 @@ type LineProps = {
   onOpenNote: (f: Finding, at?: string) => void;
   onPlayNote: (f: Finding, at?: string) => void;
   onPlaySpan: (span: [number, number]) => void;
+  /** The demo being made or heard, or null when none is; undefined when demos are not offered. */
+  demo?: { noteIds: string[]; status: VoiceDemoStatus } | null;
+  onDemo: (f: Finding) => void;
   onHover: (id: string | null) => void;
 };
 
@@ -966,6 +985,8 @@ function Line({
   onOpenNote,
   onPlayNote,
   onPlaySpan,
+  demo,
+  onDemo,
   onHover,
 }: LineProps) {
   const current = playing && time >= segment.start && time < segment.end;
@@ -1020,6 +1041,17 @@ function Line({
         onOpen={() => onOpenNote(note, segment.id)}
         onPlay={() => onPlayNote(note, segment.id)}
         onPlaySpan={onPlaySpan}
+        // Only something to work on has a better way to be said.
+        demo={
+          demo !== undefined && note.kind === "improvement"
+            ? {
+                status: demo?.noteIds.includes(note.id)
+                  ? demo.status
+                  : undefined,
+                onToggle: () => onDemo(note),
+              }
+            : undefined
+        }
         onHover={onHover}
       />
     );
@@ -1359,6 +1391,7 @@ export function Note({
   onOpen,
   onPlay,
   onPlaySpan,
+  demo,
   onHover,
 }: {
   note: Finding;
@@ -1373,6 +1406,8 @@ export function Note({
   /** The play control on the right plays the passage. */
   onPlay: () => void;
   onPlaySpan: (span: [number, number]) => void;
+  /** The passage said the way the note asks, in the speaker's own voice. */
+  demo?: { status?: VoiceDemoStatus; onToggle: () => void };
   onHover?: (id: string | null) => void;
 }) {
   const f = FOUNDATION_BY_KEY[note.foundation];
@@ -1485,6 +1520,45 @@ export function Note({
             ))}
           </ul>
         ) : null}
+        {open && demo && (
+          <button
+            type="button"
+            onClick={demo.onToggle}
+            aria-busy={demo.status === "making"}
+            // The words stay put while it is heard, so the stop action is named for screen readers.
+            aria-label={
+              demo.status === "playing"
+                ? "Stop the demo in your voice"
+                : undefined
+            }
+            className={cn(
+              "group/demo ml-6 flex items-baseline gap-2 rounded-sm text-left text-[0.8125rem] leading-5 font-semibold text-ink",
+              note.suggestions?.length ? "mt-1" : "mt-2",
+            )}
+          >
+            {demo.status === "making" ? (
+              <LoaderCircleIcon
+                className="size-2.5 shrink-0 translate-y-px animate-spin text-glass motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+            ) : demo.status === "playing" ? (
+              <PauseIcon
+                className="size-2.5 shrink-0 translate-y-px fill-current text-glass transition-colors group-hover/demo:text-glass-ink"
+                aria-hidden="true"
+              />
+            ) : (
+              <PlayIcon
+                className="size-2.5 shrink-0 translate-y-px fill-current text-glass transition-colors group-hover/demo:text-glass-ink"
+                aria-hidden="true"
+              />
+            )}
+            {demo.status === "making"
+              ? "Making it in your voice…"
+              : demo.status === "failed"
+                ? "That didn’t work. Try again"
+                : "Hear it in your voice"}
+          </button>
+        )}
       </div>
     </li>
   );

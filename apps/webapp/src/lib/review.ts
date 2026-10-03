@@ -197,6 +197,15 @@ export function normalizeReview(raw: unknown, segments: Segment[]): Review {
       )
     ) {
       previous.span[1] = finding.span[1];
+      // A part may carry only the phrases inside it, so the whole note gathers them all.
+      const fresh = (finding.suggestions ?? []).filter(
+        (s) =>
+          !previous.suggestions?.some(
+            (p) => p.direction === s.direction && p.span[0] === s.span[0],
+          ),
+      );
+      if (fresh.length)
+        previous.suggestions = [...(previous.suggestions ?? []), ...fresh];
     } else
       joined.push(
         previous

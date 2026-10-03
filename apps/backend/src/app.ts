@@ -2,6 +2,7 @@ import { maxRecordingBytes } from "@micmane/validation/review";
 import { nodeHTTPRequestHandler } from "@trpc/server/adapters/node-http";
 import Fastify from "fastify";
 
+import { fishDemo, type Demo } from "./demo.ts";
 import { reviewAudio } from "./review.ts";
 import { createContextFactory } from "./trpc/context.ts";
 import { appRouter } from "./trpc/routers/_app.ts";
@@ -9,12 +10,15 @@ import { appRouter } from "./trpc/routers/_app.ts";
 /** The whole request body: the recording plus room for multipart framing. */
 const maxBodyBytes = maxRecordingBytes + 64 * 1024;
 
-export function buildApp(review = reviewAudio) {
+export function buildApp(
+  review = reviewAudio,
+  demo: Demo | undefined = fishDemo(),
+) {
   const app = Fastify({
     logger: true,
     routerOptions: { maxParamLength: 5000 },
   });
-  const createContext = createContextFactory({ review });
+  const createContext = createContextFactory({ review, demo });
 
   // tRPC's Fastify plugin reads bodies without a size limit, so requests go
   // through its node-http handler, which stops reading at maxBodyBytes whether

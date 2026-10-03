@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_protected/upload")({
 
 function Upload() {
   const [result, setResult] = useState<ReviewResult>();
-  const { isError: offline } = useQuery(healthQuery);
+  const { isError: offline, data: health } = useQuery(healthQuery);
 
   // Development only: /upload?fixture opens the review screen on the sample take.
   useEffect(() => {
@@ -59,6 +59,7 @@ function Upload() {
           take={result.take}
           review={result.review}
           audioSrc={result.audioUrl}
+          voiceDemo={health?.demo}
           action={
             <Button
               size="sm"
