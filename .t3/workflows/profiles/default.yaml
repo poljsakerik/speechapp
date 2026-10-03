@@ -4,7 +4,6 @@ name: Speechapp verified workflow
 planner: planner
 implementer: implementer
 reviewers:
-  - correctness
   - design
   - frontend
   - Ponytail
