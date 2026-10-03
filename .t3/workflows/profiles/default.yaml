@@ -4,12 +4,35 @@ name: Speechapp verified workflow
 planner: planner
 implementer: implementer
 reviewers:
-  - ponytail
+  - correctness
+  - design
+  - frontend
+  - Ponytail
+  - use-effect
+  - animation
 checks:
-  - id: diff-check
-    name: Git whitespace check
-    run: git diff --check
+  - id: lint
+    name: Lint
+    run: pnpm lint
     timeoutMs: 300000
+  - id: typecheck
+    name: TypeScript
+    run: pnpm typecheck
+    timeoutMs: 300000
+  # Changed files only: the repository has not been formatted wholesale, so
+  # `prettier --check .` would fail on files the change never touched.
+  - id: prettier
+    name: Prettier (changed files)
+    run: |
+      base=$(git merge-base HEAD main 2>/dev/null || git rev-parse HEAD)
+      files=$({ git diff --name-only --diff-filter=ACMR "$base"; git ls-files --others --exclude-standard; } | sort -u)
+      [ -z "$files" ] && { echo "No changed files."; exit 0; }
+      printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 pnpm exec prettier --check --ignore-unknown
+    timeoutMs: 300000
+  - id: build
+    name: Build
+    run: pnpm build
+    timeoutMs: 600000
 limits:
   maxRevisionCycles: 3
   identicalFailureLimit: 2
