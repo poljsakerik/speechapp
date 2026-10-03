@@ -18,7 +18,11 @@
     "test": {},
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "PORT",
+        "API_PORT"
+      ]
     }
   }
 }

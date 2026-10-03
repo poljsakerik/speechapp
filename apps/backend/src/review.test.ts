@@ -358,3 +358,124 @@ test("a pitch mark the listening model supports uses its description and fix", (
     "A voice stuck high draws attention to itself and away from your message.",
   );
 });
+
+test("strengths become findings that say what was done well and why it works", () => {
+  const words = "So when it matters, make sure you slow down. Then move on."
+    .split(" ")
+    .map((text, i) => ({ text, start: i, end: i + 0.8 }));
+  const segments = segmentWords(words);
+  const span = (first: number, last: number) => ({
+    first,
+    last,
+    start: words[first].start,
+    end: words[last].end,
+    text: words
+      .slice(first, last + 1)
+      .map((w) => w.text)
+      .join(" "),
+  });
+  const rate = rateReview(segments, [], "", "reviewed", [
+    {
+      ...span(4, 8),
+      rule: "RATE_SLOWS_FOR_POINT",
+      pace: Math.log2(0.43),
+      focus: span(4, 8),
+    },
+  ]).assessments[0];
+  assert.equal(
+    rate.verdict,
+    "effective",
+    "a strength doesn't change the verdict",
+  );
+  assert.deepEqual(
+    rate.findings.map((f) => [f.kind, f.rule_id, f.group_id, f.start, f.end]),
+    [["strength", "RATE_SLOWS_FOR_POINT", "strength-0", 4, 8.8]],
+  );
+  assert.equal(
+    rate.findings[0].observation,
+    "You slow right down on “make sure you slow down”, to about 45% of your usual pace.",
+  );
+  assert.match(rate.findings[0].why_it_matters, /verbal highlight/);
+
+  const pause = {
+    ...span(1, 6),
+    rule: "PAUSE_LETS_IT_LAND" as const,
+    at: 3,
+    seconds: 1.24,
+  };
+  const pauses = pauseAssessment(segments, [], words, [
+    pause,
+    { ...pause, rule: "PAUSE_BUILDS_ANTICIPATION" },
+  ]);
+  assert.deepEqual(
+    pauses.findings.map((f) => [f.kind, f.observation, f.suggestions]),
+    [
+      [
+        "strength",
+        "You stop for 1.2 seconds after “when it matters” and let it land.",
+        [],
+      ],
+      [
+        "strength",
+        "You pause for 1.2 seconds just before “make sure you”.",
+        [],
+      ],
+    ],
+  );
+  assert.deepEqual(
+    pauseAssessment(segments, undefined, words, [pause]).findings,
+    [],
+    "strengths need an assessed review",
+  );
+
+  const tone = tonalityAssessment(
+    segments,
+    [],
+    [
+      {
+        ...span(0, 8),
+        rule: "TONE_EXPRESSIVE",
+        expected: ["neutral", "happy", "surprised"],
+        expressiveness: 4,
+      },
+    ],
+  );
+  assert.equal(
+    tone.findings[0].observation,
+    "Your voice is clearly expressive here, where the words call for warmth or enthusiasm and curiosity.",
+  );
+  assert.equal(tone.findings[0].uncertainty, "tentative");
+
+  const [melody] = pitchAssessment(
+    segments,
+    [],
+    [{ ...span(0, 11), rule: "PITCH_MELODY", spread: 5.1 }],
+  ).findings;
+  assert.deepEqual(
+    [melody.kind, melody.rule_id, melody.uncertainty],
+    ["strength", "PITCH_MELODY", "clear"],
+  );
+  assert.match(melody.why_it_matters, /song/);
+});
+
+test("a take that is expressive or melodic throughout says so in its summary instead of marking everything", () => {
+  const words = "This is one complete passage."
+    .split(" ")
+    .map((text, i) => ({ text, start: i, end: i + 0.8 }));
+  const segments = segmentWords(words);
+  const tone = tonalityAssessment(segments, [], [], true);
+  assert.deepEqual(
+    [tone.verdict, tone.findings, tone.summary],
+    ["effective", [], "Your voice is expressive throughout this take."],
+  );
+  assert.match(
+    tonalityAssessment(segments, [], [], false).summary,
+    /No flat stretch/,
+  );
+  const melody = { first: 0, last: 4, start: 0, end: 4.8, text: "", spread: 6 };
+  assert.equal(
+    pitchAssessment(segments, [], [{ ...melody, rule: "PITCH_MELODY" }], true)
+      .summary,
+    "Your voice moves freely between high and low notes throughout this take. The marked stretches move the most.",
+  );
+});

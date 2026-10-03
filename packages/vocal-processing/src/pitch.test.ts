@@ -284,3 +284,87 @@ test("pitch tracked in steps matches the track measured at once, and detection c
     detectPitch(samples, RATE, words),
   );
 });
+
+// A wider melody than MELODIC: about 5.5 semitones standard deviation.
+const LIVELY = [0, 7, 3, -5, 8, 1, -4, -9];
+
+test("a melody that moves as much as the coach's teaching is a strength; ordinary melody isn't", () => {
+  const { samples, words } = take([
+    ...sentences(MELODIC, 5),
+    ...sentences(LIVELY, 8),
+    ...sentences(MELODIC, 5),
+  ]);
+  const analysis = detectPitch(samples, RATE, words);
+  assert.deepEqual(analysis.marks, []);
+  assert.deepEqual(
+    analysis.strengths.map((s) => s.rule),
+    ["PITCH_MELODY"],
+  );
+  const [strength] = analysis.strengths;
+  // The lively sentences run from 14.5 s to 37.7 s; the strength is the middle of their liveliest 10 s.
+  assert.ok(strength.start >= 14.5 - 2.9 && strength.end <= 37.7 + 2.9);
+  assert.ok(strength.end - strength.start < 10, "a stretch to point at");
+  assert.ok(strength.spread >= 4.5);
+  const melodic = take(sentences(MELODIC, 12));
+  assert.deepEqual(
+    detectPitch(melodic.samples, RATE, melodic.words).strengths,
+    [],
+  );
+});
+
+test("a take that is lively throughout gets its liveliest stretches named, at most one a minute", () => {
+  // 50 sentences are two minutes of speaking, every window of it lively.
+  const { samples, words } = take(sentences(LIVELY, 50));
+  const { strengths, spread } = detectPitch(samples, RATE, words);
+  assert.equal(strengths.length, 2);
+  assert.ok(strengths[0].end <= strengths[1].start, "apart from each other");
+  assert.ok(
+    strengths.reduce((s, m) => s + m.end - m.start, 0) < 20,
+    "not the whole take",
+  );
+  assert.ok(spread! >= 4.5, "the take's spread says it is lively throughout");
+});
+
+test("a lively stretch heard as a distracting problem isn't praised", () => {
+  const { samples, words } = take(sentences(LIVELY, 12));
+  assert.equal(detectPitch(samples, RATE, words).strengths.length, 1);
+  const singSong = {
+    start: 0,
+    end: words.at(-1)!.end!,
+    issue: "sing_song" as const,
+    severity: 2,
+    how: "The same rise and fall repeats.",
+    fix: "Let the melody follow the meaning.",
+  };
+  assert.deepEqual(
+    detectPitch(samples, RATE, words, {}, [singSong]).strengths,
+    [],
+  );
+  assert.equal(
+    detectPitch(samples, RATE, words, {}, [{ ...singSong, severity: 3 }])
+      .strengths.length,
+    1,
+    "a minor problem doesn't undo it",
+  );
+});
+
+test("what is left of a lively window after a problem is cut out must be lively itself", () => {
+  // Five seconds leaping 16 semitones, then five on one note: 5.7 semitones over the whole clip.
+  const leaping = [8, -8, 8, -8, 8, -8, 8, -8],
+    still = Array(8).fill(0);
+  const { samples, words } = take([leaping, leaping, still, still]);
+  assert.equal(detectPitch(samples, RATE, words).strengths.length, 1);
+  const singSong = {
+    start: 0,
+    end: words[15].end!,
+    issue: "sing_song" as const,
+    severity: 2,
+    how: "The voice swings between two notes.",
+    fix: "Let the melody follow the meaning.",
+  };
+  assert.deepEqual(
+    detectPitch(samples, RATE, words, {}, [singSong]).strengths,
+    [],
+    "the monotone remainder isn't praised with the window's spread",
+  );
+});

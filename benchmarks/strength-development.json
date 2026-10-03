@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "id": "strength-development",
+  "purpose": "Development benchmark for strengths: what a speaker does well on rate, pauses, tonality and pitch. The course coach's whole lessons are the reference for great delivery. Three kinds of evidence, all in source time: moments the coach performs and then names himself (praise), his deliberate demonstrations of a mistake, which must not be praised for that foundation (noPraise), and student readings before and after his coaching (pairs). Spans that are not the coach's own teaching (music, sketches, students, demonstrations) are listed under notTeaching and left out of his strengths per minute. Volume has no strength: recorded level can't be told from microphone gain, and the audio model can't hear projection.",
+  "segmentation": "Whole lesson videos, decoded from the start of the file so source times hold. Times come from Deepgram nova-3 word times; demonstration and exclusion boundaries are taken from the rate, pause, volume, tonality and pitch development benchmarks.",
+  "sources": [
+    {
+      "file": "02-Rate of Speech.mp4",
+      "sha256": "4e5e37c07b145dce4ff2dbf04d561d2e3e034dd689c638c760919f363e0a3550",
+      "notTeaching": [
+        { "start": 0, "end": 6.86, "reason": "Opening." },
+        {
+          "start": 29.43,
+          "end": 40.09,
+          "reason": "Deliberately slow greeting."
+        },
+        {
+          "start": 67.91,
+          "end": 75.4,
+          "reason": "Deliberately rushed greeting."
+        },
+        {
+          "start": 94.05,
+          "end": 104.18,
+          "reason": "Deliberately constant pace."
+        },
+        {
+          "start": 137.42,
+          "end": 151.8,
+          "reason": "Deliberately predictable pace."
+        },
+        {
+          "start": 230.93,
+          "end": 309.36,
+          "reason": "The student's two readings, with the coach's \"Slower.\""
+        }
+      ],
+      "praise": [
+        {
+          "start": 175.77,
+          "end": 182.57,
+          "foundation": "rate",
+          "note": "\"So when you're speaking about something that's very important, make sure you slow down.\" The coach slows down, then names it: \"Notice how that bit there just seemed critical.\""
+        }
+      ],
+      "noPraise": [
+        {
+          "start": 29.43,
+          "end": 40.09,
+          "foundation": "pauses",
+          "note": "Slow greeting that stops after almost every word."
+        },
+        {
+          "start": 29.43,
+          "end": 40.09,
+          "foundation": "rate",
+          "note": "Slow greeting: slow throughout, not a highlight."
+        },
+        {
+          "start": 67.91,
+          "end": 75.4,
+          "foundation": "rate",
+          "note": "Rushed greeting."
+        },
+        {
+          "start": 67.91,
+          "end": 75.4,
+          "foundation": "pauses",
+          "note": "Rushed greeting with no pause at any sentence end."
+        },
+        {
+          "start": 94.05,
+          "end": 104.18,
+          "foundation": "rate",
+          "note": "Constant pace on purpose."
+        },
+        {
+          "start": 137.42,
+          "end": 151.8,
+          "foundation": "rate",
+          "note": "Predictable pace on purpose."
+        }
+      ],
+      "pairs": [
+        {
+          "foundation": "rate",
+          "before": { "start": 232.17, "end": 267.27 },
+          "after": { "start": 271.37, "end": 309.31 },
+          "note": "The student's reading without and with varied pace. The coach: \"Notice how engaging my student was in the second video as compared to the first video.\""
+        }
+      ]
+    },
+    {
+      "file": "03-Volume.mp4",
+      "sha256": "6164d27b9ab42e54797dba8666260cc6cb3831200ece87882a635b6e66fcfbc8",
+      "notTeaching": [
+        { "start": 81.16, "end": 99.6, "reason": "Deliberate 3 out of 10." },
+        {
+          "start": 109.65,
+          "end": 246.6,
+          "reason": "The student example and its introduction."
+        }
+      ],
+      "praise": [],
+      "noPraise": [
+        {
+          "start": 81.16,
+          "end": 99.6,
+          "foundation": "pitch_melody",
+          "note": "Quiet 3 out of 10, in a low register."
+        },
+        {
+          "start": 81.16,
+          "end": 99.6,
+          "foundation": "tonality",
+          "note": "Quiet 3 out of 10, meant to strip away confidence and vitality."
+        }
+      ],
+      "pairs": []
+    },
+    {
+      "file": "04-Pitch & Melody.mp4",
+      "sha256": "d1dd330ea4317825c8ff71d93b0517a72a9c1ccc604a0d612d330d33dcd30bfd",
+      "notTeaching": [
+        { "start": 136.6, "end": 146.2, "reason": "First piano track." },
+        { "start": 172.4, "end": 180.4, "reason": "Second piano track." },
+        { "start": 194.6, "end": 213.6, "reason": "Acted comedy sketch." },
+        {
+          "start": 261.3,
+          "end": 328.0,
+          "reason": "The student's siren exercise and deliberate filler sounds."
+        },
+        {
+          "start": 352.5,
+          "end": 377.2,
+          "reason": "The siren exercise, deliberately exaggerated."
+        }
+      ],
+      "praise": [],
+      "noPraise": [],
+      "pairs": []
+    },
+    {
+      "file": "05-Tonality.mp4",
+      "sha256": "0b9cebc1d5f4e2314c0463de1508e3ce8ef6b733c48d5fd0c2aaf0490bd9e0d7",
+      "notTeaching": [
+        { "start": 0, "end": 6.7, "reason": "Title." },
+        {
+          "start": 59.56,
+          "end": 103.1,
+          "reason": "Sad-face and disgusted-face exercises."
+        },
+        {
+          "start": 149.9,
+          "end": 175.5,
+          "reason": "\"Blank face Vinh\", on purpose."
+        },
+        {
+          "start": 218.0,
+          "end": 289.45,
+          "reason": "The student's two readings and the coach's reaction."
+        }
+      ],
+      "praise": [],
+      "noPraise": [
+        {
+          "start": 149.9,
+          "end": 175.5,
+          "foundation": "tonality",
+          "note": "Blank-face demonstration. Mostly visual, but he says \"I don't have much emotion\"; a strength here would be praise for the mistake."
+        }
+      ],
+      "pairs": [
+        {
+          "foundation": "tonality",
+          "before": { "start": 218.32, "end": 241.88 },
+          "after": { "start": 252.12, "end": 283.48 },
+          "note": "The student's romantic passage, then again while moving her face, with the coach calling out emotions. The coach: \"so much more emotion in their words\"."
+        }
+      ]
+    },
+    {
+      "file": "06-Pause.mp4",
+      "sha256": "50f8459a9ba9b1e17f565f58e041e6580cbde13c8741f51bec909d2d7408599a",
+      "notTeaching": [
+        { "start": 0, "end": 19.2, "reason": "Opening." },
+        {
+          "start": 105.31,
+          "end": 109.1,
+          "reason": "Filler-word demonstration."
+        },
+        {
+          "start": 127.58,
+          "end": 145.25,
+          "reason": "Filler-laden example on purpose."
+        },
+        {
+          "start": 177.71,
+          "end": 188.99,
+          "reason": "Trailing off on purpose."
+        },
+        {
+          "start": 218.31,
+          "end": 227.11,
+          "reason": "Talking on without pausing, on purpose."
+        },
+        {
+          "start": 247.67,
+          "end": 301.62,
+          "reason": "The student's two Gladiator readings, with the coach's prompts."
+        }
+      ],
+      "praise": [
+        {
+          "start": 40.23,
+          "end": 44.09,
+          "foundation": "pauses",
+          "note": "A 2.2 s pause after \"you give people time to process what you've just said.\", named at once: \"Notice how you're processing what I just said?\""
+        },
+        {
+          "start": 44.09,
+          "end": 47.28,
+          "foundation": "pauses",
+          "note": "A 1.5 s pause after \"Notice how you're processing what I just said?\", named at once: \"Notice how you're processing again?\""
+        }
+      ],
+      "noPraise": [
+        {
+          "start": 105.31,
+          "end": 109.1,
+          "foundation": "pauses",
+          "note": "Filler words fill the silence."
+        },
+        {
+          "start": 127.58,
+          "end": 145.25,
+          "foundation": "pauses",
+          "note": "Filler-laden example."
+        },
+        {
+          "start": 218.31,
+          "end": 227.11,
+          "foundation": "pauses",
+          "note": "Talks on without pausing."
+        }
+      ],
+      "pairs": [
+        {
+          "foundation": "pauses",
+          "before": { "start": 247.67, "end": 263.57 },
+          "after": { "start": 273.88, "end": 287.3 },
+          "note": "The student's Gladiator lines before and after coaching, up to where the coach's \"pause, hold, hold, go\" prompts overlap the reading. The coach: \"The moment my student there paused more, wasn't it more dramatic?\""
+        }
+      ]
+    }
+  ]
+}

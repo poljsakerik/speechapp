@@ -8,7 +8,7 @@
  * speakers hesitate too, and the lessons' jump cuts remove real pauses.
  * Model replies are cached per take and run label.
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { loadAnnotation, loadCorpus } from "../src/benchmark.ts";
@@ -20,6 +20,9 @@ import {
   pauseAfterWords,
   type PauseRule,
 } from "../src/pause.ts";
+import { decodeWav } from "../src/pauses.ts";
+import { reviewConfig } from "../src/review-config.ts";
+import { cachedJudgment } from "./cache.ts";
 import { cachedCompletion, loadTake } from "./take-audio.ts";
 
 const RULES: PauseRule[] = [
@@ -35,6 +38,8 @@ const { values, positionals } = parseArgs({
     "recognizer-timing": { type: "boolean", default: false },
     report: { type: "string" },
     run: { type: "string", default: "default" },
+    // Keep breaks and missing pauses only where the audio model hears one (needs GEMINI_API_KEY; replies are cached).
+    listen: { type: "boolean", default: false },
   },
 });
 const root = resolve(
@@ -48,6 +53,8 @@ const corpus = loadCorpus(root),
 if (positionals.some((id) => !corpus.takes.some((t) => t.id === id)))
   throw new Error("Unknown take ID");
 const settings = { ...rateModelSettings(), run: values.run };
+// How findings are heard, as in the live review, environment overrides included.
+const config = reviewConfig();
 const rows: Record<string, unknown>[] = [];
 let spans = 0,
   found = 0,
@@ -79,6 +86,17 @@ for (const take of takes) {
       pauses,
       complete,
       values["recognizer-timing"] ? undefined : original,
+      values.listen
+        ? {
+            audio: decodeWav(readFileSync(`${base}.${take.audioExtension}`)),
+            judge: cachedJudgment(
+              join(root, take.base, "..", ".cache"),
+              values.run,
+            ),
+            config: config.pauseHeard,
+            hearing: config.hearing,
+          }
+        : undefined,
     );
     if (!review.reliable) throw new Error(`pause review ${review.status}`);
     const gold = annotation.marks.filter((m) => m.foundationType === "pauses");

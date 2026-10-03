@@ -10,11 +10,14 @@
     "./openai": "./src/openai.ts",
     "./pacing": "./src/pacing.ts",
     "./pause": "./src/pause.ts",
+    "./pause-hearing": "./src/pause-hearing.ts",
     "./pause-review": "./src/pause-review.ts",
+    "./pause-strength": "./src/pause-strength.ts",
     "./pauses": "./src/pauses.ts",
     "./pitch": "./src/pitch.ts",
     "./pitch-listen": "./src/pitch-listen.ts",
     "./rate": "./src/rate.ts",
+    "./review-config": "./src/review-config.ts",
     "./tonality": "./src/tonality.ts",
     "./volume": "./src/volume.ts"
   },
@@ -33,6 +36,7 @@
     "import:tonality": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/tonality-development.json",
     "eval:tonality": "node --env-file-if-exists=../../.env scripts/eval-tonality.ts",
     "eval:pitch": "node --env-file-if-exists=../../.env scripts/eval-pitch.ts",
+    "eval:strengths": "node --env-file-if-exists=../../.env scripts/eval-strengths.ts",
     "import:pitch": "node --env-file-if-exists=../../.env scripts/import-rate-benchmark.ts --recipe ../../benchmarks/pitch-development.json"
   },
   "devDependencies": {

@@ -14,6 +14,7 @@ export default defineConfig({
     alias: { "@": path.resolve(import.meta.dirname, "./src") },
   },
   server: {
-    proxy: { "/trpc": "http://127.0.0.1:8000" },
+    // API_PORT lets a second checkout run beside the default one; the backend reads the same port as PORT.
+    proxy: { "/trpc": `http://127.0.0.1:${process.env.API_PORT ?? 8000}` },
   },
 });

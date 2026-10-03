@@ -192,11 +192,18 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
       const result = await toReviewResult(await createReview(body), blob);
       setState({ name: "idle" });
       onReviewed(result);
-      const count = result.review.findings.length;
+      const strengths = result.review.findings.filter(
+          (f) => f.kind === "strength",
+        ).length,
+        notes = result.review.findings.length - strengths;
+      const counts = [
+        notes && `${notes} note${notes > 1 ? "s" : ""} to work on`,
+        strengths && `${strengths} strength${strengths > 1 ? "s" : ""}`,
+      ].filter(Boolean);
       toast.success("Your review is ready", {
-        description: count
-          ? `${count} note${count > 1 ? "s" : ""} on your pace.`
-          : "No pace notes on this take.",
+        description: counts.length
+          ? `${counts.join(" and ")}.`
+          : "No notes on this take.",
       });
     } catch (error) {
       setState({
