@@ -25,6 +25,8 @@ test("health and upload contract", async (context) => {
         hearing: undefined,
         pauses: [],
         marks: [],
+        places: undefined,
+        met: undefined,
         strengthVersion: 1,
         strengths: [],
       },
@@ -45,6 +47,7 @@ test("health and upload contract", async (context) => {
         heard: undefined,
         hearing: undefined,
       },
+      script: undefined,
       timings: {},
       review: { mainMessage: "test", assessments: [] },
     };

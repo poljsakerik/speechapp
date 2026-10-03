@@ -9,7 +9,7 @@
  * Two checks:
  * - Contrast (the everyday one). Skilled speakers slow down on the point and
  *   move through the setup. Given a text-based prediction of which phrases
- *   deserve which (pacing.ts), a passage is flagged when its key phrases were
+ *   deserve which (delivery-map.ts), a passage is flagged when its key phrases were
  *   not slower than its setup phrases at all. Pace is measured against the
  *   speaker's own normal, so it works for fast and slow talkers alike. Single
  *   phrases are too noisy to judge; a passage of about 30 s is not. On held-out
@@ -25,13 +25,13 @@
  * he follows with "Notice how that bit there just seemed critical", is at 43%.
  * His teaching has 0.6 of these a minute, untrained talks 0.06-0.13.
  */
+import type { PacingPrediction } from "./delivery-map.ts";
 import {
   measurePace,
   mergePauses,
   silenceBetween,
   type PaceProfile,
 } from "./pace.ts";
-import type { PacingPrediction } from "./pacing.ts";
 import type { Pause } from "./pauses.ts";
 import { pronunciation } from "./syllables.ts";
 import type { Word } from "./types.ts";
@@ -87,7 +87,7 @@ export type RateAnalysis = {
   /** Judged passages: mean relative pace of key and setup phrases, and whether the passage was flagged. */
   passages: (Span & { keyPace: number; setupPace: number; flagged: boolean })[];
 };
-export const RATE_VERSION = 23;
+export const RATE_VERSION = 24;
 /** Rates are syllables/second of speaking; durations are seconds of speaking. */
 export const DEFAULT_RATE_CONFIG = {
   passagePhrases: 12, // About 30 s of speech.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DEFAULT_HEARING_CONFIG } from "./pause-hearing.ts";
-import { DEFAULT_PAUSE_HEARD_CONFIG } from "./pause-review.ts";
+import { DEFAULT_PAUSE_REVIEW_CONFIG } from "./pause-review.ts";
 import { DEFAULT_PAUSE_STRENGTH_CONFIG } from "./pause-strength.ts";
 import { DEFAULT_PITCH_CONFIG } from "./pitch.ts";
 import { DEFAULT_RATE_CONFIG } from "./rate.ts";
@@ -15,7 +15,7 @@ test("with nothing set, the review uses each module's defaults", () => {
   assert.deepEqual(config.pitch, DEFAULT_PITCH_CONFIG);
   assert.deepEqual(config.tonality, DEFAULT_TONALITY_CONFIG);
   assert.deepEqual(config.pauseStrength, DEFAULT_PAUSE_STRENGTH_CONFIG);
-  assert.deepEqual(config.pauseHeard, DEFAULT_PAUSE_HEARD_CONFIG);
+  assert.deepEqual(config.pauseReview, DEFAULT_PAUSE_REVIEW_CONFIG);
   assert.deepEqual(config.hearing, DEFAULT_HEARING_CONFIG);
 });
 
@@ -68,7 +68,8 @@ test("every strength setting can be changed from the environment", () => {
     ],
     [5.5, 2, 0],
   );
-  assert.deepEqual(config.pauseHeard, {
+  assert.deepEqual(config.pauseReview, {
+    ...DEFAULT_PAUSE_REVIEW_CONFIG,
     breakSounds: [],
     missingMustRunOn: false,
   });

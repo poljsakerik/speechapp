@@ -12,14 +12,20 @@ import {
   transcribe,
   wordsFromDeepgram,
 } from "@micmane/vocal-processing/deepgram";
+import {
+  carryMap,
+  mapDelivery,
+  pacingOf,
+  placesOf,
+  type DeliveryMap,
+} from "@micmane/vocal-processing/delivery-map";
 import { geminiJudgment, geminiVoice } from "@micmane/vocal-processing/gemini";
 import {
   openaiCompletion,
   tonalitySettings,
 } from "@micmane/vocal-processing/openai";
-import { predictPacing } from "@micmane/vocal-processing/pacing";
 import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause";
-import { reviewPause } from "@micmane/vocal-processing/pause-review";
+import { pausesMet, reviewPause } from "@micmane/vocal-processing/pause-review";
 import {
   faulted,
   PAUSE_STRENGTH_VERSION,
@@ -490,7 +496,17 @@ function retime(
   }
 }
 
-export async function reviewAudio(audio: Buffer) {
+/**
+ * Review a take. `script` is the text of an earlier take with its delivery
+ * map: this take's pauses and pace are then measured against the same phrases,
+ * so the two takes can be compared. Without it, the map is made from this
+ * take's words and returned as `script`, to pass in with the next take of the
+ * same text.
+ */
+export async function reviewAudio(
+  audio: Buffer,
+  script?: { words: string[]; map: DeliveryMap },
+) {
   // What counts as a strength and how pauses are heard; see review-config.ts for the environment overrides.
   const config = reviewConfig();
   // When each step finished, in milliseconds after the upload arrived.
@@ -510,11 +526,29 @@ export async function reviewAudio(audio: Buffer) {
   ]);
   const recognized = wordsFromDeepgram(response) as Word[];
   if (recognized.length < 3) return undefined;
-  // What needs only the recognizer's words starts at once. The pacing prediction reads only the text;
-  // pitch listening and tonality cut the audio into passages of 10 s or more, on recognizer timing as in their benchmarks.
-  const predicting = timed(
-    "pacing",
-    predictPacing(recognized, openaiCompletion()).catch(() => undefined),
+  // What needs only the recognizer's words starts at once. How the text should be delivered (where pauses belong, which
+  // phrases to slow down on) is read from the words alone in one request, once per text; a later take reuses it.
+  // Pitch listening and tonality cut the audio into passages of 10 s or more, on recognizer timing as in their benchmarks.
+  const mapping = timed(
+    "deliveryMap",
+    script
+      ? Promise.resolve(script.map)
+      : mapDelivery(recognized, openaiCompletion()).catch(() => undefined),
+  );
+  // The map over this take's words: the pause that fits after each, and the phrases with their pace.
+  const delivering = mapping.then(
+    (map) =>
+      map &&
+      (script
+        ? carryMap(
+            map,
+            script.words.map((text) => ({ text })),
+            recognized,
+          )
+        : {
+            places: placesOf(map, recognized.length),
+            pacing: pacingOf(map),
+          }),
   );
   const listening = timed("pitchListening", listen(decoded, recognized));
   const toning = timed(
@@ -526,25 +560,25 @@ export async function reviewAudio(audio: Buffer) {
   const transcript = retime(recognized, decoded?.pauses, await scoring);
   done("alignment");
   const pauses = decoded?.pauses;
-  // Timing measures every pause; a model judges each one, the work it does, and every stretch without one.
+  // Timing measures every pause in this take against the map.
   const reviewing = timed(
     "pauseReview",
     pauses
-      ? reviewPause(
-          transcript,
-          pauses,
-          openaiCompletion(),
-          transcript === recognized ? undefined : recognized,
-          // Breaks and missing pauses count only where they also sound like one, and a pause is praised only if it sounds deliberate.
-          decoded && process.env.GEMINI_API_KEY
-            ? {
-                audio: decoded,
-                judge: geminiJudgment(),
-                config: config.pauseHeard,
-                hearing: config.hearing,
-              }
-            : undefined,
-          config.strengths && config.pauseStrength,
+      ? delivering.then((delivery) =>
+          reviewPause(transcript, pauses, delivery?.places, {
+            recognized: transcript === recognized ? undefined : recognized,
+            // Breaks and missing pauses count only where they also sound like one, and a pause is praised only if it sounds deliberate.
+            hear:
+              decoded && process.env.GEMINI_API_KEY
+                ? {
+                    audio: decoded,
+                    judge: geminiJudgment(),
+                    hearing: config.hearing,
+                  }
+                : undefined,
+            strength: config.strengths && config.pauseStrength,
+            config: config.pauseReview,
+          }),
         )
       : Promise.resolve(undefined),
   );
@@ -565,12 +599,13 @@ export async function reviewAudio(audio: Buffer) {
         )
       : Promise.resolve(undefined),
   );
-  const [pacing, heard, tone, pause, measured] = await Promise.all([
-    predicting,
+  const [pacing, heard, tone, pause, measured, map] = await Promise.all([
+    delivering.then((delivery) => delivery?.pacing),
     listening,
     toning,
     reviewing,
     measuring,
+    mapping,
   ]);
   const segments = segmentWords(transcript);
   const analysis = detectRate(transcript, config.rate, pauses, pacing);
@@ -653,6 +688,9 @@ export async function reviewAudio(audio: Buffer) {
       hearing: pause?.hearing,
       pauses,
       marks: pauseMarks ?? [],
+      // What the speaker did at each place the map says needs a pause, and how many of them got one.
+      places: pause?.places,
+      met: pause?.places && pausesMet(pause.places),
       strengthVersion: PAUSE_STRENGTH_VERSION,
       strengths: pauseMarks ? kept : [],
     },
@@ -675,6 +713,11 @@ export async function reviewAudio(audio: Buffer) {
       strengths: pitchStrengths,
       spread: melody ? melody.spread : undefined,
       heard,
+    },
+    // The text and its delivery map, for measuring the next take of it against the same phrases.
+    script: map && {
+      words: script?.words ?? recognized.map((w) => w.text),
+      map,
     },
     timings,
     review,

@@ -8,21 +8,21 @@
  * Before a reveal or the key word, it makes the listener lean in for what comes
  * next ("guess what you can do? [1.7 s] You can breathe."). Two models judge:
  * - Where: whether a pause sits where it can do either job is a judgment about
- *   meaning. The text model that reviews the pauses (pause-review.ts) also says,
- *   in the same reply, what work each pause of 0.6 s or more does: a shorter
- *   one is a breath. Only a pause it says fits can be a strength.
+ *   meaning, made from the text before anyone speaks it: the delivery map
+ *   (delivery-map.ts) marks the few moments to hold. A pause of 0.6 s or more at
+ *   one of them can be a strength; a shorter one is a breath.
  * - How it sounds: text can't tell a pause held for effect from one spent
- *   searching for words, and the text model alone praised 36-42% of held
- *   pauses, in the coach's lessons and untrained talks alike. An audio model
- *   hears each candidate in context (pause-hearing.ts) and keeps it only if
- *   it sounds deliberate.
+ *   searching for words, and a text model asked about each held pause praised
+ *   36-42% of them, in the coach's lessons and untrained talks alike. An audio
+ *   model hears each candidate in context (pause-hearing.ts) and keeps it only
+ *   if it sounds deliberate.
  * The caller also drops a strength the pause review faults (too short, too
  * long, or breaking a thought). A strength is a moment to point at, so at most
  * two a minute are named, the longest-held first: the coach's lessons have
  * about four a minute that qualify.
  *
- * Without both models, audio and complete replies, no pause strengths are
- * reported.
+ * Without a map, audio and a hearing of every candidate, no pause strengths
+ * are reported.
  */
 import type { PauseSound } from "./pause-hearing.ts";
 import type { MarkedPause } from "./pause-review.ts";
@@ -57,14 +57,9 @@ export const DEFAULT_PAUSE_STRENGTH_CONFIG = {
 };
 export type PauseStrengthConfig = typeof DEFAULT_PAUSE_STRENGTH_CONFIG;
 
-/** The work the text model says a held pause does. */
-export const WORKS = [
-  "lets_it_land",
-  "builds_anticipation",
-  "ordinary",
-] as const;
-export type Work = (typeof WORKS)[number];
-const RULES: Record<Exclude<Work, "ordinary">, PauseStrength> = {
+/** The work a held pause does. */
+export type Work = "lets_it_land" | "builds_anticipation";
+const RULES: Record<Work, PauseStrength> = {
   lets_it_land: "PAUSE_LETS_IT_LAND",
   builds_anticipation: "PAUSE_BUILDS_ANTICIPATION",
 };
@@ -77,7 +72,7 @@ export function proposeStrength(
   words: Timed[],
   marked: MarkedPause[],
   { after: at, seconds }: MarkedPause,
-  work: Exclude<Work, "ordinary">,
+  work: Work,
   config: Partial<PauseStrengthConfig> = {},
 ): PauseStrengthMark {
   const c = { ...DEFAULT_PAUSE_STRENGTH_CONFIG, ...config };

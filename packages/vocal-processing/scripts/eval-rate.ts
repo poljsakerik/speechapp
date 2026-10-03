@@ -24,8 +24,9 @@ import {
   type Counts,
 } from "../src/benchmark.ts";
 import { wordsFromDeepgram } from "../src/deepgram.ts";
+import { mapDelivery, pacingOf } from "../src/delivery-map.ts";
 import { wordOffsets } from "../src/golden.ts";
-import { predictPacing } from "../src/pacing.ts";
+import { openaiCompletion, rateModelSettings } from "../src/openai.ts";
 import { decodeWav, findPauses } from "../src/pauses.ts";
 import {
   DEFAULT_RATE_CONFIG,
@@ -33,7 +34,7 @@ import {
   RATE_VERSION,
   type SpeedRule,
 } from "../src/rate.ts";
-import { cachedCompletion } from "./cache.ts";
+import { cachedCompletion } from "./take-audio.ts";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -42,7 +43,7 @@ const { values, positionals } = parseArgs({
     "recognizer-timing": { type: "boolean", default: false },
     report: { type: "string" },
     "require-pass": { type: "boolean", default: false },
-    // Skip the text-based pacing prediction (and so the contrast check), e.g. offline.
+    // Skip the delivery map (and so the contrast check), e.g. offline.
     "no-pacing": { type: "boolean", default: false },
   },
 });
@@ -68,6 +69,7 @@ const add = (a: Counts, b: Counts) => {
   a.fp += b.fp;
   a.fn += b.fn;
 };
+const settings = rateModelSettings();
 let aligner: Aligner | undefined;
 let selected = 0,
   reviewed = 0,
@@ -121,10 +123,14 @@ for (const take of takes) {
     }
     const pacing = values["no-pacing"]
       ? undefined
-      : await predictPacing(
+      : await mapDelivery(
           original,
-          cachedCompletion(join(dirname(base), ".cache")),
-        );
+          cachedCompletion(
+            join(dirname(base), ".cache"),
+            openaiCompletion(settings),
+            settings,
+          ),
+        ).then((map) => map && pacingOf(map));
     const analysis = detectRate(words, {}, pauses, pacing);
     if (!analysis.reliable) uncertain++;
     const offsets = wordOffsets(text, original);

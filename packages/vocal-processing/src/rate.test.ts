@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { pacingPhrases, type PacingPrediction } from "./pacing.ts";
+import type { PacingPhrase, PacingPrediction } from "./delivery-map.ts";
 import { detectRate, syllables } from "./rate.ts";
 import type { Word } from "./types.ts";
 
@@ -15,6 +15,12 @@ function speech(durations: number[], gap = 0): Word[] {
     return word;
   });
 }
+/** Phrases of five words, as the sentences in these tests are. */
+const pacingPhrases = (words: Word[]): PacingPhrase[] =>
+  Array.from({ length: Math.ceil(words.length / 5) }, (_, k) => [
+    k * 5,
+    Math.min(words.length, k * 5 + 5) - 1,
+  ]);
 const rules = (
   words: Word[],
   config = {},
@@ -201,7 +207,7 @@ test("key points spoken slower than the setup are left alone, for fast and slow 
     assert.equal(detectRate(flat.words, {}, [], flat.pacing).marks.length, 1);
   }
 });
-test("without a pacing prediction the contrast check does not run", () => {
+test("without pace scores the contrast check does not run", () => {
   const flat = passage(0.2, 0.2);
   const analysis = detectRate(flat.words);
   assert.equal(analysis.contrast, false);

@@ -29,6 +29,7 @@ import {
   type Aligner,
 } from "../src/align.ts";
 import { wordsFromDeepgram } from "../src/deepgram.ts";
+import { mapDelivery, pacingOf, placesOf } from "../src/delivery-map.ts";
 import {
   geminiSettings,
   geminiVoice,
@@ -40,7 +41,6 @@ import {
   rateModelSettings,
   tonalitySettings,
 } from "../src/openai.ts";
-import { predictPacing } from "../src/pacing.ts";
 import { reviewPause } from "../src/pause-review.ts";
 import { faulted, PAUSE_STRENGTH_VERSION } from "../src/pause-strength.ts";
 import { decodeWav, findPauses } from "../src/pauses.ts";
@@ -50,7 +50,7 @@ import { detectRate, RATE_VERSION } from "../src/rate.ts";
 import { reviewConfig } from "../src/review-config.ts";
 import { reviewTonality, TONALITY_VERSION } from "../src/tonality.ts";
 import type { Word } from "../src/types.ts";
-import { cachedJudgment, cachedCompletion as cachedPacing } from "./cache.ts";
+import { cachedJudgment } from "./cache.ts";
 import { cachedCompletion } from "./take-audio.ts";
 
 const { values, positionals } = parseArgs({
@@ -167,15 +167,17 @@ async function strengthsOf(r: (typeof recordings)[number]) {
     },
   );
   const audio = { samples, sampleRate };
-  const [pacing, pauseReview, tone, heard] = await Promise.all([
-    predictPacing(recognized, cachedPacing(cache, run)).catch(() => undefined),
-    reviewPause(
-      words,
-      pauses,
-      complete,
-      recognized,
-      { audio, judge, config: config.pauseHeard, hearing: config.hearing },
-      config.strengths && config.pauseStrength,
+  // One reading of the text says where pauses belong and which phrases to slow down on.
+  const map = await mapDelivery(recognized, complete).catch(() => undefined),
+    pacing = map && pacingOf(map);
+  const [pauseReview, tone, heard] = await Promise.all([
+    Promise.resolve(map && placesOf(map, recognized.length)).then((places) =>
+      reviewPause(words, pauses, places, {
+        recognized,
+        hear: { audio, judge, hearing: config.hearing },
+        strength: config.strengths && config.pauseStrength,
+        config: config.pauseReview,
+      }),
     ),
     reviewTonality(
       recognized,
