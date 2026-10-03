@@ -57,6 +57,8 @@ const settings = { ...rateModelSettings(), run: values.run };
 const config = reviewConfig();
 const rows: Record<string, unknown>[] = [];
 let spans = 0,
+  moments = 0,
+  clips = 0,
   found = 0,
   findingsInFlawed = 0,
   correct = 0,
@@ -97,8 +99,11 @@ for (const take of takes) {
             hearing: config.hearing,
           }
         : undefined,
+      config.strengths && config.pauseStrength,
     );
     if (!review.reliable) throw new Error(`pause review ${review.status}`);
+    moments += review.hearing?.moments ?? 0;
+    clips += review.hearing?.clips ?? 0;
     const gold = annotation.marks.filter((m) => m.foundationType === "pauses");
     if (gold.some((m) => !RULES.includes(m.rule as PauseRule)))
       throw new Error("Unknown pause rule");
@@ -206,6 +211,6 @@ writeFileSync(
   ) + "\n",
 );
 console.log(
-  `\nAnnotated mistakes found ${found}/${spans}; findings in flawed takes inside an annotation ${correct}/${findingsInFlawed}; clean takes ${cleanFindings} findings in ${cleanMinutes.toFixed(1)} min (${summary.cleanFindingsPerMinute}/min); ${failed} failed. Development corpus, not held-out accuracy.`,
+  `\nAnnotated mistakes found ${found}/${spans}; findings in flawed takes inside an annotation ${correct}/${findingsInFlawed}; clean takes ${cleanFindings} findings in ${cleanMinutes.toFixed(1)} min (${summary.cleanFindingsPerMinute}/min); ${failed} failed${values.listen ? `; ${moments} moments heard in ${clips} requests` : ""}. Development corpus, not held-out accuracy.`,
 );
 if (failed) process.exitCode = 1;

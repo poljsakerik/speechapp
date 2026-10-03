@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { AudioJudgment } from "./gemini.ts";
 import {
   confirmedPauses,
   parseReview,
@@ -38,7 +39,7 @@ const marked = [
 ];
 const ids = (user: string) =>
   [...user.matchAll(/P(\d+)(?=[,\n ]|$)/g)].map((m) => Number(m[1]));
-/** A reply giving each pause in the request `verdict(id)` and offering `missing` for every stretch it is asked about. */
+/** A reply giving each pause in the request `verdict(id)` and no special work, and offering `missing` for every stretch it is asked about. */
 const reply =
   (verdict: (id: number) => string, missing: number[] = []): JsonCompletion =>
   async ({ user }) => {
@@ -47,6 +48,7 @@ const reply =
       pauses: [...new Set(ids(asked.split("\n")[0]))].map((id) => ({
         id,
         verdict: verdict(id),
+        work: "ordinary",
       })),
       stretches: [...asked.matchAll(/S(\d+):/g)].map((m) => ({
         id: Number(m[1]),
@@ -225,15 +227,19 @@ test("a pause the two timings place at different words gets no finding", () => {
 test("with an audio model, a break must sound hesitant and a missing pause must sound like running on", async () => {
   const audio = { samples: new Float32Array(16000 * 12), sampleRate: 16000 };
   const read = reply((id) => ["breaks", "too_long", "breaks"][id], [12]);
-  /** Hears each pause and each place without one as told; the prompt says which is asked. */
+  /** Hears each listed pause as `pause(its line)` and each place without one as `moment`. */
   const judge =
-    (pause: (prompt: string) => string, moment: string) =>
-    async ({ prompt }: { prompt: string }) =>
-      prompt.includes("pauses for") ? { pause: pause(prompt) } : { moment };
+    (pause: (line: string) => string, moment: string): AudioJudgment =>
+    async ({ prompt }) => ({
+      moments: [...prompt.matchAll(/^(\d+)\. .*$/gm)].map((m) => ({
+        id: Number(m[1]),
+        sound: m[0].includes("pauses for") ? pause(m[0]) : moment,
+      })),
+    });
   const heard = await reviewPause(t.words, t.pauses, read, undefined, {
     audio,
     judge: judge(
-      (p) => (p.includes('"We looked"') ? "hesitant" : "deliberate"),
+      (line) => (line.includes('"We looked"') ? "hesitant" : "deliberate"),
       "clear",
     ),
   });
@@ -269,4 +275,38 @@ test("with an audio model, a break must sound hesitant and a missing pause must 
     [4, false, true],
   );
   assert.equal((await reviewPause(t.words, t.pauses, read)).heard, false);
+});
+
+test("moments close together are heard in one request", async () => {
+  const audio = { samples: new Float32Array(16000 * 12), sampleRate: 16000 };
+  const prompts: string[] = [];
+  const review = await reviewPause(
+    t.words,
+    t.pauses,
+    reply((id) => ["breaks", "fits", "breaks"][id], [12]),
+    undefined,
+    {
+      audio,
+      judge: async ({ prompt }) => {
+        prompts.push(prompt);
+        return {
+          moments: [
+            { id: 1, sound: "hesitant" },
+            { id: 2, sound: "hesitant" },
+            { id: 3, sound: "runs_on" },
+          ],
+        };
+      },
+    },
+  );
+  assert.equal(prompts.length, 1);
+  assert.match(
+    prompts[0],
+    /1\. At 0\.4 seconds, right after the words "We looked", the speaker pauses for 0\.6 seconds\./,
+  );
+  assert.match(
+    prompts[0],
+    /3\. At .* the speaker goes on without a real pause\./,
+  );
+  assert.equal(review.kept, 3);
 });

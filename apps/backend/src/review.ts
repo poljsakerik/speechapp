@@ -18,7 +18,6 @@ import { PAUSE_VERSION, type PauseMark } from "@micmane/vocal-processing/pause";
 import { reviewPause } from "@micmane/vocal-processing/pause-review";
 import {
   faulted,
-  findPauseStrengths,
   PAUSE_STRENGTH_VERSION,
   type PauseStrengthMark,
 } from "@micmane/vocal-processing/pause-strength";
@@ -698,7 +697,7 @@ export async function reviewAudio(audio: Buffer) {
   const transcript = retime(recognized, decoded?.pauses, await scoring);
   done("alignment");
   const pauses = decoded?.pauses;
-  // Timing measures every pause; a model judges each one and every stretch without one.
+  // Timing measures every pause; a model judges each one, the work it does, and every stretch without one.
   const reviewing = timed(
     "pauseReview",
     pauses
@@ -707,7 +706,7 @@ export async function reviewAudio(audio: Buffer) {
           pauses,
           openaiCompletion(),
           transcript === recognized ? undefined : recognized,
-          // Breaks and missing pauses count only where they also sound like one.
+          // Breaks and missing pauses count only where they also sound like one, and a pause is praised only if it sounds deliberate.
           decoded && process.env.GEMINI_API_KEY
             ? {
                 audio: decoded,
@@ -716,23 +715,8 @@ export async function reviewAudio(audio: Buffer) {
                 hearing: config.hearing,
               }
             : undefined,
+          config.strengths && config.pauseStrength,
         )
-      : Promise.resolve(undefined),
-  );
-  // Alongside it, the pauses that do real work: proposed from the text, kept if they sound deliberate.
-  const praising = timed(
-    "pauseStrengths",
-    pauses && decoded && config.strengths
-      ? findPauseStrengths(
-          transcript,
-          pauses,
-          decoded,
-          openaiCompletion(),
-          process.env.GEMINI_API_KEY ? geminiJudgment() : undefined,
-          transcript === recognized ? undefined : recognized,
-          config.pauseStrength,
-          config.hearing,
-        ).catch(() => undefined)
       : Promise.resolve(undefined),
   );
   // While the models answer, measure what needs only the audio. Pitch is tracked in steps so their requests keep moving.
@@ -752,15 +736,13 @@ export async function reviewAudio(audio: Buffer) {
         )
       : Promise.resolve(undefined),
   );
-  const [pacing, heard, tone, pause, measured, pauseStrengths] =
-    await Promise.all([
-      predicting,
-      listening,
-      toning,
-      reviewing,
-      measuring,
-      praising,
-    ]);
+  const [pacing, heard, tone, pause, measured] = await Promise.all([
+    predicting,
+    listening,
+    toning,
+    reviewing,
+    measuring,
+  ]);
   const segments = segmentWords(transcript);
   const analysis = detectRate(transcript, config.rate, pauses, pacing);
   // Without the waveform, silence cannot be told from speech; without the prediction, contrast is unjudged.
@@ -777,7 +759,7 @@ export async function reviewAudio(audio: Buffer) {
           (s) => !faulted(s, pauseMarks, config.faults.rate),
         )
       : [];
-  const kept = (pauseStrengths ?? []).filter(
+  const kept = (pause?.strengths ?? []).filter(
     (s) => !faulted(s, pauseMarks, config.faults.pauses),
   );
   const toneStrengths =
@@ -839,6 +821,7 @@ export async function reviewAudio(audio: Buffer) {
       status: pauseMarks ? ("reviewed" as const) : ("uncertain" as const),
       review: pause?.status,
       heard: pause?.heard,
+      hearing: pause?.hearing,
       pauses,
       marks: pauseMarks ?? [],
       strengthVersion: PAUSE_STRENGTH_VERSION,
