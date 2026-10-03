@@ -227,6 +227,12 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
 
   const choose = (file: File | undefined) => {
     if (!file) return;
+    // Say what is wrong with a file as soon as it is chosen, not after it is sent.
+    const invalid = recordingErrorMessage(file);
+    if (invalid) {
+      setState({ name: "error", message: invalid });
+      return;
+    }
     setState({
       name: "ready",
       blob: file,
@@ -309,12 +315,13 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
         : undefined;
 
   return (
-    <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-10">
+    <div className="grid gap-x-12 gap-y-12 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-6">
       <div className="lg:col-span-5">
-        <h1 className="font-wide text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance">
+        {/* Trimmed to the capitals, so the letters, not their line box, meet the card's top edge. */}
+        <h1 className="font-wide text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance lg:[text-box:trim-start_cap_alphabetic]">
           Record a take.
         </h1>
-        <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
+        <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-pretty text-ink-2">
           Speak for up to a minute: tell a story, pitch an idea, or introduce
           yourself. You get notes on your own words, each with one thing to try
           on the next take.
@@ -323,7 +330,7 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
 
       <div
         className={cn(
-          "booklet-page relative self-start px-4 py-6 transition-shadow duration-200 sm:px-8 sm:py-8 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 xl:px-12 xl:py-10",
+          "booklet-page relative flex flex-col justify-center p-4 transition-shadow duration-200 sm:p-8 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 xl:p-12",
           dragging && "ring-2 ring-glass ring-offset-4 ring-offset-paper",
         )}
         onDragOver={(e) => {
@@ -345,7 +352,7 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
           scanning={state.name === "reviewing"}
         />
 
-        <div className="mt-10 min-h-[15rem] min-w-0" aria-live="polite">
+        <div className="mt-10 min-w-0" aria-live="polite">
           {state.name === "idle" && (
             <>
               <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em] text-balance">
@@ -498,7 +505,7 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                 <Button
                   variant="ghost"
                   size="lg"
-                  className="max-sm:-ml-5"
+
                   onClick={reset}
                 >
                   <XIcon />
@@ -555,44 +562,39 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
         />
       </div>
 
-      <div className="lg:col-span-5 lg:row-start-2">
-        <h2 className="text-[0.75rem] leading-5 font-semibold text-ink-3">
-          The coach listens for
+      {/* Sits on the card's bottom edge, so the left column is as tall as the card. */}
+      <div className="lg:col-span-5 lg:row-start-2 lg:self-end">
+        <h2
+          className={cn(
+            "text-[0.75rem] leading-5 font-semibold transition-colors",
+            state.name === "reviewing" ? "text-glass-ink" : "text-ink-3",
+          )}
+        >
+          {state.name === "reviewing"
+            ? "The coach is listening for"
+            : "The coach listens for"}
         </h2>
-        <ul className="mt-3 grid max-w-[24rem] gap-2">
-          {FOUNDATIONS.map((f) => {
-            // Every foundation is listened for at once, so all light together.
-            const lit = state.name === "reviewing";
-            return (
-              <li
-                key={f.key}
-                className="grid grid-cols-[0.625rem_minmax(0,1fr)_auto] items-center gap-x-3 text-[0.875rem] leading-6"
-              >
-                <span
-                  aria-hidden="true"
-                  className="size-2.5 rounded-[2px]"
-                  style={{
-                    background: f.fill,
-                    boxShadow: `inset 0 0 0 1px ${f.ink}`,
-                  }}
-                />
-                <span className="font-semibold text-ink">{f.label}</span>
-                <span
-                  className={cn(
-                    "text-[0.75rem]",
-                    lit ? "text-glass-ink" : "text-ink-3",
-                  )}
-                >
-                  {lit ? "Listening" : ""}
-                </span>
-              </li>
-            );
-          })}
+        <ul className="mt-2 grid gap-1">
+          {FOUNDATIONS.map((f) => (
+            <li
+              key={f.key}
+              className="group/f flex items-baseline gap-3 text-[0.875rem] leading-6 font-semibold text-ink"
+            >
+              <span
+                aria-hidden="true"
+                className="size-2.5 rounded-[2px]"
+                style={{
+                  background: f.fill,
+                  boxShadow: `inset 0 0 0 1px ${f.ink}`,
+                }}
+              />
+              {/* The last name is trimmed to its baseline, so the letters meet the card's bottom edge. */}
+              <span className="block lg:group-last/f:[text-box:trim-end_cap_alphabetic]">
+                {f.label}
+              </span>
+            </li>
+          ))}
         </ul>
-        <p className="mt-8 max-w-[46ch] text-[0.8125rem] leading-5 text-ink-3">
-          Up to a minute, in English, one speaker. WAV, MP3, M4A, MP4 or WebM,
-          up to 25 MB.
-        </p>
       </div>
     </div>
   );

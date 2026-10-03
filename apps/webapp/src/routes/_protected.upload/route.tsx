@@ -88,7 +88,7 @@ function Upload() {
           <Wordmark />
         </Link>
       </header>
-      <main className="mx-auto min-h-svh max-w-[1440px] px-4 pt-12 pb-24 sm:px-6 sm:pt-16 lg:px-10 lg:pt-20 lg:pb-36">
+      <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1440px] flex-col justify-center px-4 pt-8 pb-24 sm:px-6 lg:px-10">
         {offline && (
           <Alert className="mb-10 max-w-2xl">
             <CloudOffIcon />

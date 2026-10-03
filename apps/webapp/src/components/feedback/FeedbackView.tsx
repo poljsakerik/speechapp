@@ -10,11 +10,9 @@ import {
   Fragment,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 
@@ -23,6 +21,7 @@ import {
   FOUNDATIONS,
   FOUNDATION_BY_KEY,
   VERDICT_LABEL,
+  type FoundationKey,
 } from "@/lib/foundations";
 import {
   emptyReviewMessage,
@@ -47,21 +46,21 @@ type FeedbackViewProps = {
   className?: string;
 };
 
-/** What each rule is called in a note, and whether it marks a whole stretch rather than one phrase. */
-export const RULES: Record<string, { label: string; stretch?: boolean }> = {
-  RATE_IMPORTANCE_FAST: { label: "Rushed passage", stretch: true },
-  RATE_IMPORTANCE_SLOW: { label: "Dragged passage", stretch: true },
-  RATE_CONTRAST: { label: "Flat pacing", stretch: true },
-  PAUSE_NECESSARY: { label: "Missing pause", stretch: true },
+/** What each rule is called in a note. */
+export const RULES: Record<string, { label: string }> = {
+  RATE_IMPORTANCE_FAST: { label: "Rushed passage" },
+  RATE_IMPORTANCE_SLOW: { label: "Dragged passage" },
+  RATE_CONTRAST: { label: "Flat pacing" },
+  PAUSE_NECESSARY: { label: "Missing pause" },
   PAUSE_TOO_SHORT: { label: "Pause too short" },
-  PAUSE_UNNECESSARY: { label: "Pause out of place", stretch: true },
+  PAUSE_UNNECESSARY: { label: "Pause out of place" },
   PAUSE_TOO_LONG: { label: "Pause too long" },
-  VOLUME_LOW: { label: "Volume drop", stretch: true },
+  VOLUME_LOW: { label: "Volume drop" },
   VOLUME_FADE: { label: "Trailing off" },
-  TONE_FLAT: { label: "Flat voice", stretch: true },
-  PITCH_VARIETY: { label: "Monotone stretch", stretch: true },
-  PITCH_HIGH: { label: "Stuck high", stretch: true },
-  PITCH_LOW: { label: "Stuck low", stretch: true },
+  TONE_FLAT: { label: "Flat voice" },
+  PITCH_VARIETY: { label: "Monotone stretch" },
+  PITCH_HIGH: { label: "Stuck high" },
+  PITCH_LOW: { label: "Stuck low" },
 };
 
 const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {
@@ -75,9 +74,9 @@ const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {
 
 const SPEEDS = [0.75, 1, 1.25, 1.5];
 const SHELL = "mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10";
-/** Timecode, line, and on large screens the margin. Every row of the sheet shares it. */
+/** Timecode, then the line with its notes beneath. Every row of the sheet shares it. */
 const ROW =
-  "grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-x-6 lg:grid-cols-[4.5rem_minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-10";
+  "grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-x-6 lg:gap-x-10";
 /** Where the playhead holds while the page follows it, as a share of the viewport. */
 const READING_LINE = 0.42;
 
@@ -87,16 +86,20 @@ const within = (word: Word, span: [number, number]) =>
 /** The silence between two lines, as space: 8px steps, longer pauses breathe more. */
 const breath = (seconds: number) =>
   8 * Math.round(2 + Math.min(seconds, 4) * 6);
-/** Space between two margin blocks when one has to give way to the other. */
-const MARGIN_GAP = 32;
 const passage = (f: Finding): [number, number] => f.span ?? [f.at, f.at + 2];
+
+type Lens = "all" | FoundationKey;
+
+/** A note covering more than one line: the lines it runs from and to, and its lane in the margin. */
+type Rail = { note: Finding; first: number; last: number; lane: number };
 
 type Row = { id: string; start: number; end: number; segment?: Segment };
 
 /**
- * A reviewed take as one long page: each line with its timecode and pace, silences
- * as space, and every note in the margin level with its words. The transport's
- * scrubber is the timeline; while the take plays, the page follows the playhead.
+ * A reviewed take as one long page: each line with its timecode, silences as space,
+ * and its notes listed under it. One note is in focus at a time, and the page can
+ * show a single foundation's notes. The transport's scrubber is the timeline; while
+ * the take plays, the page follows the playhead.
  */
 export function FeedbackView({
   take,
@@ -109,21 +112,28 @@ export function FeedbackView({
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAt = useRef<number | null>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
-  const tapeRef = useRef<HTMLOListElement>(null);
-  const [margin, setMargin] = useState<{
-    pads: Record<string, number>;
-    overflow: number;
-  }>({ pads: {}, overflow: 0 });
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [follow, setFollow] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  /** The line a note was picked on, so it opens there even when it began on an earlier line. */
+  const [selectedAt, setSelectedAt] = useState<string | null>(null);
 
-  const findings = useMemo(
+  const allFindings = useMemo(
     () => [...review.findings].sort((a, b) => a.at - b.at),
     [review.findings],
+  );
+  // The page shows every note with one in focus, or one foundation's notes on their own.
+  const [lens, setLens] = useState<Lens>("all");
+  const findings = useMemo(
+    () =>
+      lens === "all"
+        ? allFindings
+        : allFindings.filter((f) => f.foundation === lens),
+    [allFindings, lens],
   );
   const rows = useMemo(() => {
     const result: Row[] = [];
@@ -151,7 +161,11 @@ export function FeedbackView({
         (f) => time >= passage(f)[0] - 0.2 && time <= passage(f)[1] + 0.6,
       )?.id
     : undefined;
-  const activeId = live ?? selected;
+  const activeId =
+    live ?? (findings.some((f) => f.id === selected) ? selected : null);
+  // Hovering a note previews its words without opening it.
+  const markId = hovered ?? activeId;
+  const focusAt = activeId === selected ? selectedAt : null;
   const noteIndex = findings.findIndex((f) => f.id === activeId);
 
   useEffect(() => {
@@ -215,11 +229,23 @@ export function FeedbackView({
   );
 
   const playNote = useCallback(
-    (f: Finding) => {
+    (f: Finding, at?: string) => {
       setSelected(f.id);
+      setSelectedAt(at ?? null);
       playSpan(passage(f));
     },
     [playSpan],
+  );
+
+  /** Open a note where it was pressed, without playing it; pressing the open note closes it. */
+  const openNote = useCallback(
+    (f: Finding, at?: string) => {
+      const here = at ?? f.segmentId;
+      const isOpen = selected === f.id && (selectedAt ?? f.segmentId) === here;
+      setSelected(isOpen ? null : f.id);
+      setSelectedAt(isOpen ? null : here);
+    },
+    [selected, selectedAt],
   );
 
   /** Step to the next or previous note in take order and bring it into view. */
@@ -229,10 +255,14 @@ export function FeedbackView({
       const from = noteIndex < 0 ? (by > 0 ? -1 : findings.length) : noteIndex;
       const note = findings[(from + by + findings.length) % findings.length];
       setSelected(note.id);
+      setSelectedAt(null);
       setFollow(false);
-      document
-        .querySelector(`[data-note="${note.id}"]`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+      // The note opens on the next paint; bring it into view once it has.
+      requestAnimationFrame(() =>
+        document
+          .querySelector(`[data-note="${note.id}"]`)
+          ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+      );
     },
     [findings, noteIndex],
   );
@@ -312,63 +342,33 @@ export function FeedbackView({
     lastRow.current = currentRow;
   }, [time, playing, follow, currentRow, rows]);
 
-  // On large screens notes hang in the margin level with their line without stretching it, so a line's
-  // height stays its words and the space after it stays its silence. Only where a line's notes would
-  // run into the next line's does that line grow, just enough; the page grows to hold the last block.
-  useLayoutEffect(() => {
-    const ol = tapeRef.current;
-    if (!ol) return;
-    const measure = () => {
-      const pads: Record<string, number> = {};
-      let overflow = 0;
-      if (window.matchMedia("(min-width: 1024px)").matches) {
-        const base = ol.getBoundingClientRect().top;
-        const current = Object.fromEntries(
-          Array.from(ol.querySelectorAll<HTMLElement>("[data-pad]"), (el) => [
-            el.dataset.pad!,
-            parseFloat(el.style.paddingBottom) || 0,
-          ]),
-        );
-        let removed = 0;
-        let added = 0;
-        let previous: { id: string; bottom: number } | undefined;
-        for (const el of ol.querySelectorAll<HTMLElement>("[data-margin]")) {
-          const id = el.dataset.margin!;
-          // Where this block would sit with no line grown, then with the growth decided so far.
-          let top =
-            el.parentElement!.getBoundingClientRect().top -
-            base -
-            removed +
-            added;
-          if (previous && previous.bottom + MARGIN_GAP > top) {
-            const need = Math.ceil(previous.bottom + MARGIN_GAP - top);
-            pads[previous.id] = need;
-            added += need;
-            top += need;
-          }
-          removed += current[id] ?? 0;
-          previous = { id, bottom: top + el.offsetHeight };
-        }
-        const height =
-          ol.offsetHeight -
-          (parseFloat(ol.style.paddingBottom) || 0) -
-          removed +
-          added;
-        overflow = previous
-          ? Math.max(0, Math.ceil(previous.bottom - height))
-          : 0;
-      }
-      setMargin((prev) =>
-        JSON.stringify(prev) === JSON.stringify({ pads, overflow })
-          ? prev
-          : { pads, overflow },
+  // A note that runs over several lines is written once, where it begins, and a bar in the
+  // margin runs beside every line it covers. Bars that overlap sit side by side in lanes.
+  const rails = useMemo(() => {
+    const long: Rail[] = findings.flatMap((note) => {
+      if (!note.span) return [];
+      const covered = take.segments.flatMap((sg, i) =>
+        sg.words.some((w) => within(w, note.span!)) ? [i] : [],
       );
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(ol);
-    ol.querySelectorAll("[data-margin]").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [rows, findings]);
+      return covered.length > 1
+        ? [
+            {
+              note,
+              first: covered[0],
+              last: covered[covered.length - 1],
+              lane: 0,
+            },
+          ]
+        : [];
+    });
+    const ends: number[] = [];
+    for (const rail of long) {
+      const free = ends.findIndex((end) => end < rail.first);
+      rail.lane = free < 0 ? ends.length : free;
+      ends[rail.lane] = rail.last;
+    }
+    return long;
+  }, [take.segments, findings]);
 
   const pct = (t: number) =>
     `${(Math.min(Math.max(t, 0), take.duration) / take.duration) * 100}%`;
@@ -569,17 +569,14 @@ export function FeedbackView({
             </h1>
             <p className="mt-4 font-mono text-[0.75rem] leading-5 text-ink-3 tabular">
               {formatTime(take.duration, false)} · {lines}{" "}
-              {lines === 1 ? "line" : "lines"} · {findings.length}{" "}
-              {findings.length === 1 ? "note" : "notes"}
+              {lines === 1 ? "line" : "lines"} · {allFindings.length}{" "}
+              {allFindings.length === 1 ? "note" : "notes"}
             </p>
-            <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
-              {findings.length
-                ? "Each note sits beside the words it is about. Press a highlighted phrase or a note to hear that passage."
-                : emptyReviewMessage(review.assessments)}
-            </p>
-            <p className="mt-4 text-[0.8125rem] leading-5 text-ink-3 max-sm:hidden">
-              Space plays and pauses. J and K step through the notes.
-            </p>
+            {!allFindings.length && (
+              <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
+                {emptyReviewMessage(review.assessments)}
+              </p>
+            )}
           </div>
           <ul
             className="grid content-start gap-5 lg:col-span-7 lg:col-start-6"
@@ -591,7 +588,7 @@ export function FeedbackView({
               );
               const reviewed =
                 !!assessment && assessment.verdict !== "uncertain";
-              const notes = findings.filter((n) => n.foundation === f.key);
+              const notes = allFindings.filter((n) => n.foundation === f.key);
               return (
                 <li
                   key={f.key}
@@ -681,12 +678,39 @@ export function FeedbackView({
 
         {/* The tape */}
         <div className="booklet-page mt-12 px-3 py-8 sm:px-8 sm:py-10 lg:mt-16 xl:px-12">
-          <ol
-            ref={tapeRef}
-            aria-label="Transcript of the take, with notes"
-            style={{ paddingBottom: margin.overflow || undefined }}
-          >
-            {rows.map((row) =>
+          {allFindings.length > 0 && (
+            <div
+              role="group"
+              aria-label="Notes to show"
+              className="mb-10 flex flex-wrap items-center gap-2"
+            >
+              <LensButton
+                pressed={lens === "all"}
+                onClick={() => setLens("all")}
+                count={allFindings.length}
+              >
+                All notes
+              </LensButton>
+              {FOUNDATIONS.map((f) => {
+                const count = allFindings.filter(
+                  (n) => n.foundation === f.key,
+                ).length;
+                return (
+                  <LensButton
+                    key={f.key}
+                    pressed={lens === f.key}
+                    onClick={() => setLens(f.key)}
+                    count={count}
+                    foundation={f}
+                  >
+                    {f.short}
+                  </LensButton>
+                );
+              })}
+            </div>
+          )}
+          <ol aria-label="Transcript of the take, with notes">
+            {rows.map((row, r) =>
               row.segment ? (
                 <Line
                   key={row.id}
@@ -698,16 +722,24 @@ export function FeedbackView({
                   take={take}
                   segment={row.segment}
                   findings={findings}
+                  rails={rails.filter(
+                    (rail) => rail.first <= r / 2 && rail.last >= r / 2,
+                  )}
+                  index={r / 2}
                   time={time}
                   playing={playing}
-                  activeId={activeId}
+                  lens={lens}
+                  focusId={activeId}
+                  focusAt={focusAt}
+                  markId={markId}
                   onPlayFrom={(t) => {
                     seek(t);
                     void play();
                   }}
+                  onOpenNote={openNote}
                   onPlayNote={playNote}
                   onPlaySpan={playSpan}
-                  pad={margin.pads[row.id] ?? 0}
+                  onHover={setHovered}
                 />
               ) : (
                 <li
@@ -718,9 +750,19 @@ export function FeedbackView({
                       : rowRefs.current.delete(row.id))
                   }
                   aria-hidden="true"
-                  className={ROW}
+                  className={cn(ROW, "relative")}
                   style={{ height: breath(row.end - row.start) }}
                 >
+                  {/* The bars carry on through the silence between two lines of the same note. */}
+                  <Rails
+                    rails={rails.filter(
+                      (rail) =>
+                        rail.first <= (r - 1) / 2 && rail.last > (r - 1) / 2,
+                    )}
+                    index={-1}
+                    lens={lens}
+                    markId={markId}
+                  />
                   {row.end - row.start >= 0.25 && (
                     <span className="flex items-center gap-2 self-center font-mono text-[0.625rem] text-ink-3 tabular max-sm:hidden">
                       <span className="h-px w-3 bg-line-strong" />
@@ -783,53 +825,119 @@ function Swatch({
 const STEP =
   "grid size-8 place-items-center rounded-sm text-on-graphite-muted transition-colors hover:bg-graphite-line hover:text-on-graphite sm:size-6";
 
+function LensButton({
+  pressed,
+  onClick,
+  count,
+  foundation,
+  children,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  count: number;
+  foundation?: (typeof FOUNDATIONS)[number];
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      disabled={!count}
+      onClick={onClick}
+      className="flex h-8 items-center gap-2 rounded-[3px] px-2.5 text-[0.8125rem] font-medium text-ink-2 shadow-[inset_0_0_0_1px_var(--line-strong)] transition-colors hover:bg-sunken hover:text-ink disabled:pointer-events-none disabled:text-ink-3 disabled:opacity-60 disabled:shadow-[inset_0_0_0_1px_var(--line)] aria-pressed:bg-ink aria-pressed:text-paper aria-pressed:shadow-none"
+    >
+      {foundation && (
+        <span
+          aria-hidden="true"
+          className="size-2.5 rounded-[2px]"
+          style={{
+            background: count ? foundation.fill : "transparent",
+            boxShadow: `inset 0 0 0 1px ${count ? foundation.ink : "var(--line-strong)"}`,
+          }}
+        />
+      )}
+      {children}
+      <span className="font-mono text-[0.6875rem] tabular opacity-70">
+        {count}
+      </span>
+    </button>
+  );
+}
+
 type LineProps = {
   ref: (el: HTMLLIElement | null) => void;
   take: Take;
   segment: Segment;
+  /** The notes in view: all of them, or one foundation's. */
   findings: Finding[];
+  /** The several-line notes passing through this line. */
+  rails: Rail[];
+  /** This line's place among the lines. */
+  index: number;
+  lens: Lens;
   time: number;
   playing: boolean;
-  activeId: string | null | undefined;
+  /** The note that is open. */
+  focusId: string | null | undefined;
+  /** The line the open note was picked on, when it was picked on one. */
+  focusAt: string | null;
+  /** The note whose words are coloured: the open one, or one being hovered. */
+  markId: string | null | undefined;
   onPlayFrom: (t: number) => void;
-  onPlayNote: (f: Finding) => void;
+  /** Reading a note and hearing it are separate: opening never starts playback. */
+  onOpenNote: (f: Finding, at?: string) => void;
+  onPlayNote: (f: Finding, at?: string) => void;
   onPlaySpan: (span: [number, number]) => void;
-  /** Extra room under this line so its margin notes clear the next line's. */
-  pad: number;
+  onHover: (id: string | null) => void;
 };
 
-type Run = { finding?: Finding; words: Word[] };
+/** Consecutive words marked by the same set of notes. */
+type Run = { findings: Finding[]; words: Word[] };
 
 function Line({
   ref,
   take,
   segment,
   findings,
+  rails,
+  index,
+  lens,
   time,
   playing,
-  activeId,
+  focusId,
+  focusAt,
+  markId,
   onPlayFrom,
+  onOpenNote,
   onPlayNote,
   onPlaySpan,
-  pad,
+  onHover,
 }: LineProps) {
-  const notes = findings.filter((f) => f.segmentId === segment.id);
   const current = playing && time >= segment.start && time < segment.end;
-  const rated = notes.some((f) => f.foundation === "rate");
+  // A note is written once, under the line it begins on. A note from an earlier line shows
+  // here only while it is open and was picked on this line.
+  const notes = findings.filter(
+    (f) =>
+      f.segmentId === segment.id ||
+      (f.id === focusId &&
+        focusAt === segment.id &&
+        rails.some((rail) => rail.note === f)),
+  );
 
-  // Each word belongs to the narrowest note covering it; consecutive words of one note form a run.
   const runs = useMemo(() => {
-    const width = (f: Finding) => (f.span ? f.span[1] - f.span[0] : Infinity);
     const result: Run[] = [];
     for (const word of segment.words) {
-      const finding = findings
-        .filter((f) =>
-          f.span ? within(word, f.span) : f.segmentId === segment.id,
-        )
-        .sort((a, b) => width(a) - width(b))[0];
+      const marks = findings.filter((f) =>
+        f.span ? within(word, f.span) : f.segmentId === segment.id,
+      );
       const last = result[result.length - 1];
-      if (last && last.finding === finding) last.words.push(word);
-      else result.push({ finding, words: [word] });
+      if (
+        last &&
+        last.findings.length === marks.length &&
+        last.findings.every((f, i) => f === marks[i])
+      )
+        last.words.push(word);
+      else result.push({ findings: marks, words: [word] });
     }
     return result;
   }, [segment, findings]);
@@ -840,15 +948,22 @@ function Line({
       p.end <= segment.end + 0.05 &&
       p.end - p.start >= 0.3,
   );
+  const words = useMemo(
+    () => take.segments.flatMap((sg) => sg.words),
+    [take.segments],
+  );
 
   return (
-    <li
-      ref={ref}
-      data-pad={segment.id}
-      className={ROW}
-      style={pad ? { paddingBottom: pad } : undefined}
-    >
-      <div className="flex items-baseline gap-3 pt-1 sm:block sm:pt-2">
+    <li ref={ref} className={cn(ROW, "relative")}>
+      <Rails
+        rails={rails}
+        index={index}
+        lens={lens}
+        markId={markId}
+        onOpen={(note) => onOpenNote(note, segment.id)}
+        onHover={onHover}
+      />
+      <div className="pt-1 sm:pt-2">
         <button
           type="button"
           onClick={() => onPlayFrom(segment.start)}
@@ -860,99 +975,164 @@ function Line({
         >
           {formatTime(segment.start)}
         </button>
-        {segment.speakingRate !== undefined && (
-          <p
-            className="font-mono text-[0.625rem] leading-5 tabular sm:mt-1"
-            style={{ color: rated ? "var(--f-rate-ink)" : "var(--ink-3)" }}
-            title="Syllables per second in this line, including short silences"
-          >
-            {segment.speakingRate.toFixed(1)} syl/s
-          </p>
-        )}
       </div>
-      <div className="pt-2 pb-8 sm:pb-10 lg:pb-6">
-        <p className="max-w-[36ch] font-wide text-[clamp(1.25rem,1.9vw,1.75rem)] leading-[1.35] font-semibold tracking-[-0.015em] text-pretty">
+      <div className="pt-2 pb-8 sm:pb-10">
+        <p className="max-w-[40ch] font-wide text-[clamp(1.25rem,1.9vw,1.75rem)] leading-[1.4] font-semibold tracking-[-0.015em] text-pretty">
           {runs.map((run, r) => (
             <Fragment key={r}>
               {r > 0 && " "}
               <Words
                 run={run}
+                lens={lens}
                 time={time}
                 current={current}
                 pauses={pauses}
-                active={!!run.finding && run.finding.id === activeId}
-                onPlay={
-                  run.finding ? () => onPlayNote(run.finding!) : undefined
-                }
+                markId={markId}
+                onOpen={(f) => onOpenNote(f, segment.id)}
               />
             </Fragment>
           ))}
         </p>
         {notes.length > 0 && (
-          <ul className="mt-6 grid gap-6 lg:hidden">
+          <ul className="mt-4 grid max-w-[38rem] gap-1">
             {notes.map((note) => (
               <Note
                 key={note.id}
                 note={note}
-                active={note.id === activeId}
-                onPlay={() => onPlayNote(note)}
+                quote={quoteOf(note, words)}
+                // A note opens on the line it was picked on, or else on the line it begins on.
+                open={
+                  note.id === focusId &&
+                  (focusAt ?? note.segmentId) === segment.id
+                }
+                marked={note.id === markId}
+                lines={
+                  rails.find((rail) => rail.note === note) &&
+                  rails.find((rail) => rail.note === note)!.last -
+                    rails.find((rail) => rail.note === note)!.first +
+                    1
+                }
+                onOpen={() => onOpenNote(note, segment.id)}
+                onPlay={() => onPlayNote(note, segment.id)}
                 onPlaySpan={onPlaySpan}
+                onHover={onHover}
               />
             ))}
           </ul>
         )}
       </div>
-      {notes.length > 0 && (
-        <div className="relative max-lg:hidden">
-          <ul
-            data-margin={segment.id}
-            className="absolute inset-x-0 top-0 grid gap-8 pt-3"
-          >
-            {notes.map((note) => (
-              <Note
-                key={note.id}
-                note={note}
-                active={note.id === activeId}
-                onPlay={() => onPlayNote(note)}
-                onPlaySpan={onPlaySpan}
-              />
-            ))}
-          </ul>
-        </div>
-      )}
     </li>
   );
 }
 
+/**
+ * Margin bars for notes that run over several lines, one lane each. A bar is quiet until
+ * its note is in focus, then it takes the foundation's ink. `index` is the line's place,
+ * or -1 for the silence between two lines, where the bars only pass through.
+ */
+function Rails({
+  rails,
+  index,
+  lens,
+  markId,
+  onOpen,
+  onHover,
+}: {
+  rails: Rail[];
+  index: number;
+  lens: Lens;
+  markId: string | null | undefined;
+  onOpen?: (note: Finding) => void;
+  onHover?: (id: string | null) => void;
+}) {
+  if (!rails.length) return null;
+  return (
+    <div className="absolute inset-y-0 left-[-0.625rem] sm:left-[calc(4.5rem+0.375rem)]">
+      {rails.map((rail) => {
+        const foundation = FOUNDATION_BY_KEY[rail.note.foundation];
+        const focused = rail.note.id === markId;
+        const label = RULES[rail.note.ruleId]?.label ?? foundation.label;
+        return (
+          <button
+            key={rail.note.id}
+            type="button"
+            tabIndex={-1}
+            disabled={!onOpen}
+            aria-label={`${foundation.short}: ${label}, lines ${rail.first + 1} to ${rail.last + 1}`}
+            title={`${foundation.short} · ${label} · ${rail.last - rail.first + 1} lines`}
+            onClick={() => onOpen?.(rail.note)}
+            onPointerEnter={() => onHover?.(rail.note.id)}
+            onPointerLeave={() => onHover?.(null)}
+            className={cn(
+              "absolute w-[3px] rounded-full transition-colors duration-150 before:absolute before:inset-y-0 before:-inset-x-1 disabled:pointer-events-none",
+              // The bar starts level with the first line's words and stops under the last line's.
+              index === rail.first ? "top-3 sm:top-4" : "top-0",
+              index === rail.last ? "bottom-8 sm:bottom-10" : "bottom-0",
+              index !== rail.first && "rounded-t-none",
+              index !== rail.last && "rounded-b-none",
+            )}
+            style={{
+              left: rail.lane * 6,
+              background: focused
+                ? foundation.ink
+                : lens === "all"
+                  ? "var(--line-strong)"
+                  : `color-mix(in oklch, ${foundation.ink} 40%, transparent)`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** The words a note is about, shortened in the middle when the passage is long. */
+function quoteOf(note: Finding, words: Word[]) {
+  const said = note.span
+    ? words.filter((w) => within(w, note.span!)).map((w) => w.text)
+    : [];
+  return said.length > 9
+    ? `${said.slice(0, 4).join(" ")} … ${said.slice(-3).join(" ")}`
+    : said.join(" ");
+}
+
+const highlighter = (fill: string) =>
+  `linear-gradient(transparent 10%, ${fill} 10%, ${fill} 92%, transparent 92%)`;
+
 function Words({
   run,
+  lens,
   time,
   current,
   pauses,
-  active,
-  onPlay,
+  markId,
+  onOpen,
 }: {
   run: Run;
+  lens: Lens;
   time: number;
   current: boolean;
   pauses: Take["pauses"];
-  active: boolean;
-  onPlay?: () => void;
+  markId: string | null | undefined;
+  onOpen: (f: Finding) => void;
 }) {
-  const f = run.finding;
-  const foundation = f && FOUNDATION_BY_KEY[f.foundation];
-  // A stretch is laid on lighter than a single phrase; the note in focus is laid on in full.
-  const band =
-    foundation &&
-    (active || !RULES[f.ruleId]?.stretch
-      ? foundation.fill
-      : `color-mix(in oklch, ${foundation.fill} 55%, transparent)`);
+  const marks = run.findings;
+  // Only one note is ever coloured on a word: the one in focus. With a single foundation
+  // in view its other notes keep a lighter wash of the same colour.
+  const focus = marks.find((f) => f.id === markId);
+  const shown = focus ? [focus] : lens === "all" ? [] : marks;
   const words = run.words.map((word, i) => {
-    const suggestion = f?.suggestions?.find((s) => within(word, s.span));
-    const marksPause =
-      suggestion &&
-      ["pause_after", "lengthen_pause_after"].includes(suggestion.direction);
-    const emphasis = suggestion && !marksPause;
+    const suggested = shown.flatMap((f) =>
+      (f.suggestions ?? [])
+        .filter((s) => within(word, s.span))
+        .map((s) => ({ s, f })),
+    );
+    const marksPause = suggested.some(({ s }) =>
+      ["pause_after", "lengthen_pause_after"].includes(s.direction),
+    );
+    const emphasis = suggested.find(
+      ({ s }) => !["pause_after", "lengthen_pause_after"].includes(s.direction),
+    );
     const pause = pauses.find((p) => Math.abs(p.start - word.end) < 0.08);
     const now = current && time >= word.start && time < word.end + 0.05;
     return (
@@ -970,7 +1150,10 @@ function Words({
           )}
           style={
             !now && emphasis
-              ? { textDecorationColor: foundation!.ink }
+              ? {
+                  textDecorationColor:
+                    FOUNDATION_BY_KEY[emphasis.f.foundation].ink,
+                }
               : undefined
           }
         >
@@ -979,7 +1162,7 @@ function Words({
         {pause && (
           <PauseMark
             seconds={pause.end - pause.start}
-            noted={f?.foundation === "pauses"}
+            noted={shown.some((f) => f.foundation === "pauses")}
           />
         )}
         {marksPause && !pause && (
@@ -996,21 +1179,31 @@ function Words({
       </Fragment>
     );
   });
-  if (!f || !foundation) return words;
+  if (!marks.length) return words;
 
+  const fill = shown.length
+    ? FOUNDATION_BY_KEY[shown[0].foundation].fill
+    : undefined;
+  // Pressing a marked phrase opens its note without playing it; pressing again moves to the next note on the same words.
+  const at = marks.findIndex((f) => f.id === markId);
   return (
     <span
-      onClick={onPlay}
+      onClick={() => onOpen(marks[(at + 1) % marks.length])}
       className={cn(
-        "cursor-pointer rounded-[0.14em] transition-[background-color,box-shadow] duration-200 [box-decoration-break:clone]",
-        f.uncertainty === "tentative" && "border-b-2 border-dashed",
+        "cursor-pointer rounded-[0.14em] transition-[text-decoration-color] duration-150 [box-decoration-break:clone]",
+        // Noted but not in focus: one quiet underline, whatever the note is about.
+        !fill &&
+          "underline decoration-line-strong decoration-2 underline-offset-[0.3em] hover:decoration-ink-3",
       )}
       style={
-        {
-          borderColor: foundation.ink,
-          background: `linear-gradient(transparent 12%, ${band} 12%, ${band} 94%, transparent 94%)`,
-          mixBlendMode: "multiply",
-        } as CSSProperties
+        fill
+          ? {
+              background: highlighter(
+                focus ? fill : `color-mix(in oklch, ${fill} 50%, transparent)`,
+              ),
+              mixBlendMode: "multiply",
+            }
+          : undefined
       }
     >
       {words}
@@ -1037,14 +1230,30 @@ function PauseMark({ seconds, noted }: { seconds: number; noted: boolean }) {
 
 export function Note({
   note,
-  active,
+  quote,
+  open = true,
+  marked = open,
+  lines,
+  onOpen,
   onPlay,
   onPlaySpan,
+  onHover,
 }: {
   note: Finding;
-  active: boolean;
+  /** The words the note is about, shown in its highlighter so the two can be matched. */
+  quote?: string;
+  /** Closed, a note is one line naming it; open, it says everything. */
+  open?: boolean;
+  /** Its words are coloured in the line right now. */
+  marked?: boolean;
+  /** How many lines the note runs over, when more than one. */
+  lines?: number;
+  /** Pressing the entry opens or closes it; it never plays. */
+  onOpen?: () => void;
+  /** The play control on the right plays the passage. */
   onPlay: () => void;
   onPlaySpan: (span: [number, number]) => void;
+  onHover?: (id: string | null) => void;
 }) {
   const f = FOUNDATION_BY_KEY[note.foundation];
   const tentative = note.uncertainty === "tentative";
@@ -1053,57 +1262,87 @@ export function Note({
     (note.kind === "strength" ? "Strength" : "To improve");
   return (
     <li
-      data-note={note.id}
-      className="grid scroll-mt-28 grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2"
+      data-note={open ? note.id : undefined}
+      className={cn(
+        "grid scroll-mt-28 grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2",
+        open && "py-2",
+      )}
+      onPointerEnter={() => onHover?.(note.id)}
+      onPointerLeave={() => onHover?.(null)}
     >
       {/* The pin is centred on the label line, so it reads as that line's bullet. */}
-      <span className="flex h-5 items-center justify-center">
+      <span className="flex h-6 items-center justify-center">
         <Pin
           kind={note.kind}
           tentative={tentative}
           color={f.ink}
-          active={active}
+          active={marked}
           size={12}
         />
       </span>
-      <div className="min-w-0">
+      <div className="relative min-w-0">
         <button
           type="button"
-          onClick={onPlay}
-          className="group/note block w-full rounded-sm text-left"
-          aria-label={`${f.label}, ${label}${tentative ? ", tentative" : ""}: ${note.observation} Play this passage.`}
+          onClick={onOpen}
+          aria-expanded={open}
+          className="group/note block w-full rounded-sm pr-16 text-left"
+          aria-label={`${f.label}, ${label}${tentative ? ", tentative" : ""}: ${note.observation}`}
         >
-          <span className="flex flex-wrap items-baseline gap-x-2 text-[0.75rem] leading-5">
+          <span className="flex flex-wrap items-baseline gap-x-2 text-[0.8125rem] leading-6">
             <span className="font-semibold" style={{ color: f.ink }}>
               {f.short}
             </span>
-            <span className="text-ink-3">
+            <span
+              className={cn(
+                "transition-colors group-hover/note:text-ink",
+                open ? "text-ink" : "text-ink-2",
+              )}
+            >
               {label}
-              {tentative && " · tentative"}
             </span>
-            <span className="ml-auto flex items-center gap-1.5 font-mono text-[0.6875rem] text-ink-3 tabular transition-colors group-hover/note:text-glass-ink">
-              <PlayIcon
-                className="size-2.5 fill-current text-glass"
-                aria-hidden="true"
-              />
-              {formatTime(passage(note)[0], false)}
-            </span>
-          </span>
-          <span
-            className={cn(
-              "mt-1 block text-[0.9375rem] leading-6 font-medium transition-colors group-hover/note:text-ink",
-              active ? "text-ink" : "text-ink-2",
+            {(tentative || lines) && (
+              <span className="text-ink-3">
+                {[tentative && "tentative", lines && `${lines} lines`]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
             )}
-          >
-            {note.observation}
           </span>
+          {open && quote && (
+            <span className="mt-1 block text-[0.8125rem] leading-5 font-semibold text-ink">
+              <span
+                className="rounded-[2px] px-1 [box-decoration-break:clone]"
+                style={{ background: f.fill }}
+              >
+                {quote}
+              </span>
+            </span>
+          )}
+          {open && (
+            <span className="mt-2 block text-[0.9375rem] leading-6 font-medium text-ink">
+              {note.observation}
+            </span>
+          )}
         </button>
-        {note.why && (
+        {/* Hearing the passage is its own control, so reading a note never starts the audio. */}
+        <button
+          type="button"
+          onClick={onPlay}
+          aria-label={`Play this passage, from ${formatTime(passage(note)[0], false)}`}
+          className="group/play absolute top-0 right-0 flex h-6 items-center gap-1.5 rounded-sm font-mono text-[0.6875rem] text-ink-3 tabular transition-colors hover:text-glass-ink"
+        >
+          <PlayIcon
+            className="size-2.5 fill-current text-glass transition-colors group-hover/play:text-glass-ink"
+            aria-hidden="true"
+          />
+          {formatTime(passage(note)[0], false)}
+        </button>
+        {open && note.why && (
           <p className="mt-1 text-[0.8125rem] leading-5 text-ink-3">
             {note.why}
           </p>
         )}
-        {note.practice && (
+        {open && note.practice && (
           <p className="mt-3 flex gap-2 text-[0.8125rem] leading-5 font-medium text-ink">
             <CornerDownRightIcon
               className="mt-0.5 size-4 shrink-0"
@@ -1113,7 +1352,7 @@ export function Note({
             {note.practice}
           </p>
         )}
-        {note.suggestions?.length ? (
+        {open && note.suggestions?.length ? (
           <ul className="mt-2 grid gap-1 pl-6">
             {note.suggestions.map((s) => (
               <li key={`${s.direction}-${s.span[0]}`}>

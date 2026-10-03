@@ -101,7 +101,7 @@ const SECTIONS = [
   ["mark", "Mark"],
   ["cover", "Cover"],
   ["lyric", "Lyric sheet"],
-  ["note", "Margin note"],
+  ["note", "Note"],
   ["recorder", "Recorder tape"],
   ["pin", "Note pins"],
   ["button", "Button"],
@@ -261,7 +261,7 @@ export function Components() {
               </TypeRow>
               <TypeRow meta="Time, catalog · Martian Mono">
                 <span className="font-mono text-[0.75rem] tabular">
-                  00:04.7 / 00:15 · 4.1 syl/s · MMV 001
+                  00:04.7 / 00:15 · MMV 001
                 </span>
               </TypeRow>
             </div>
@@ -333,15 +333,21 @@ export function Components() {
 
           <Showcase
             id="note"
-            title="Margin note"
-            note="Pinned to its words: foundation and rule, the observation, why it matters, and one thing to try. Every note and every phrase in it can be played."
+            title="Note"
+            note="Sits under the line it is about and quotes its words in the same highlighter: foundation and rule, the observation, why it matters, and one thing to try. Every note and every phrase in it can be played."
           >
-            <ul className="grid max-w-[34rem] gap-8">
+            <ul className="grid max-w-[38rem] gap-1">
               {REVIEW_FIXTURE.review.findings.slice(0, 2).map((f, i) => (
                 <Note
                   key={f.id}
+                  quote={
+                    i === 0
+                      ? "For three years, I ran the night shift"
+                      : "nobody tells you is that"
+                  }
                   note={f}
-                  active={i === 0}
+                  open={i === 0}
+                  onOpen={() => undefined}
                   onPlay={() => undefined}
                   onPlaySpan={() => undefined}
                 />
@@ -687,10 +693,10 @@ export function Components() {
             <Row>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline">5.4 syl/s</Button>
+                  <Button variant="outline">0.7 s</Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Syllables per second in this passage, including silence
+                  Silence between two lines, in seconds
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
