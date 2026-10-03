@@ -4,12 +4,28 @@ name: Speechapp verified workflow
 planner: planner
 implementer: implementer
 reviewers:
-  - ponytail
+  - design
+  - frontend
+  - Ponytail
+  - use-effect
+  - animation
 checks:
-  - id: diff-check
-    name: Git whitespace check
-    run: git diff --check
+  - id: lint
+    name: Lint
+    run: pnpm lint
     timeoutMs: 300000
+  - id: typecheck
+    name: TypeScript
+    run: pnpm typecheck
+    timeoutMs: 300000
+  - id: prettier
+    name: Prettier
+    run: pnpm format:check
+    timeoutMs: 300000
+  - id: build
+    name: Build
+    run: pnpm build
+    timeoutMs: 600000
 limits:
   maxRevisionCycles: 3
   identicalFailureLimit: 2
