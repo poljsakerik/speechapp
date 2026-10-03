@@ -147,8 +147,7 @@ export function Editor({
       )}
       onKeyDown={(event) => {
         const target = event.target as HTMLElement;
-        if (target.closest(translate("review:editorRoleSliderButtonInputA")))
-          return;
+        if (target.closest("[role=slider], button, input, a")) return;
         if (event.key === " " || event.key === "k") {
           event.preventDefault();
           void toggle();
