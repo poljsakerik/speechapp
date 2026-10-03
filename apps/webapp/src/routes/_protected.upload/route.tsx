@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { CloudOffIcon, UploadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Wordmark } from "@/components/brand/Mark";
 import { FeedbackView } from "@/components/feedback/FeedbackView";
 import { TryReview } from "@/components/try/TryReview";
 import type { ReviewResult } from "@/lib/api";
@@ -30,10 +31,25 @@ function Upload() {
   const [result, setResult] = useState<ReviewResult>();
   const { isError: offline } = useQuery(healthQuery);
 
+  // Development only: /upload?fixture opens the review screen on the sample take.
+  useEffect(() => {
+    if (
+      !import.meta.env.DEV ||
+      !new URLSearchParams(window.location.search).has("fixture")
+    )
+      return;
+    void import("@/data/review-fixture").then(({ REVIEW_FIXTURE }) =>
+      setResult(REVIEW_FIXTURE),
+    );
+  }, []);
+
   useEffect(() => {
     if (!result) return;
     window.scrollTo({ top: 0 });
-    return () => URL.revokeObjectURL(result.audioUrl);
+    return () => {
+      if (result.audioUrl.startsWith("blob:"))
+        URL.revokeObjectURL(result.audioUrl);
+    };
   }, [result]);
 
   if (result) {
@@ -41,8 +57,7 @@ function Upload() {
       <main className="min-h-svh">
         <FeedbackView
           take={result.take}
-          findings={result.review.findings}
-          assessments={result.review.assessments}
+          review={result.review}
           audioSrc={result.audioUrl}
           action={
             <Button
@@ -52,11 +67,11 @@ function Upload() {
               onClick={() => setResult(undefined)}
             >
               <UploadIcon />
-              <span className="max-sm:hidden">Upload another take</span>
+              <span className="max-sm:hidden">Another take</span>
             </Button>
           }
           footer={
-            <p className="text-[0.8125rem] text-ink-3">
+            <p className="text-[0.8125rem] leading-5 text-ink-3">
               This is AI feedback and it can be wrong. Listen back to the
               passage before you act on a note.
             </p>
@@ -67,22 +82,24 @@ function Upload() {
   }
 
   return (
-    <main className="mx-auto min-h-svh max-w-[1320px] px-4 py-12 sm:px-6 sm:py-20 lg:px-10">
-      <h1 className="font-wide text-[clamp(2.5rem,4.5vw,4.25rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance">
-        Upload your recording.
-      </h1>
-      {offline && (
-        <Alert className="mt-8 max-w-2xl">
-          <CloudOffIcon />
-          <AlertTitle>The review service can't be reached</AlertTitle>
-          <AlertDescription>
-            You can still record a take. Send it once the service is back.
-          </AlertDescription>
-        </Alert>
-      )}
-      <div className="mt-10">
+    <>
+      <header className="mx-auto flex h-14 max-w-[1440px] items-center px-4 sm:px-6 lg:px-10">
+        <Link to="/" aria-label="MicMane home" className="rounded-sm">
+          <Wordmark />
+        </Link>
+      </header>
+      <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1440px] flex-col justify-center px-4 pt-8 pb-24 sm:px-6 lg:px-10">
+        {offline && (
+          <Alert className="mb-10 max-w-2xl">
+            <CloudOffIcon />
+            <AlertTitle>The review service can't be reached</AlertTitle>
+            <AlertDescription>
+              You can still record a take. Send it once the service is back.
+            </AlertDescription>
+          </Alert>
+        )}
         <TryReview uploadFirst onReviewed={setResult} />
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
