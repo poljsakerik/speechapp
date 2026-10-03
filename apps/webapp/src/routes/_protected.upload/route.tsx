@@ -1,7 +1,9 @@
+import { PUBLIC_WEBSITE_NS, REVIEW_NS } from "@/core/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CloudOffIcon, UploadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Wordmark } from "@/components/brand/Mark";
 import { FeedbackView } from "@/components/feedback/FeedbackView";
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/_protected/upload")({
 });
 
 function Upload() {
+  const { t: translate } = useTranslation([REVIEW_NS, PUBLIC_WEBSITE_NS]);
   const [result, setResult] = useState<ReviewResult>();
   const { isError: offline } = useQuery(healthQuery);
 
@@ -62,18 +65,19 @@ function Upload() {
           action={
             <Button
               size="sm"
-              aria-label="Upload another take"
+              aria-label={translate("review:protecteduploadUploadAnotherTake")}
               className="bg-on-graphite text-graphite-deep hover:bg-white max-sm:size-8 max-sm:px-0"
               onClick={() => setResult(undefined)}
             >
               <UploadIcon />
-              <span className="max-sm:hidden">Another take</span>
+              <span className="max-sm:hidden">
+                {translate("review:protecteduploadAnotherTake")}
+              </span>
             </Button>
           }
           footer={
             <p className="text-[0.8125rem] leading-5 text-ink-3">
-              This is AI feedback and it can be wrong. Listen back to the
-              passage before you act on a note.
+              {translate("review:protecteduploadThisIsAiFeedbackAndItCanBe")}
             </p>
           }
         />
@@ -84,7 +88,11 @@ function Upload() {
   return (
     <>
       <header className="mx-auto flex h-14 max-w-[1440px] items-center px-4 sm:px-6 lg:px-10">
-        <Link to="/" aria-label="MicMane home" className="rounded-sm">
+        <Link
+          to="/"
+          aria-label={translate("publicWebsite:sitenavMicmaneHome")}
+          className="rounded-sm"
+        >
           <Wordmark />
         </Link>
       </header>
@@ -92,9 +100,11 @@ function Upload() {
         {offline && (
           <Alert className="mb-10 max-w-2xl">
             <CloudOffIcon />
-            <AlertTitle>The review service can't be reached</AlertTitle>
+            <AlertTitle>
+              {translate("review:protecteduploadTheReviewServiceCanTBeReached")}
+            </AlertTitle>
             <AlertDescription>
-              You can still record a take. Send it once the service is back.
+              {translate("review:protecteduploadYouCanStillRecordATakeSendIt")}
             </AlertDescription>
           </Alert>
         )}

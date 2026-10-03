@@ -1,4 +1,6 @@
+import { PUBLIC_WEBSITE_NS, REVIEW_NS } from "@/core/i18n";
 import { useId, useMemo, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { FOUNDATION_BY_KEY } from "@/lib/foundations";
 import type { Review, Take } from "@/lib/review";
@@ -159,6 +161,7 @@ export function CoverArt({
   bottom,
   className,
 }: CoverArtProps) {
+  const { t: translate } = useTranslation([REVIEW_NS, PUBLIC_WEBSITE_NS]);
   const ridges = useRidges(take, review, palette);
   const clipId = `horizon-${useId().replace(/[^a-zA-Z0-9-]/g, "")}`;
   const current = live
@@ -183,8 +186,8 @@ export function CoverArt({
       )}
       aria-label={
         palette
-          ? `Cover for “${title}”, drawn from the level of the take`
-          : `Cover for “${title}”, one ridge for each line that showed a strength`
+          ? translate("publicWebsite:coverLevel", { title })
+          : translate("publicWebsite:coverStrengths", { title })
       }
     >
       <svg

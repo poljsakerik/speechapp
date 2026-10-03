@@ -29,6 +29,12 @@ The Vite server proxies `/trpc` to the backend, where Fastify serves the tRPC ro
 
 Web routes use flat folders in `apps/webapp/src/routes`, matching `../leksoro`: each route has a `route.tsx` entry, with dots in folder names for nested paths. Pathless `_public` and `_protected` layouts follow `../branchwren`: `_public.index` (`/`) and `_public.components` (`/components`) share the site header, while `_protected.upload` (`/upload`) starts a recording review without it. The protected group is a layout boundary; authentication is not implemented yet. Vite generates `src/routeTree.gen.ts` on dev/build; commit that file but do not edit it by hand.
 
+## Translations
+
+The web app follows `../leksoro`: `src/core/i18n` initializes i18next and React, browser catalogs load from `public/locales/{{lng}}/{{ns}}.json`, and `src/i18n.d.ts` types the namespaces. English is currently supplied. Catalogs use flat keys (`keySeparator: false`) in `common`, `publicWebsite`, `review`, `components`, and `validation`. Add new locales to `resources.ts` and `supportedLanguages`.
+
+Use `useTranslation` in views, including toasts and accessible labels. Keep complete sentences and plural forms in the catalogs. Shared validation schemas return `validation:` keys; pass the view's `t` to `FormMessage` to render errors. Never display raw server exception messages. The backend returns rule IDs, summary codes, and evidence (durations, pace, emotion categories, transcript excerpts); `lib/coaching.ts` creates translated coaching copy. Transcripts and uploaded filenames remain recording content.
+
 ## Rate of speech
 
 The aim is to show an untrained speaker where someone of the course coach's caliber would slow down or move through. Rate is how fast the words themselves are spoken: **articulation rate**, speech per second of actual speaking, with pauses left out. Listeners judge speed mostly from articulation rather than from pausing ([Grosjean & Lane](https://francoisgrosjean.ch/perc_comp/13.%20Grosjean%20&%20Lane.pdf)). Pausing is reviewed elsewhere.

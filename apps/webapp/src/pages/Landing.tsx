@@ -1,6 +1,13 @@
+import {
+  COMMON_NS,
+  COMPONENTS_NS,
+  PUBLIC_WEBSITE_NS,
+  REVIEW_NS,
+} from "@/core/i18n";
 import { Link } from "@tanstack/react-router";
 import { ArrowRightIcon, MicIcon, PauseIcon, PlayIcon } from "lucide-react";
 import { useMemo, useRef, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { LANE_H, LaneSignal, Pin } from "@/components/editor/Editor";
 import { CoverArt } from "@/components/liner/CoverArt";
@@ -10,7 +17,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import sampleTake from "@/data/sample-take.json";
 import { FOUNDATIONS, FOUNDATION_BY_KEY } from "@/lib/foundations";
 import { formatTime, type Take } from "@/lib/review";
-import { SAMPLE_REVIEW, SAMPLE_TITLE } from "@/lib/sample";
+import { SAMPLE_REVIEW, sampleTitle } from "@/lib/sample";
 import { Badge } from "@micmane/ui/components/badge";
 import { Button } from "@micmane/ui/components/button";
 import { cn } from "@micmane/ui/lib/utils";
@@ -37,6 +44,7 @@ const LEAD = "max-w-[46ch] text-[1.0625rem] leading-7 text-pretty text-ink-2";
 const PAGE = "booklet-page";
 
 export function Landing() {
+  useTranslation();
   return (
     <>
       <main>
@@ -52,6 +60,12 @@ export function Landing() {
 }
 
 function Hero() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   const player = useTakePlayer(TAKE.duration);
   const { time, playing, started, toggle, playFrom } = player;
   const progress = Math.min(1, time / TAKE.duration);
@@ -85,15 +99,20 @@ function Hero() {
             id="hero-title"
             className="font-wide text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance"
           >
-            Unlock the full potential of your voice.
+            {translate(
+              "publicWebsite:sitenavUnlockTheFullPotentialOfYourVoice",
+            )}
           </h1>
           <p className={cn(LEAD, "mt-6")}>
-            Learn what makes a voice carry, practise out loud with a coach that
-            listens, and grow more confident one take at a time.
+            {translate(
+              "publicWebsite:landingLearnWhatMakesAVoiceCarryPractiseOut",
+            )}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild size="lg">
-              <Link to="/upload">Try a free review</Link>
+              <Link to="/upload">
+                {translate("publicWebsite:sitefooterTryAFreeReview")}
+              </Link>
             </Button>
             <Button variant="outline" size="lg" onClick={seeExample}>
               {playing ? (
@@ -104,7 +123,9 @@ function Hero() {
                   className="fill-glass text-glass"
                 />
               )}
-              {playing ? "Pause the example" : "See an example"}
+              {playing
+                ? translate("publicWebsite:landingPauseTheExample")
+                : translate("components:seeAnExample")}
               <span className="font-mono text-[0.75rem] text-ink-3 tabular">
                 0:15
               </span>
@@ -119,7 +140,7 @@ function Hero() {
             <CoverArt
               take={TAKE}
               review={SAMPLE_REVIEW}
-              title={SAMPLE_TITLE}
+              title={sampleTitle()}
               time={time}
               live={started}
               palette={COVER_PALETTE}
@@ -127,10 +148,10 @@ function Hero() {
               top={
                 <>
                   <span className="font-wide text-[0.9375rem] font-extrabold tracking-[-0.02em]">
-                    MicMane
+                    {translate("common:markMicmane")}
                   </span>
                   <span className="font-mono text-[0.6875rem] text-on-graphite-muted tabular">
-                    MMV 001
+                    {translate("publicWebsite:sitefooterMmv001")}
                   </span>
                 </>
               }
@@ -138,10 +159,10 @@ function Hero() {
                 <>
                   <span className="min-w-0">
                     <span className="block font-wide text-[clamp(1.75rem,3vw,2.5rem)] leading-none font-extrabold tracking-[-0.03em]">
-                      {SAMPLE_TITLE}
+                      {sampleTitle()}
                     </span>
                     <span className="mt-2 block font-mono text-[0.75rem] text-on-graphite-muted tabular">
-                      Take 1 · 0:15
+                      {translate("components:take1015")}
                     </span>
                   </span>
                   <Button
@@ -151,8 +172,8 @@ function Hero() {
                     onClick={() => void toggle()}
                     aria-label={
                       playing
-                        ? "Pause the example take"
-                        : "Play the example take"
+                        ? translate("publicWebsite:landingPauseTheExampleTake")
+                        : translate("publicWebsite:landingPlayTheExampleTake")
                     }
                   >
                     {playing ? (
@@ -184,7 +205,9 @@ function Hero() {
                 <div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <p className="font-wide text-[1.125rem] font-bold tracking-[-0.01em]">
-                      Notes on “{SAMPLE_TITLE}”
+                      {translate("publicWebsite:landingNotesTitle", {
+                        title: sampleTitle(),
+                      })}
                     </p>
                     <p
                       className="ml-auto font-mono text-[0.75rem] text-ink-3 tabular"
@@ -214,7 +237,7 @@ function Hero() {
               footer={
                 <div className="mt-10 grid gap-x-6 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
                   <p className="pt-1 text-[0.75rem] font-semibold text-ink-3">
-                    Overall
+                    {translate("publicWebsite:landingOverall")}
                   </p>
                   <div>
                     <p className="max-w-[52ch] text-[0.9375rem] leading-6 text-ink-2">
@@ -249,6 +272,7 @@ function SectionTitle({
   title: string;
   children?: ReactNode;
 }) {
+  useTranslation();
   return (
     <div className={cn(LEFT, "lg:col-start-1")}>
       <div className="lg:sticky lg:top-24">
@@ -262,6 +286,12 @@ function SectionTitle({
 }
 
 function Lessons() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   return (
     <section
       id="lessons"
@@ -269,11 +299,14 @@ function Lessons() {
       className="scroll-mt-14 bg-surface"
     >
       <div className={cn(SHELL, SPREAD, "py-24 lg:py-36")}>
-        <SectionTitle id="lessons-title" title="Five lessons. Every take kept.">
+        <SectionTitle
+          id="lessons-title"
+          title={translate("publicWebsite:landingFiveLessonsEveryTakeKept")}
+        >
           <p>
-            The course follows five foundations, in order. Each lesson is one
-            page: the lesson at the top, then every take you record under it,
-            with its notes, so you can scroll back and hear what changed.
+            {translate(
+              "publicWebsite:landingTheCourseFollowsFiveFoundationsInOrderEach",
+            )}
           </p>
         </SectionTitle>
 
@@ -292,7 +325,11 @@ function Lessons() {
                 </span>
                 <div className="min-w-0">
                   <h3 className="font-wide text-[1.5rem] leading-10 font-bold tracking-[-0.02em]">
-                    <span className="sr-only">Lesson {i + 1}: </span>
+                    <span className="sr-only">
+                      {translate("publicWebsite:landingLessonNumber", {
+                        number: i + 1,
+                      })}
+                    </span>
                     {f.label}
                   </h3>
                   <p className="max-w-[52ch] text-[0.9375rem] leading-6 text-ink-2">
@@ -318,7 +355,7 @@ function Lessons() {
             ))}
           </ol>
           <p className="mt-10 pl-16 text-[0.8125rem] leading-5 text-ink-3 sm:pl-[4.5rem]">
-            Each strip is the same sample take, read through one foundation.
+            {translate("publicWebsite:landingEachStripIsTheSameSampleTakeRead")}
           </p>
         </div>
       </div>
@@ -356,23 +393,41 @@ function useRetakeCurves() {
 }
 
 function Retake() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   const curves = useRetakeCurves();
   const volume = FOUNDATION_BY_KEY.volume;
   const note = SAMPLE_REVIEW.findings.find((f) => f.foundation === "volume");
   const takes = [
     {
-      label: "Take 1",
-      tag: "Needs work",
+      get label() {
+        return translate("components:take1");
+      },
+      get tag() {
+        return translate("common:foundationsNeedsWork");
+      },
       curve: curves.one,
       kind: "improvement" as const,
-      note: "The ending drops away on “out loud, and mean it”.",
+      get note() {
+        return translate("publicWebsite:landingTheEndingDropsAwayOnOutLoudAnd");
+      },
     },
     {
-      label: "Take 2",
-      tag: "Effective",
+      get label() {
+        return translate("components:take2");
+      },
+      get tag() {
+        return translate("common:foundationsEffective");
+      },
       curve: curves.two,
       kind: "strength" as const,
-      note: "The ending holds at the level of “So tonight”.",
+      get note() {
+        return translate("publicWebsite:landingTheEndingHoldsAtTheLevelOfSo");
+      },
       illustration: true,
     },
   ];
@@ -384,17 +439,21 @@ function Retake() {
       className="scroll-mt-14"
     >
       <div className={cn(SHELL, SPREAD, "py-24 lg:py-36")}>
-        <SectionTitle id="retake-title" title="The retake is the point.">
+        <SectionTitle
+          id="retake-title"
+          title={translate("publicWebsite:landingTheRetakeIsThePoint")}
+        >
           <p>
-            A review only matters if the next take is better. Every note ends
-            with something to try, and MicMane listens again.
+            {translate("publicWebsite:landingAReviewOnlyMattersIfTheNextTake")}
           </p>
         </SectionTitle>
 
         <div className={RIGHT}>
           <article
             className={cn(PAGE, "px-4 py-6 sm:px-8 sm:py-8")}
-            aria-label="The Volume lesson page, with two takes of the same line"
+            aria-label={translate(
+              "publicWebsite:landingTheVolumeLessonPageWithTwoTakesOf",
+            )}
           >
             <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span
@@ -406,18 +465,22 @@ function Retake() {
                 aria-hidden="true"
               />
               <h3 className="font-wide text-[1.125rem] font-bold tracking-[-0.01em]">
-                Volume
+                {translate("common:foundationsVolume")}
               </h3>
               <p className="text-[0.8125rem] text-ink-3">
-                Lesson 2 · one line, practised
+                {translate("publicWebsite:landingLesson2OneLinePractised")}
               </p>
               <p className="ml-auto flex items-center gap-2 text-[0.75rem] font-semibold">
-                <span className="text-ink-3">Needs work</span>
+                <span className="text-ink-3">
+                  {translate("common:foundationsNeedsWork")}
+                </span>
                 <ArrowRightIcon
                   className="size-3.5 text-ink-3"
                   aria-hidden="true"
                 />
-                <span style={{ color: volume.ink }}>Effective</span>
+                <span style={{ color: volume.ink }}>
+                  {translate("common:foundationsEffective")}
+                </span>
               </p>
             </header>
 
@@ -441,7 +504,9 @@ function Retake() {
                       {t.tag}
                     </p>
                     {t.illustration && (
-                      <Badge variant="sample">Illustration</Badge>
+                      <Badge variant="sample">
+                        {translate("components:illustration")}
+                      </Badge>
                     )}
                   </div>
                   <div className="relative mt-3 h-24">
@@ -486,13 +551,15 @@ function Retake() {
                       />
                     </span>
                     <p className="absolute top-0 left-0 hidden text-[0.75rem] text-ink-3 sm:block">
-                      So tonight, I want to talk about…
+                      {translate(
+                        "publicWebsite:landingSoTonightIWantToTalkAbout",
+                      )}
                     </p>
                     <p
                       className="absolute top-0 right-0 text-right text-[0.75rem] font-semibold"
                       style={{ color: i === 0 ? "var(--ink-3)" : volume.ink }}
                     >
-                      out loud, and mean it.
+                      {translate("publicWebsite:landingOutLoudAndMeanIt")}
                     </p>
                   </div>
                   <p className="mt-3 max-w-[52ch] text-[0.8125rem] leading-5 text-ink-2">
@@ -508,7 +575,7 @@ function Retake() {
                 />
                 <div className="rounded-[8px] border border-dashed border-line-strong bg-surface/80 p-5">
                   <p className="font-wide text-[1rem] font-bold">
-                    Take 3 is yours
+                    {translate("publicWebsite:landingTake3IsYours")}
                   </p>
                   {note && (
                     <p className="mt-2 max-w-[52ch] text-[0.9375rem] leading-6 text-ink">
@@ -518,7 +585,7 @@ function Retake() {
                   <Button asChild className="mt-4">
                     <Link to="/upload">
                       <MicIcon aria-hidden="true" />
-                      Record a take
+                      {translate("publicWebsite:landingRecordATake")}
                     </Link>
                   </Button>
                 </div>
@@ -526,8 +593,7 @@ function Retake() {
             </ol>
           </article>
           <p className="mt-4 text-[0.8125rem] leading-5 text-ink-3">
-            Take one is the sample's measured level. Take two is drawn to show
-            the same line with the note followed.
+            {translate("publicWebsite:landingTakeOneIsTheSampleSMeasuredLevel")}
           </p>
         </div>
       </div>
@@ -536,22 +602,50 @@ function Retake() {
 }
 
 function Promises() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   const items = [
     {
-      title: "How you feel.",
-      body: "Tonality describes how you sound. It never guesses at your emotions, your confidence or your personality.",
+      get title() {
+        return translate("publicWebsite:landingHowYouFeel");
+      },
+      get body() {
+        return translate(
+          "publicWebsite:landingTonalityDescribesHowYouSoundItNeverGuesses",
+        );
+      },
     },
     {
-      title: "A score.",
-      body: "There is no number for your voice. You get notes on moments, and a next take.",
+      get title() {
+        return translate("publicWebsite:landingAScore");
+      },
+      get body() {
+        return translate("publicWebsite:landingThereIsNoNumberForYourVoiceYou");
+      },
     },
     {
-      title: "That everything is wrong.",
-      body: "A delivery that already works is left alone. “No clear problem” is a real answer.",
+      get title() {
+        return translate("publicWebsite:landingThatEverythingIsWrong");
+      },
+      get body() {
+        return translate(
+          "publicWebsite:landingADeliveryThatAlreadyWorksIsLeftAlone",
+        );
+      },
     },
     {
-      title: "The one right way.",
-      body: "The same sentence can land in more than one way. When a note is a judgment call, it is marked tentative.",
+      get title() {
+        return translate("publicWebsite:landingTheOneRightWay");
+      },
+      get body() {
+        return translate(
+          "publicWebsite:landingTheSameSentenceCanLandInMoreThan",
+        );
+      },
     },
   ];
   return (
@@ -563,11 +657,12 @@ function Promises() {
       <div className={cn(SHELL, SPREAD, "py-24 lg:py-36")}>
         <div className={cn(LEFT, "lg:col-start-1")}>
           <h2 id="promises-title" className={H2}>
-            What it will never tell you.
+            {translate("publicWebsite:landingWhatItWillNeverTellYou")}
           </h2>
           <p className="mt-6 max-w-[40ch] text-[1.0625rem] leading-7 text-on-graphite-muted">
-            Hearing your own voice is exposing. The coach is built to describe
-            what it hears, and to stop there.
+            {translate(
+              "publicWebsite:landingHearingYourOwnVoiceIsExposingTheCoach",
+            )}
           </p>
         </div>
         {/* Set like liner notes: one continuous text in two columns, run-in titles. */}
@@ -590,6 +685,12 @@ function Promises() {
 }
 
 function Record() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   return (
     <section
       id="record"
@@ -602,15 +703,17 @@ function Record() {
         </div>
         <div className={RIGHT}>
           <h2 id="record-title" className={H2}>
-            Record your first take.
+            {translate("publicWebsite:landingRecordYourFirstTake")}
           </h2>
           <p className={cn(LEAD, "mt-6")}>
-            Thirty seconds to a minute, on your phone or laptop. The free review
-            listens for all five foundations and pins its notes to your own
-            words.
+            {translate(
+              "publicWebsite:landingThirtySecondsToAMinuteOnYourPhone",
+            )}
           </p>
           <Button asChild size="lg" className="mt-8">
-            <Link to="/upload">Try a free review</Link>
+            <Link to="/upload">
+              {translate("publicWebsite:sitefooterTryAFreeReview")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -620,6 +723,12 @@ function Record() {
 
 /** The visitor's own sleeve, not yet pressed: the ridges wait as outlines. */
 function EmptyCover() {
+  const { t: translate } = useTranslation([
+    COMMON_NS,
+    REVIEW_NS,
+    PUBLIC_WEBSITE_NS,
+    COMPONENTS_NS,
+  ]);
   const bases = [168, 243, 318, 392];
   return (
     <figure className="relative mx-auto aspect-square w-full max-w-[22rem] overflow-hidden rounded-[10px] bg-graphite text-on-graphite cover-shadow lg:mx-0 lg:max-w-none">
@@ -644,18 +753,18 @@ function EmptyCover() {
       </svg>
       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-5 sm:p-6">
         <span className="font-wide text-[0.9375rem] font-extrabold tracking-[-0.02em]">
-          MicMane
+          {translate("common:markMicmane")}
         </span>
         <span className="font-mono text-[0.6875rem] text-on-graphite-muted tabular">
-          MMV 002
+          {translate("publicWebsite:landingMmv002")}
         </span>
       </div>
       <figcaption className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
         <span className="block font-wide text-[clamp(1.75rem,3vw,2.5rem)] leading-none font-extrabold tracking-[-0.03em]">
-          Your take
+          {translate("review:tryreviewYourTake")}
         </span>
         <span className="mt-2 block text-[0.8125rem] text-on-graphite-muted">
-          Thirty seconds is enough to start.
+          {translate("publicWebsite:landingThirtySecondsIsEnoughToStart")}
         </span>
       </figcaption>
     </figure>

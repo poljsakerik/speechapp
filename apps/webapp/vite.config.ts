@@ -3,9 +3,17 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { defineConfig } from "vite";
+import en from "./public/locales/en/common.json" with { type: "json" };
 
 export default defineConfig({
   plugins: [
+    {
+      name: "localized-html",
+      transformIndexHtml: (html) =>
+        html
+          .replace("%APP_TITLE%", en.metadataTitle)
+          .replace("%APP_DESCRIPTION%", en.metadataDescription),
+    },
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     tailwindcss(),

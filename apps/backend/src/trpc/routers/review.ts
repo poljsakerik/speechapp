@@ -35,14 +35,14 @@ export const reviewRouter = router({
         ctx.req.log.error(error);
         throw new TRPCError({
           code: "BAD_GATEWAY",
-          message: "Review service unavailable",
+          message: "REVIEW_UNAVAILABLE",
           cause: error,
         });
       }
       if (!result)
         throw new TRPCError({
           code: "UNPROCESSABLE_CONTENT",
-          message: "Not enough speech",
+          message: "INSUFFICIENT_SPEECH",
         });
       return result;
     }),

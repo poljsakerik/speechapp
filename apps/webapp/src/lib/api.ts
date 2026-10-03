@@ -1,15 +1,19 @@
+import {
+  isValidationMessage,
+  type ValidationMessage,
+} from "@micmane/validation/messages";
 import { TRPCClientError } from "@trpc/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import * as v from "valibot";
 
+import type { AppRouter } from "@micmane/backend";
+import { recordingSchema } from "@micmane/validation/review";
 import {
   normalizeReview,
   type Review,
   type Segment,
   type Take,
-} from "@/lib/review";
-import type { AppRouter } from "@micmane/backend";
-import { recordingSchema } from "@micmane/validation/review";
+} from "./review.ts";
 
 type ReviewResponse = inferRouterOutputs<AppRouter>["review"]["create"];
 
@@ -18,37 +22,38 @@ export type ReviewResult = { take: Take; review: Review; audioUrl: string };
 type ReviewErrorKind =
   "busy" | "format" | "size" | "speech" | "offline" | "failed";
 
-const MESSAGES: Record<ReviewErrorKind, string> = {
-  busy: "The coach is busy right now. Wait a minute and send the take again.",
-  format:
-    "That file type isn't supported. Use a WAV, MP3, M4A, MP4 or WebM recording.",
-  size: "That file is larger than 25 MB. Trim it to the minute you want reviewed.",
-  speech:
-    "The coach couldn't hear enough speech in that take. Record closer to the mic and try again.",
-  offline:
-    "The review service can't be reached. Check your connection and try again.",
-  failed:
-    "The review couldn't be completed. Your take wasn't saved; send it again.",
+export type ReviewErrorKey =
+  | ValidationMessage
+  | "review:apiTheCoachIsBusyRightNowWaitA"
+  | "review:apiTheReviewServiceCanTBeReachedCheck"
+  | "review:apiTheReviewCouldnTBeCompletedYourTake"
+  | "review:tryreviewThisBrowserCanTRecordAudioUploadA";
+
+const ERROR_KEYS: Record<ReviewErrorKind, ReviewErrorKey> = {
+  busy: "review:apiTheCoachIsBusyRightNowWaitA",
+  format: "validation:recordingFormat",
+  size: "validation:recordingTooLarge",
+  speech: "validation:recordingEmpty",
+  offline: "review:apiTheReviewServiceCanTBeReachedCheck",
+  failed: "review:apiTheReviewCouldnTBeCompletedYourTake",
 };
 
-const ISSUE_KINDS: Record<string, ReviewErrorKind> = {
-  mime_type: "format",
-  max_size: "size",
-  min_size: "speech",
-};
-
-/** Why the coach can't take this recording, checked before it is sent. Undefined when it can. */
-export function recordingErrorMessage(recording: Blob): string | undefined {
+/** Return the schema's translation key; the form owns its translation. */
+export function recordingErrorKey(
+  recording: Blob,
+): ValidationMessage | undefined {
   const result = v.safeParse(recordingSchema, recording, {
     abortPipeEarly: true,
   });
   if (result.success) return undefined;
-  return MESSAGES[ISSUE_KINDS[result.issues[0].type] ?? "failed"];
+  const message = result.issues[0].message;
+  return isValidationMessage(message) ? message : "validation:invalidUpload";
 }
 
-/** What to tell the speaker when `review.create` fails. */
-export function reviewErrorMessage(error: unknown): string {
-  if (!(error instanceof TRPCClientError)) return MESSAGES.failed;
+/** Map transport status to a known UI key, never display an upstream message. */
+export function reviewErrorKey(error: unknown): ReviewErrorKey {
+  if (!(error instanceof TRPCClientError)) return ERROR_KEYS.failed;
+  if (isValidationMessage(error.message)) return error.message;
   const status: number | undefined =
     error.data?.httpStatus ??
     (error.meta?.response as Response | undefined)?.status;
@@ -66,7 +71,7 @@ export function reviewErrorMessage(error: unknown): string {
               : status === 502 || status === 504
                 ? "offline"
                 : "failed";
-  return MESSAGES[kind];
+  return ERROR_KEYS[kind];
 }
 
 /** Turn the `review.create` response for `recording` into what the editor draws. The caller owns the audio URL. */

@@ -1,6 +1,8 @@
+import { COMMON_NS, PUBLIC_WEBSITE_NS, t as translate } from "@/core/i18n";
 import { Link } from "@tanstack/react-router";
 import { MenuIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Wordmark } from "@/components/brand/Mark";
 import { Button } from "@micmane/ui/components/button";
@@ -16,10 +18,30 @@ import {
 import { cn } from "@micmane/ui/lib/utils";
 
 const LINKS = [
-  { hash: "sample", label: "The example" },
-  { hash: "lessons", label: "Lessons" },
-  { hash: "retake", label: "The retake" },
-  { hash: "promises", label: "Promises" },
+  {
+    hash: "sample",
+    get label() {
+      return translate("publicWebsite:sitenavTheExample");
+    },
+  },
+  {
+    hash: "lessons",
+    get label() {
+      return translate("publicWebsite:sitefooterLessons");
+    },
+  },
+  {
+    hash: "retake",
+    get label() {
+      return translate("publicWebsite:sitenavTheRetake");
+    },
+  },
+  {
+    hash: "promises",
+    get label() {
+      return translate("publicWebsite:sitenavPromises");
+    },
+  },
 ];
 
 /** The section under the reading line, so the nav can light where you are. */
@@ -47,6 +69,7 @@ function useCurrentSection() {
 }
 
 export function SiteNav() {
+  const { t: translate } = useTranslation([COMMON_NS, PUBLIC_WEBSITE_NS]);
   const [scrolled, setScrolled] = useState(false);
   const current = useCurrentSection();
   useEffect(() => {
@@ -67,9 +90,13 @@ export function SiteNav() {
     >
       <nav
         className="mx-auto flex h-14 max-w-[1440px] items-center gap-8 px-4 sm:px-6 lg:px-10"
-        aria-label="Main"
+        aria-label={translate("publicWebsite:sitenavMain")}
       >
-        <Link to="/" className="rounded-sm" aria-label="MicMane home">
+        <Link
+          to="/"
+          className="rounded-sm"
+          aria-label={translate("publicWebsite:sitenavMicmaneHome")}
+        >
           <Wordmark />
         </Link>
         <ul className="hidden items-center gap-6 text-[0.8125rem] font-medium text-ink-2 md:flex">
@@ -92,7 +119,9 @@ export function SiteNav() {
         </ul>
         <div className="ml-auto flex items-center gap-2">
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link to="/upload">Try a free review</Link>
+            <Link to="/upload">
+              {translate("publicWebsite:sitefooterTryAFreeReview")}
+            </Link>
           </Button>
           <Sheet>
             <SheetTrigger asChild>
@@ -100,16 +129,22 @@ export function SiteNav() {
                 variant="ghost"
                 size="icon-sm"
                 className="md:hidden"
-                aria-label="Open menu"
+                aria-label={translate("publicWebsite:sitenavOpenMenu")}
               >
                 <MenuIcon />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[85vw] max-w-xs">
+            <SheetContent
+              closeLabel={translate("common:close")}
+              side="right"
+              className="w-[85vw] max-w-xs"
+            >
               <SheetHeader>
-                <SheetTitle>MicMane</SheetTitle>
+                <SheetTitle>{translate("common:markMicmane")}</SheetTitle>
                 <SheetDescription>
-                  Unlock the full potential of your voice.
+                  {translate(
+                    "publicWebsite:sitenavUnlockTheFullPotentialOfYourVoice",
+                  )}
                 </SheetDescription>
               </SheetHeader>
               <ul className="grid gap-1 px-4 text-base font-medium">
@@ -125,7 +160,7 @@ export function SiteNav() {
                 <li>
                   <SheetClose asChild>
                     <Link to="/components" className="block py-3">
-                      Components
+                      {translate("publicWebsite:sitefooterComponents")}
                     </Link>
                   </SheetClose>
                 </li>
@@ -133,7 +168,9 @@ export function SiteNav() {
               <div className="p-4">
                 <SheetClose asChild>
                   <Button asChild className="w-full" size="lg">
-                    <Link to="/upload">Try a free review</Link>
+                    <Link to="/upload">
+                      {translate("publicWebsite:sitefooterTryAFreeReview")}
+                    </Link>
                   </Button>
                 </SheetClose>
               </div>

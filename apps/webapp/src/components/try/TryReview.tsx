@@ -1,3 +1,6 @@
+import { formatList, REVIEW_NS, VALIDATION_NS } from "@/core/i18n";
+import type { ReviewErrorKey } from "@/lib/api";
+import { FormMessage } from "@micmane/ui/components/form";
 import { useMutation } from "@tanstack/react-query";
 import {
   FileAudioIcon,
@@ -17,13 +20,14 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { useTakePlayer } from "@/components/liner/useTakePlayer";
 import {
   measureTake,
-  recordingErrorMessage,
-  reviewErrorMessage,
+  recordingErrorKey,
+  reviewErrorKey,
   toReviewResult,
   type ReviewResult,
 } from "@/lib/api";
@@ -59,7 +63,7 @@ type State =
     }
   | {
       name: "error";
-      message: string;
+      message: ReviewErrorKey;
       blob?: Blob;
       label?: string;
       url?: string;
@@ -76,6 +80,7 @@ type TryReviewProps = {
  * your level as you speak, and holds the take while the coach listens.
  */
 export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
+  const { t: translate } = useTranslation([REVIEW_NS, VALIDATION_NS]);
   const [state, setState] = useState<State>({ name: "idle" });
   const [now, setNow] = useState(() => performance.now());
   const [history, setHistory] = useState<number[]>([]);
@@ -173,7 +178,7 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
     ) {
       setState({
         name: "error",
-        message: "This browser can't record audio. Upload a recording instead.",
+        message: "review:tryreviewThisBrowserCanTRecordAudioUploadA",
       });
       return;
     }
@@ -216,7 +221,9 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
       setState({
         name: "ready",
         blob,
-        label: "Your recording",
+        get label() {
+          return translate("review:tryreviewYourRecording");
+        },
         url: URL.createObjectURL(blob),
       });
     };
@@ -228,7 +235,7 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
   const choose = (file: File | undefined) => {
     if (!file) return;
     // Say what is wrong with a file as soon as it is chosen, not after it is sent.
-    const invalid = recordingErrorMessage(file);
+    const invalid = recordingErrorKey(file);
     if (invalid) {
       setState({ name: "error", message: invalid });
       return;
@@ -243,9 +250,15 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
 
   const send = async (blob: Blob, label: string, url: string) => {
     // The same checks the backend runs, so a take it would refuse isn't uploaded.
-    const invalid = recordingErrorMessage(blob);
+    const invalid = recordingErrorKey(blob);
     if (invalid) {
-      setState({ name: "error", message: invalid, blob, label, url });
+      setState({
+        name: "error",
+        message: invalid,
+        blob,
+        label,
+        url,
+      });
       return;
     }
     setState({
@@ -273,18 +286,24 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
         ).length,
         notes = result.review.findings.length - strengths;
       const counts = [
-        notes && `${notes} note${notes > 1 ? "s" : ""} to work on`,
-        strengths && `${strengths} strength${strengths > 1 ? "s" : ""}`,
-      ].filter(Boolean);
-      toast.success("Your review is ready", {
+        ...(notes
+          ? [translate("review:reviewReadyNotes", { count: notes })]
+          : []),
+        ...(strengths
+          ? [translate("review:reviewReadyStrengths", { count: strengths })]
+          : []),
+      ];
+      toast.success(translate("review:tryreviewYourReviewIsReady"), {
         description: counts.length
-          ? `${counts.join(" and ")}.`
-          : "No notes on this take.",
+          ? translate("review:reviewReadyDescription", {
+              counts: formatList(counts),
+            })
+          : translate("review:tryreviewNoNotesOnThisTake"),
       });
     } catch (error) {
       setState({
         name: "error",
-        message: reviewErrorMessage(error),
+        message: reviewErrorKey(error),
         blob,
         label,
         url,
@@ -326,12 +345,10 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
       <div className="lg:col-span-5">
         {/* Trimmed to the capitals, so the letters, not their line box, meet the card's top edge. */}
         <h1 className="font-wide text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance lg:[text-box:trim-start_cap_alphabetic]">
-          Record a take.
+          {translate("review:tryreviewRecordATake")}
         </h1>
         <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-pretty text-ink-2">
-          Speak for up to a minute: tell a story, pitch an idea, or introduce
-          yourself. You get notes on your own words, each with one thing to try
-          on the next take.
+          {translate("review:tryreviewSpeakForUpToAMinuteTellA")}
         </p>
       </div>
 
@@ -364,12 +381,13 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
             <>
               <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em] text-balance">
                 {uploadFirst
-                  ? "Drop a recording here, or record one now."
-                  : "Press record and talk."}
+                  ? translate(
+                      "review:tryreviewDropARecordingHereOrRecordOneNow",
+                    )
+                  : translate("review:tryreviewPressRecordAndTalk")}
               </p>
               <p className="mt-4 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
-                The tape above holds one minute. It fills with your voice as you
-                speak and stops by itself at the end.
+                {translate("review:tryreviewTheTapeAboveHoldsOneMinuteItFills")}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button
@@ -379,7 +397,9 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                   }
                 >
                   {uploadFirst ? <UploadIcon /> : <MicIcon />}
-                  {uploadFirst ? "Choose a recording" : "Record"}
+                  {uploadFirst
+                    ? translate("review:tryreviewChooseARecording")
+                    : translate("review:tryreviewRecord")}
                 </Button>
                 <Button
                   variant="outline"
@@ -389,7 +409,9 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                   }
                 >
                   {uploadFirst ? <MicIcon /> : <UploadIcon />}
-                  {uploadFirst ? "Record instead" : "Upload a file"}
+                  {uploadFirst
+                    ? translate("review:tryreviewRecordInstead")
+                    : translate("review:tryreviewUploadAFile")}
                 </Button>
               </div>
             </>
@@ -397,28 +419,33 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
 
           {state.name === "asking" && (
             <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em] text-balance">
-              Allow the microphone in your browser to start.
+              {translate(
+                "review:tryreviewAllowTheMicrophoneInYourBrowserToStart",
+              )}
             </p>
           )}
 
           {state.name === "denied" && (
             <Alert variant="destructive" className="max-w-xl">
               <MicOffIcon />
-              <AlertTitle>The microphone is blocked</AlertTitle>
+              <AlertTitle>
+                {translate("review:tryreviewTheMicrophoneIsBlocked")}
+              </AlertTitle>
               <AlertDescription>
-                Allow the microphone for this site in your browser's settings,
-                then try again. Or upload a recording instead.
+                {translate(
+                  "review:tryreviewAllowTheMicrophoneForThisSiteInYour",
+                )}
               </AlertDescription>
               <div className="col-start-2 mt-3 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => void record()}>
-                  Try again
+                  {translate("review:tryreviewTryAgain")}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fileInput.current?.click()}
                 >
-                  Upload a file
+                  {translate("review:tryreviewUploadAFile")}
                 </Button>
               </div>
             </Alert>
@@ -431,16 +458,17 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                   {formatTime(elapsed)}
                 </span>
                 <span className="font-mono text-[0.75rem] text-ink-3 tabular">
-                  of {formatTime(MAX_SECONDS, false)}
+                  {translate("review:recordingLimit", {
+                    duration: formatTime(MAX_SECONDS, false),
+                  })}
                 </span>
               </p>
               <p className="mt-6 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
-                Recording. Speak as you would to a room. It stops by itself at
-                one minute.
+                {translate("review:tryreviewRecordingSpeakAsYouWouldToARoom")}
               </p>
               <Button variant="glass" size="lg" className="mt-8" onClick={stop}>
                 <SquareIcon className="fill-current" />
-                Stop recording
+                {translate("review:tryreviewStopRecording")}
               </Button>
             </>
           )}
@@ -449,7 +477,7 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
             <>
               <audio src={state.url} {...player.audioProps} />
               <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em]">
-                Your take
+                {translate("review:tryreviewYourTake")}
               </p>
               <p className="mt-2 flex min-w-0 items-center gap-2 text-[0.8125rem] leading-5 text-ink-3">
                 <FileAudioIcon className="size-4 shrink-0" aria-hidden="true" />
@@ -467,7 +495,9 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                   className="rounded-full"
                   onClick={() => void player.toggle()}
                   aria-label={
-                    player.playing ? "Pause your take" : "Play your take"
+                    player.playing
+                      ? translate("review:tryreviewPauseYourTake")
+                      : translate("review:tryreviewPlayYourTake")
                   }
                 >
                   {player.playing ? (
@@ -487,15 +517,18 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
               </div>
               {measured && measured.duration > MAX_SECONDS && (
                 <p className="mt-4 max-w-[44ch] text-[0.8125rem] leading-5 text-ink-2">
-                  This take is longer than a minute. The coach reviews one
-                  minute of it.
+                  {translate("review:tryreviewThisTakeIsLongerThanAMinuteThe")}
                 </p>
               )}
               {state.name === "error" && (
                 <Alert variant="destructive" className="mt-6 max-w-xl">
                   <MicOffIcon />
-                  <AlertTitle>That didn't work</AlertTitle>
-                  <AlertDescription>{state.message}</AlertDescription>
+                  <AlertTitle>
+                    {translate("review:tryreviewThatDidnTWork")}
+                  </AlertTitle>
+                  <AlertDescription>
+                    <FormMessage message={state.message} t={translate} />
+                  </AlertDescription>
                 </Alert>
               )}
               <div className="mt-8 flex flex-wrap gap-3">
@@ -506,8 +539,8 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                   }
                 >
                   {state.name === "error"
-                    ? "Send it again"
-                    : "Review this take"}
+                    ? translate("review:tryreviewSendItAgain")
+                    : translate("review:tryreviewReviewThisTake")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -516,7 +549,9 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
                   onClick={reset}
                 >
                   <XIcon />
-                  {state.name === "error" ? "Start over" : "Discard"}
+                  {state.name === "error"
+                    ? translate("review:tryreviewStartOver")
+                    : translate("review:tryreviewDiscard")}
                 </Button>
               </div>
             </>
@@ -525,14 +560,18 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
           {state.name === "error" && !state.url && (
             <Alert variant="destructive" className="max-w-xl">
               <MicOffIcon />
-              <AlertTitle>That didn't work</AlertTitle>
-              <AlertDescription>{state.message}</AlertDescription>
+              <AlertTitle>
+                {translate("review:tryreviewThatDidnTWork")}
+              </AlertTitle>
+              <AlertDescription>
+                <FormMessage message={state.message} t={translate} />
+              </AlertDescription>
               <div className="col-start-2 mt-3 flex gap-2">
                 <Button size="sm" onClick={() => fileInput.current?.click()}>
-                  Upload a file
+                  {translate("review:tryreviewUploadAFile")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={reset}>
-                  Start over
+                  {translate("review:tryreviewStartOver")}
                 </Button>
               </div>
             </Alert>
@@ -541,12 +580,12 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
           {state.name === "reviewing" && (
             <>
               <p className="font-wide text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.15] font-bold tracking-[-0.02em]">
-                Listening to your take…
+                {translate("review:tryreviewListeningToYourTake")}
               </p>
               <p className="mt-4 max-w-[44ch] text-[0.9375rem] leading-6 text-ink-2">
-                The coach transcribes it, then listens for all five foundations:
-                rate, volume, pitch and melody, tonality and pauses. This can
-                take a minute.
+                {translate(
+                  "review:tryreviewTheCoachTranscribesItThenListensForAll",
+                )}
               </p>
               <p className="mt-6 font-mono text-[0.75rem] text-ink-3 tabular">
                 {formatTime(listening, false)}
@@ -578,8 +617,8 @@ export function TryReview({ uploadFirst = false, onReviewed }: TryReviewProps) {
           )}
         >
           {state.name === "reviewing"
-            ? "The coach is listening for"
-            : "The coach listens for"}
+            ? translate("review:tryreviewTheCoachIsListeningFor")
+            : translate("review:tryreviewTheCoachListensFor")}
         </h2>
         <ul className="mt-2 grid gap-1">
           {FOUNDATIONS.map((f) => (
@@ -624,6 +663,7 @@ export function Tape({
   live: boolean;
   scanning: boolean;
 }) {
+  useTranslation();
   const end = (Math.min(length, MAX_SECONDS) / MAX_SECONDS) * 100;
   const shape = useMemo(() => {
     if (!level.length || end <= 0) return "";

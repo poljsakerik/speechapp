@@ -1,3 +1,4 @@
+import { REVIEW_NS, formatNumber, t as translate } from "@/core/i18n";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -15,6 +16,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import {
   FOUNDATIONS,
@@ -28,7 +30,6 @@ import {
   type Finding,
   type Review,
   type Segment,
-  type Suggestion,
   type Take,
   type Word,
 } from "@/lib/review";
@@ -47,33 +48,96 @@ type FeedbackViewProps = {
 
 /** What each rule is called in a note. */
 export const RULES: Record<string, { label: string }> = {
-  RATE_IMPORTANCE_FAST: { label: "Rushed passage" },
-  RATE_IMPORTANCE_SLOW: { label: "Dragged passage" },
-  RATE_CONTRAST: { label: "Flat pacing" },
-  PAUSE_NECESSARY: { label: "Missing pause" },
-  PAUSE_TOO_SHORT: { label: "Pause too short" },
-  PAUSE_UNNECESSARY: { label: "Pause out of place" },
-  PAUSE_TOO_LONG: { label: "Pause too long" },
-  VOLUME_LOW: { label: "Volume drop" },
-  VOLUME_FADE: { label: "Trailing off" },
-  TONE_FLAT: { label: "Flat voice" },
-  PITCH_VARIETY: { label: "Monotone stretch" },
-  PITCH_HIGH: { label: "Stuck high" },
-  PITCH_LOW: { label: "Stuck low" },
-  RATE_SLOWS_FOR_POINT: { label: "Slows down for the point" },
-  PAUSE_LETS_IT_LAND: { label: "Pause that lets it land" },
-  PAUSE_BUILDS_ANTICIPATION: { label: "Pause that builds anticipation" },
-  TONE_EXPRESSIVE: { label: "Expressive voice" },
-  PITCH_MELODY: { label: "Melodic stretch" },
-};
-
-const SUGGESTION_LABELS: Record<Suggestion["direction"], string> = {
-  slow_down: "Slow down on",
-  speed_up: "Speed up through",
-  pause_after: "Pause after",
-  lengthen_pause_after: "Hold the pause longer after",
-  no_pause_after: "Don’t stop after",
-  shorten_pause_after: "Shorten the pause after",
+  RATE_IMPORTANCE_FAST: {
+    get label() {
+      return translate("review:feedbackviewRushedPassage");
+    },
+  },
+  RATE_IMPORTANCE_SLOW: {
+    get label() {
+      return translate("review:feedbackviewDraggedPassage");
+    },
+  },
+  RATE_CONTRAST: {
+    get label() {
+      return translate("review:feedbackviewFlatPacing");
+    },
+  },
+  PAUSE_NECESSARY: {
+    get label() {
+      return translate("review:feedbackviewMissingPause");
+    },
+  },
+  PAUSE_TOO_SHORT: {
+    get label() {
+      return translate("review:feedbackviewPauseTooShort");
+    },
+  },
+  PAUSE_UNNECESSARY: {
+    get label() {
+      return translate("review:feedbackviewPauseOutOfPlace");
+    },
+  },
+  PAUSE_TOO_LONG: {
+    get label() {
+      return translate("review:feedbackviewPauseTooLong");
+    },
+  },
+  VOLUME_LOW: {
+    get label() {
+      return translate("review:feedbackviewVolumeDrop");
+    },
+  },
+  VOLUME_FADE: {
+    get label() {
+      return translate("review:feedbackviewTrailingOff");
+    },
+  },
+  TONE_FLAT: {
+    get label() {
+      return translate("review:feedbackviewFlatVoice");
+    },
+  },
+  PITCH_VARIETY: {
+    get label() {
+      return translate("review:feedbackviewMonotoneStretch");
+    },
+  },
+  PITCH_HIGH: {
+    get label() {
+      return translate("review:feedbackviewStuckHigh");
+    },
+  },
+  PITCH_LOW: {
+    get label() {
+      return translate("review:feedbackviewStuckLow");
+    },
+  },
+  RATE_SLOWS_FOR_POINT: {
+    get label() {
+      return translate("review:feedbackviewSlowsDownForThePoint");
+    },
+  },
+  PAUSE_LETS_IT_LAND: {
+    get label() {
+      return translate("review:feedbackviewPauseThatLetsItLand");
+    },
+  },
+  PAUSE_BUILDS_ANTICIPATION: {
+    get label() {
+      return translate("review:feedbackviewPauseThatBuildsAnticipation");
+    },
+  },
+  TONE_EXPRESSIVE: {
+    get label() {
+      return translate("review:feedbackviewExpressiveVoice");
+    },
+  },
+  PITCH_MELODY: {
+    get label() {
+      return translate("review:feedbackviewMelodicStretch");
+    },
+  },
 };
 
 const SPEEDS = [0.75, 1, 1.25, 1.5];
@@ -113,6 +177,7 @@ export function FeedbackView({
   footer,
   className,
 }: FeedbackViewProps) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAt = useRef<number | null>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
@@ -406,7 +471,11 @@ export function FeedbackView({
           <button
             type="button"
             onClick={() => void toggle()}
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={
+              playing
+                ? translate("review:feedbackviewPause")
+                : translate("review:feedbackviewPlay")
+            }
             className={cn(
               "grid size-10 place-items-center rounded-full transition-[background-color,color,transform] duration-200 ease-(--ease-out) active:scale-95",
               "glass-lit text-graphite-deep hover:bg-glass-hot",
@@ -425,7 +494,7 @@ export function FeedbackView({
           <div
             role="slider"
             tabIndex={0}
-            aria-label="Position in take"
+            aria-label={translate("review:feedbackviewPositionInTake")}
             aria-valuemin={0}
             aria-valuemax={Math.round(take.duration)}
             aria-valuenow={Math.round(time)}
@@ -460,7 +529,10 @@ export function FeedbackView({
                   key={f.id}
                   type="button"
                   tabIndex={-1}
-                  aria-label={`${RULES[f.ruleId]?.label ?? foundation.label} at ${formatTime(from, false)}`}
+                  aria-label={translate("review:feedbackMarker", {
+                    label: RULES[f.ruleId]?.label ?? foundation.label,
+                    time: formatTime(from, false),
+                  })}
                   className={cn(
                     "absolute top-1.5 h-5 min-w-1 rounded-[2px] transition-opacity duration-200",
                     f.id === activeId
@@ -495,7 +567,7 @@ export function FeedbackView({
             <div
               className="flex gap-0.5"
               role="group"
-              aria-label="Playback speed"
+              aria-label={translate("review:feedbackviewPlaybackSpeed")}
             >
               {SPEEDS.map((s) => (
                 <button
@@ -508,7 +580,9 @@ export function FeedbackView({
                   }}
                   className="h-8 rounded-sm px-1.5 font-mono text-[0.6875rem] text-on-graphite-muted transition-colors hover:text-on-graphite aria-pressed:bg-graphite-line aria-pressed:text-on-graphite sm:h-6"
                 >
-                  {s}×
+                  {translate("review:feedbackSpeed", {
+                    speed: formatNumber(s),
+                  })}
                 </button>
               ))}
             </div>
@@ -516,40 +590,30 @@ export function FeedbackView({
               <div
                 className="flex items-center"
                 role="group"
-                aria-label="Notes"
+                aria-label={translate("review:editorNotes")}
                 aria-keyshortcuts="j k"
               >
                 <button
                   type="button"
-                  aria-label="Previous note (K)"
+                  aria-label={translate("review:feedbackviewPreviousNoteK")}
                   onClick={() => step(-1)}
                   className={STEP}
                 >
                   <ChevronLeftIcon className="size-3.5" />
                 </button>
                 <span className="min-w-[4rem] text-center text-[0.75rem] text-on-graphite-muted">
-                  {noteIndex < 0 ? (
-                    <>
-                      <span className="font-mono tabular">
-                        {findings.length}
-                      </span>{" "}
-                      {findings.length === 1 ? "note" : "notes"}
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-mono text-on-graphite tabular">
-                        {noteIndex + 1}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-mono tabular">
-                        {findings.length}
-                      </span>
-                    </>
-                  )}
+                  {noteIndex < 0
+                    ? translate("review:feedbackNotes", {
+                        count: findings.length,
+                      })
+                    : translate("review:feedbackNotePosition", {
+                        index: noteIndex + 1,
+                        count: findings.length,
+                      })}
                 </span>
                 <button
                   type="button"
-                  aria-label="Next note (J)"
+                  aria-label={translate("review:feedbackviewNextNoteJ")}
                   onClick={() => step(1)}
                   className={STEP}
                 >
@@ -561,7 +625,7 @@ export function FeedbackView({
               type="button"
               onClick={() => setFollow(true)}
               aria-pressed={follow}
-              aria-label="Follow the playhead"
+              aria-label={translate("review:feedbackviewFollowThePlayhead")}
               className={cn(
                 "flex h-8 items-center gap-1.5 rounded-sm px-2 text-[0.75rem] font-medium transition-colors sm:h-7",
                 follow
@@ -571,7 +635,9 @@ export function FeedbackView({
             >
               <LocateFixedIcon className="size-3.5" />
               <span className="max-sm:hidden">
-                {follow ? "Following" : "Follow"}
+                {follow
+                  ? translate("review:feedbackviewFollowing")
+                  : translate("review:feedbackviewFollow")}
               </span>
             </button>
           </div>
@@ -583,13 +649,25 @@ export function FeedbackView({
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-12 lg:gap-x-16">
           <div className="lg:col-span-5">
             <h1 className="font-wide text-[clamp(2rem,3.4vw,3.25rem)] leading-[0.98] font-extrabold tracking-[-0.03em] text-balance">
-              Notes on your take
+              {translate("review:feedbackviewNotesOnYourTake")}
             </h1>
             <p className="mt-4 text-[0.8125rem] leading-5 text-ink-3 [&>span]:font-mono [&>span]:text-[0.75rem] [&>span]:tabular">
-              <span>{formatTime(take.duration, false)}</span> ·{" "}
-              <span>{lines}</span> {lines === 1 ? "line" : "lines"} ·{" "}
-              <span>{toWorkOn}</span> to work on · <span>{strengths}</span>{" "}
-              {strengths === 1 ? "strength" : "strengths"}
+              {translate("review:feedbackTakeStats", {
+                duration: formatTime(take.duration, false),
+                get lines() {
+                  return translate("review:feedbackLines", { count: lines });
+                },
+                get notes() {
+                  return translate("review:feedbackToWorkOn", {
+                    count: toWorkOn,
+                  });
+                },
+                get strengths() {
+                  return translate("review:reviewReadyStrengths", {
+                    count: strengths,
+                  });
+                },
+              })}
             </p>
             {!allFindings.length && (
               <p className="mt-6 max-w-[46ch] text-[1.0625rem] leading-7 text-ink-2">
@@ -599,7 +677,7 @@ export function FeedbackView({
           </div>
           <ul
             className="grid content-start gap-5 lg:col-span-7 lg:col-start-6"
-            aria-label="Foundations"
+            aria-label={translate("review:feedbackviewFoundations")}
           >
             {FOUNDATIONS.map((f) => {
               const assessment = review.assessments.find(
@@ -696,7 +774,9 @@ export function FeedbackView({
                   {unreviewed.map((f) => f.label).join(", ")}
                 </p>
                 <p className="col-start-2 text-[0.8125rem] leading-5 text-ink-3">
-                  Not enough evidence to judge on this take
+                  {translate(
+                    "review:feedbackviewNotEnoughEvidenceToJudgeOnThisTake",
+                  )}
                 </p>
               </li>
             )}
@@ -708,7 +788,7 @@ export function FeedbackView({
           {allFindings.length > 0 && (
             <div
               role="group"
-              aria-label="Notes to show"
+              aria-label={translate("review:feedbackviewNotesToShow")}
               className="mb-10 flex flex-wrap items-center gap-2"
             >
               <LensButton
@@ -716,7 +796,7 @@ export function FeedbackView({
                 onClick={() => setKind("all")}
                 count={allFindings.length}
               >
-                All notes
+                {translate("review:editorAllNotes")}
               </LensButton>
               <LensButton
                 pressed={kind === "improvement"}
@@ -724,7 +804,7 @@ export function FeedbackView({
                 count={toWorkOn}
                 mark="improvement"
               >
-                To work on
+                {translate("review:feedbackviewToWorkOn2")}
               </LensButton>
               <LensButton
                 pressed={kind === "strength"}
@@ -732,7 +812,7 @@ export function FeedbackView({
                 count={strengths}
                 mark="strength"
               >
-                Strengths
+                {translate("review:feedbackviewStrengths")}
               </LensButton>
               <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
               {FOUNDATIONS.map((f) => {
@@ -754,7 +834,11 @@ export function FeedbackView({
               })}
             </div>
           )}
-          <ol aria-label="Transcript of the take, with notes">
+          <ol
+            aria-label={translate(
+              "review:feedbackviewTranscriptOfTheTakeWithNotes",
+            )}
+          >
             {rows.map((row, r) =>
               row.segment ? (
                 <Line
@@ -833,7 +917,7 @@ export function FeedbackView({
 const notReviewed = (summary?: string) =>
   summary && !/not been analy[sz]ed/.test(summary)
     ? summary
-    : "Not enough evidence to judge on this take";
+    : translate("review:feedbackviewNotEnoughEvidenceToJudgeOnThisTake");
 
 function Swatch({
   foundation,
@@ -845,6 +929,7 @@ function Swatch({
   /** Filled when the foundation is working as it is, open when there is something to work on. */
   working?: boolean;
 }) {
+  useTranslation();
   return (
     <span
       aria-hidden="true"
@@ -883,6 +968,7 @@ function LensButton({
   mark?: Finding["kind"];
   children: ReactNode;
 }) {
+  useTranslation();
   return (
     <button
       type="button"
@@ -968,6 +1054,7 @@ function Line({
   onPlaySpan,
   onHover,
 }: LineProps) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   const current = playing && time >= segment.start && time < segment.end;
   // A note is written once, under the line it begins on. A note from an earlier line shows
   // here only while it is open and was picked on this line.
@@ -1043,7 +1130,9 @@ function Line({
             "rounded-sm font-mono text-[0.75rem] tabular transition-colors hover:text-glass-ink",
             current ? "text-glass-ink" : "text-ink-3",
           )}
-          aria-label={`Play from ${formatTime(segment.start)}`}
+          aria-label={translate("review:feedbackPlayFrom", {
+            time: formatTime(segment.start),
+          })}
         >
           {formatTime(segment.start)}
         </button>
@@ -1093,6 +1182,7 @@ function Rails({
   onOpen?: (note: Finding) => void;
   onHover?: (id: string | null) => void;
 }) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   if (!rails.length) return null;
   return (
     <div className="absolute inset-y-0 left-[-0.625rem] sm:left-[calc(4.5rem+0.375rem)]">
@@ -1106,8 +1196,16 @@ function Rails({
             type="button"
             tabIndex={-1}
             disabled={!onOpen}
-            aria-label={`${foundation.short}: ${label}, lines ${rail.first + 1} to ${rail.last + 1}`}
-            title={`${foundation.short} · ${label}`}
+            aria-label={translate("review:feedbackRail", {
+              foundation: foundation.short,
+              label,
+              first: rail.first + 1,
+              last: rail.last + 1,
+            })}
+            title={translate("review:feedbackRailTitle", {
+              foundation: foundation.short,
+              label,
+            })}
             onClick={() => onOpen?.(rail.note)}
             onPointerEnter={() => onHover?.(rail.note.id)}
             onPointerLeave={() => onHover?.(null)}
@@ -1167,6 +1265,7 @@ function Words({
   markId: string | null | undefined;
   onOpen: (f: Finding) => void;
 }) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   const marks = run.findings;
   // Colour on the words means a strength: a band in its foundation's fill, like a highlighter
   // (keep this), the way a cover fills with colour as strengths are earned. Something to work
@@ -1224,9 +1323,11 @@ function Words({
             <span
               className="inline-block h-[0.42em] w-[1.1em] rounded-[2px] border-2 border-dashed align-middle"
               style={{ borderColor: "var(--f-pauses-ink)" }}
-              title="A pause belongs here"
+              title={translate("review:feedbackviewAPauseBelongsHere")}
             />
-            <span className="sr-only">(a pause belongs here)</span>
+            <span className="sr-only">
+              {translate("review:feedbackviewAPauseBelongsHere2")}
+            </span>
           </>
         )}
       </Fragment>
@@ -1275,6 +1376,7 @@ function Words({
 }
 
 function PauseMark({ seconds, noted }: { seconds: number; noted: boolean }) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   return (
     <>
       {" "}
@@ -1284,9 +1386,23 @@ function PauseMark({ seconds, noted }: { seconds: number; noted: boolean }) {
           noted ? "bg-f-pauses-ink" : "bg-line-strong",
         )}
         style={{ width: `${Math.min(seconds * 1.6, 4).toFixed(2)}em` }}
-        title={`${seconds.toFixed(1)} second pause`}
+        title={translate("review:feedbackPauseTitle", {
+          count: seconds,
+          seconds: formatNumber(seconds, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          }),
+        })}
       />
-      <span className="sr-only">(pause, {seconds.toFixed(1)} seconds)</span>
+      <span className="sr-only">
+        {translate("review:feedbackPauseAccessible", {
+          count: seconds,
+          seconds: formatNumber(seconds, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          }),
+        })}
+      </span>
     </>
   );
 }
@@ -1306,6 +1422,7 @@ function KindPin({
   color: string;
   active?: boolean;
 }) {
+  useTranslation();
   const strength = kind === "strength";
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
@@ -1375,12 +1492,13 @@ export function Note({
   onPlaySpan: (span: [number, number]) => void;
   onHover?: (id: string | null) => void;
 }) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   const f = FOUNDATION_BY_KEY[note.foundation];
   const tentative = note.uncertainty === "tentative";
   const label =
     RULES[note.ruleId]?.label ??
     // An unnamed rule still gets a plain name; its pin says which kind it is.
-    "Note";
+    translate("review:feedbackviewNote");
   return (
     <li
       data-note={open ? note.id : undefined}
@@ -1406,7 +1524,20 @@ export function Note({
           onClick={onOpen}
           aria-expanded={open}
           className="group/note block w-full rounded-sm pr-16 text-left"
-          aria-label={`${note.kind === "strength" ? "Strength" : "To work on"}: ${f.label}, ${label}${tentative ? ", tentative" : ""}. ${note.observation}`}
+          aria-label={translate(
+            tentative
+              ? "review:feedbackNoteLabelTentative"
+              : "review:feedbackNoteLabel",
+            {
+              kind:
+                note.kind === "strength"
+                  ? translate("review:editorStrength")
+                  : translate("review:feedbackviewToWorkOn2"),
+              foundation: f.label,
+              label,
+              observation: note.observation,
+            },
+          )}
         >
           <span className="flex flex-wrap items-baseline gap-x-2 text-[0.8125rem] leading-6">
             <span className="font-semibold" style={{ color: f.ink }}>
@@ -1420,7 +1551,11 @@ export function Note({
             >
               {label}
             </span>
-            {tentative && <span className="text-ink-3">tentative</span>}
+            {tentative && (
+              <span className="text-ink-3">
+                {translate("review:feedbackviewTentative")}
+              </span>
+            )}
           </span>
           {open && quote && (
             <span className="mt-1 block text-[0.8125rem] leading-5 font-semibold text-ink">
@@ -1437,7 +1572,9 @@ export function Note({
         <button
           type="button"
           onClick={onPlay}
-          aria-label={`Play this passage, from ${formatTime(passage(note)[0], false)}`}
+          aria-label={translate("review:feedbackPlayPassage", {
+            time: formatTime(passage(note)[0], false),
+          })}
           className="group/play absolute top-0 right-0 flex h-6 items-center gap-1.5 rounded-sm font-mono text-[0.6875rem] text-ink-3 tabular transition-colors hover:text-glass-ink"
         >
           <PlayIcon
@@ -1475,10 +1612,14 @@ export function Note({
                     aria-hidden="true"
                   />
                   <span>
-                    <span className="text-ink-2">
-                      {SUGGESTION_LABELS[s.direction]}
-                    </span>{" "}
-                    <span className="font-semibold text-ink">“{s.text}”</span>
+                    <Trans
+                      t={translate}
+                      i18nKey={`review:suggestion_${s.direction}`}
+                      values={{ text: s.text }}
+                      components={{
+                        quote: <span className="font-semibold text-ink" />,
+                      }}
+                    />
                   </span>
                 </button>
               </li>

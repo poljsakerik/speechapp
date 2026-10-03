@@ -1,0 +1,7 @@
+{
+  "invalidUpload": "Send the recording as the only field.",
+  "recordingRequired": "Choose a recording to review.",
+  "recordingFormat": "That file type isn't supported. Use a WAV, MP3, M4A, MP4 or WebM recording.",
+  "recordingEmpty": "The coach couldn't hear enough speech in that take. Record closer to the mic and try again.",
+  "recordingTooLarge": "That file is larger than 25 MB. Trim it to the minute you want reviewed."
+}

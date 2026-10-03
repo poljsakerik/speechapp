@@ -1,5 +1,7 @@
+import { formatNumber, REVIEW_NS } from "@/core/i18n";
 import { CornerDownRightIcon } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Pin } from "@/components/editor/Editor";
 import { RULES } from "@/components/feedback/FeedbackView";
@@ -48,6 +50,7 @@ export function LyricSheet({
   header,
   footer,
 }: LyricSheetProps) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   const segments = take.segments;
   const activeId = started
     ? review.findings.find((f) => {
@@ -60,7 +63,12 @@ export function LyricSheet({
   return (
     <div>
       {header}
-      <ol className="mt-8" aria-label="Transcript of the take, with notes">
+      <ol
+        className="mt-8"
+        aria-label={translate(
+          "review:feedbackviewTranscriptOfTheTakeWithNotes",
+        )}
+      >
         {segments.map((segment, index) => {
           const notes = review.findings.filter(
             (f) => f.segmentId === segment.id,
@@ -85,7 +93,9 @@ export function LyricSheet({
                     "h-fit justify-self-start rounded-sm pt-2 font-mono text-[0.75rem] tabular transition-colors hover:text-glass-ink sm:pt-3",
                     current ? "text-glass-ink" : "text-ink-3",
                   )}
-                  aria-label={`Play from ${formatTime(segment.start)}`}
+                  aria-label={translate("review:feedbackPlayFrom", {
+                    time: formatTime(segment.start),
+                  })}
                 >
                   {formatTime(segment.start)}
                 </button>
@@ -171,7 +181,12 @@ export function LyricSheet({
                   {gap >= 0.25 && (
                     <span className="flex items-center gap-2 self-center font-mono text-[0.625rem] text-ink-3 tabular">
                       <span className="h-px w-3 bg-line-strong" />
-                      {gap.toFixed(1)} s
+                      {translate("review:feedbackSeconds", {
+                        seconds: formatNumber(gap, {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        }),
+                      })}
                     </span>
                   )}
                 </li>
@@ -186,6 +201,7 @@ export function LyricSheet({
 }
 
 function PauseMark({ seconds, noted }: { seconds: number; noted: boolean }) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   return (
     <>
       {" "}
@@ -198,9 +214,23 @@ function PauseMark({ seconds, noted }: { seconds: number; noted: boolean }) {
           width: `${(seconds * 1.6).toFixed(2)}em`,
           boxShadow: noted ? "inset 0 0 0 1px var(--f-pauses-ink)" : undefined,
         }}
-        title={`${seconds.toFixed(1)} second pause`}
+        title={translate("review:feedbackPauseTitle", {
+          count: seconds,
+          seconds: formatNumber(seconds, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          }),
+        })}
       />
-      <span className="sr-only">(pause, {seconds.toFixed(1)} seconds)</span>
+      <span className="sr-only">
+        {translate("review:feedbackPauseAccessible", {
+          count: seconds,
+          seconds: formatNumber(seconds, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          }),
+        })}
+      </span>
     </>
   );
 }
@@ -214,17 +244,25 @@ function MarginNote({
   active: boolean;
   onPlay: () => void;
 }) {
+  const { t: translate } = useTranslation([REVIEW_NS]);
   const f = FOUNDATION_BY_KEY[note.foundation];
   const kind =
     RULES[note.ruleId]?.label ??
-    (note.kind === "strength" ? "Strength" : "To improve");
+    (note.kind === "strength"
+      ? translate("review:editorStrength")
+      : translate("review:editorToImprove2"));
   return (
     <li>
       <button
         type="button"
         onClick={onPlay}
         className="group/note grid w-full grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2 rounded-md text-left"
-        aria-label={`${f.label}, ${kind.toLowerCase()}${note.uncertainty === "tentative" ? ", tentative" : ""}. Play this passage.`}
+        aria-label={translate(
+          note.uncertainty === "tentative"
+            ? "review:feedbackMarginLabelTentative"
+            : "review:feedbackMarginLabel",
+          { foundation: f.label, kind },
+        )}
       >
         <span className="flex h-5 items-center justify-center">
           <Pin
@@ -242,7 +280,8 @@ function MarginNote({
             </span>
             <span className="text-ink-3">
               {kind}
-              {note.uncertainty === "tentative" && " · tentative"}
+              {note.uncertainty === "tentative" &&
+                translate("review:editorTentative2")}
             </span>
           </span>
           <span
