@@ -17,6 +17,7 @@
     "./pitch": "./src/pitch.ts",
     "./pitch-listen": "./src/pitch-listen.ts",
     "./rate": "./src/rate.ts",
+    "./review-config": "./src/review-config.ts",
     "./tonality": "./src/tonality.ts",
     "./volume": "./src/volume.ts"
   },

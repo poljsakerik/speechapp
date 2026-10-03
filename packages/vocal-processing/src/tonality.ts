@@ -90,6 +90,7 @@ export const DEFAULT_TONALITY_CONFIG = {
   maxPassageSeconds: 30, // ...and a run-on sentence is cut here.
   flatScore: 2, // The voice is flat when rated this or lower: 1 = flat, blank; 2 = mostly flat; 3 = ordinary.
   expressiveScore: 4, // A strength when rated this or higher: 4 = clearly expressive; 5 = vivid.
+  aboveUsual: true, // ...and only above the take's own median rating, so a strength stands out from the speaker's norm.
 };
 export type TonalityConfig = typeof DEFAULT_TONALITY_CONFIG;
 
@@ -312,7 +313,7 @@ export function detectTonality(
     strengths,
     (p) =>
       p.expressiveness >= c.expressiveScore &&
-      p.expressiveness > usual &&
+      (!c.aboveUsual || p.expressiveness > usual) &&
       p.fits.some((e) => e !== "neutral"),
     "TONE_EXPRESSIVE",
     Math.max,

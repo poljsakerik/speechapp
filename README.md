@@ -18,6 +18,7 @@ Use Node 22.18+ and pnpm 11.10+. Copy `.env.example` to `.env` and set `DEEPGRAM
 ```sh
 pnpm install
 pnpm dev             # web: http://localhost:5173, API: http://localhost:8000
+PORT=8100 API_PORT=8100 pnpm dev   # beside another checkout: the API on 8100, and the web server (next free port) proxying to it
 pnpm build
 pnpm typecheck
 pnpm lint
@@ -324,6 +325,26 @@ What was tried and dropped, so it isn't tried again:
 
 - **Pauses from text alone.** The text model praised 36-42% of held pauses, in the coach's lessons and untrained talks alike, including obvious searching ("where he said, you know, [2.4 s]"). Listening to each candidate in context separates them: Gemini heard 90% of the coach's candidates as deliberate and 1% as hesitant, against 41% and 18% for untrained speakers. Duration doesn't help: untrained speakers' held pauses are longer than the coach's.
 - **Pitch lifted on the point.** Measured, the coach's key phrases (pacing −2) rise no more than his setup phrases, also with sentence declination taken out. Gemini's own list of pitch highlights gave about one per 30 s chunk for everyone. How much the melody moves over 10 s is what separates him: his windows' median is 4.2-4.7 semitones per lesson, untrained talks' 2.7-3.6 (one 4.2).
+
+### Settings
+
+Every number above is a setting, kept in a config object next to the code that uses it and gathered by `reviewConfig()` (`review-config.ts`), which the live review and `eval:strengths` both read. Environment variables override them without a release; an invalid value stops the review with the variable's name rather than being ignored. The figures in this README describe the defaults, so measure a change with `pnpm eval:strengths` and `pnpm eval:pause --listen` before keeping it.
+
+| Variable                                                 | Default | Meaning                                                                                                                                     |
+| -------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRENGTHS`                                              | 1       | 0 reports no strengths                                                                                                                      |
+| `STRENGTH_RATE_PACE_PERCENT`                             | 62      | A key phrase at this share of the usual pace, or slower                                                                                     |
+| `STRENGTH_RATE_SCORE`                                    | -1      | ...scored this or lower by the pacing prediction (-2 or -1)                                                                                 |
+| `STRENGTH_PAUSE_SECONDS`                                 | 0.6     | Shortest pause that can be a strength                                                                                                       |
+| `STRENGTH_PAUSES_PER_MINUTE`, `STRENGTH_PAUSES_AT_LEAST` | 2, 2    | Most pause strengths named per minute; a short take may still have the second                                                               |
+| `STRENGTH_TONE_SCORE`                                    | 4       | Expressiveness rating a passage needs (1-5)                                                                                                 |
+| `STRENGTH_TONE_ABOVE_USUAL`                              | 1       | 1 marks only passages above the take's median rating; 0 marks every passage at the score                                                    |
+| `STRENGTH_PITCH_SPREAD`                                  | 4.5     | Pitch standard deviation over 10 s of speaking, in semitones                                                                                |
+| `STRENGTH_PITCH_PER_MINUTE`, `STRENGTH_PITCH_AT_LEAST`   | 1, 1    | Most lively stretches named per minute of speaking; a short take may still have the second                                                  |
+| `PAUSE_HEAR_BREAKS`, `PAUSE_HEAR_MISSING`                | 1, 1    | Whether a "breaks the thought" finding must sound hesitant, and a "missing pause" must sound like running on; 0 leaves it to the text model |
+| `PAUSE_HEAR_LEAD_IN_SECONDS`, `PAUSE_HEAR_AFTER_SECONDS` | 6, 2.5  | Audio the model hears before and after a pause                                                                                              |
+
+Settings without a variable are in the same objects and need a code change: which sound a praised pause must have (`sounds`), how many words a pause highlight spans, and which pause findings undo a strength (`faults`). The prompts are not settings: a changed prompt needs its benchmark rerun.
 
 ### Strength benchmark
 

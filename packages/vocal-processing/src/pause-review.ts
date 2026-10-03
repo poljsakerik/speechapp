@@ -15,7 +15,13 @@
  */
 import { createHash } from "node:crypto";
 import type { AudioJudgment } from "./gemini.ts";
-import { hearPause, hearsRunOn, type Audio } from "./pause-hearing.ts";
+import {
+  hearPause,
+  hearsRunOn,
+  type Audio,
+  type HearingConfig,
+  type PauseSound,
+} from "./pause-hearing.ts";
 import {
   pauseAfterWords,
   timed,
@@ -225,6 +231,12 @@ export function confirmedPauses(
   });
 }
 
+/** Which of the text model's findings must also be heard, and as what. */
+export const DEFAULT_PAUSE_HEARD_CONFIG = {
+  breakSounds: ["hesitant"] as PauseSound[], // A break is kept when its pause sounds like one of these; empty keeps every break.
+  missingMustRunOn: true, // A missing pause is kept only where the words sound like they run on.
+};
+export type PauseHeardConfig = typeof DEFAULT_PAUSE_HEARD_CONFIG;
 export type PauseReview = {
   marks: PauseMark[];
   reliable: boolean;
@@ -256,7 +268,12 @@ export async function reviewPause(
   pauses: Pause[],
   complete?: JsonCompletion,
   recognized?: Word[],
-  hear?: { audio: Audio; judge: AudioJudgment },
+  hear?: {
+    audio: Audio;
+    judge: AudioJudgment;
+    config?: Partial<PauseHeardConfig>;
+    hearing?: Partial<HearingConfig>;
+  },
 ): Promise<PauseReview> {
   if (!timed(words))
     return { marks: [], reliable: false, status: "no timing", marked: [] };
@@ -323,22 +340,27 @@ export async function reviewPause(
   let points = read,
     heard = false;
   if (hear) {
+    const c = { ...DEFAULT_PAUSE_HEARD_CONFIG, ...hear.config };
     const seconds = new Map(marked.map((p) => [p.after, p.seconds]));
     try {
       const sounds = await Promise.all(
-        read.map(async ({ at, rule }) =>
-          rule === "PAUSE_UNNECESSARY"
-            ? (await hearPause(
-                words,
-                at,
-                seconds.get(at)!,
-                hear.audio,
-                hear.judge,
-              )) === "hesitant"
-            : rule === "PAUSE_NECESSARY"
-              ? hearsRunOn(words, at, hear.audio, hear.judge)
-              : true,
-        ),
+        read.map(async ({ at, rule }) => {
+          if (rule === "PAUSE_UNNECESSARY" && c.breakSounds.length) {
+            const sound = await hearPause(
+              words,
+              at,
+              seconds.get(at)!,
+              hear.audio,
+              hear.judge,
+              undefined,
+              hear.hearing,
+            );
+            return !!sound && c.breakSounds.includes(sound);
+          }
+          return rule === "PAUSE_NECESSARY" && c.missingMustRunOn
+            ? hearsRunOn(words, at, hear.audio, hear.judge, hear.hearing)
+            : true;
+        }),
       );
       points = read.filter((_, i) => sounds[i]);
       heard = true;

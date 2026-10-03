@@ -347,3 +347,24 @@ test("a lively stretch heard as a distracting problem isn't praised", () => {
     "a minor problem doesn't undo it",
   );
 });
+
+test("what is left of a lively window after a problem is cut out must be lively itself", () => {
+  // Five seconds leaping 16 semitones, then five on one note: 5.7 semitones over the whole clip.
+  const leaping = [8, -8, 8, -8, 8, -8, 8, -8],
+    still = Array(8).fill(0);
+  const { samples, words } = take([leaping, leaping, still, still]);
+  assert.equal(detectPitch(samples, RATE, words).strengths.length, 1);
+  const singSong = {
+    start: 0,
+    end: words[15].end!,
+    issue: "sing_song" as const,
+    severity: 2,
+    how: "The voice swings between two notes.",
+    fix: "Let the melody follow the meaning.",
+  };
+  assert.deepEqual(
+    detectPitch(samples, RATE, words, {}, [singSong]).strengths,
+    [],
+    "the monotone remainder isn't praised with the window's spread",
+  );
+});

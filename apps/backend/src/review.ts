@@ -24,7 +24,6 @@ import {
 } from "@micmane/vocal-processing/pause-strength";
 import { findPauses, type Pause } from "@micmane/vocal-processing/pauses";
 import {
-  DEFAULT_PITCH_CONFIG,
   detectPitch,
   PITCH_VERSION,
   trackPitchInSteps,
@@ -43,9 +42,12 @@ import {
   type RateStrengthMark,
 } from "@micmane/vocal-processing/rate";
 import {
+  reviewConfig,
+  type ReviewConfig,
+} from "@micmane/vocal-processing/review-config";
+import {
   reviewTonality,
   TONALITY_VERSION,
-  tonalityConfig,
   type Emotion,
   type ToneMark,
   type ToneStrengthMark,
@@ -584,6 +586,7 @@ async function measurePauses(
 async function analyzeTonality(
   words: Word[],
   decoded: { samples: Float32Array; sampleRate: number },
+  config: ReviewConfig["tonality"],
 ) {
   try {
     return await reviewTonality(
@@ -592,7 +595,7 @@ async function analyzeTonality(
       decoded.sampleRate,
       geminiVoice(),
       openaiCompletion(tonalitySettings()),
-      tonalityConfig(),
+      config,
     );
   } catch {
     return undefined;
@@ -660,6 +663,8 @@ function retime(
 }
 
 export async function reviewAudio(audio: Buffer) {
+  // What counts as a strength and how pauses are heard; see review-config.ts for the environment overrides.
+  const config = reviewConfig();
   // When each step finished, in milliseconds after the upload arrived.
   const began = performance.now(),
     timings: Record<string, number> = {};
@@ -686,7 +691,9 @@ export async function reviewAudio(audio: Buffer) {
   const listening = timed("pitchListening", listen(decoded, recognized));
   const toning = timed(
     "tonality",
-    decoded ? analyzeTonality(recognized, decoded) : Promise.resolve(undefined),
+    decoded
+      ? analyzeTonality(recognized, decoded, config.tonality)
+      : Promise.resolve(undefined),
   );
   const transcript = retime(recognized, decoded?.pauses, await scoring);
   done("alignment");
@@ -702,7 +709,12 @@ export async function reviewAudio(audio: Buffer) {
           transcript === recognized ? undefined : recognized,
           // Breaks and missing pauses count only where they also sound like one.
           decoded && process.env.GEMINI_API_KEY
-            ? { audio: decoded, judge: geminiJudgment() }
+            ? {
+                audio: decoded,
+                judge: geminiJudgment(),
+                config: config.pauseHeard,
+                hearing: config.hearing,
+              }
             : undefined,
         )
       : Promise.resolve(undefined),
@@ -710,7 +722,7 @@ export async function reviewAudio(audio: Buffer) {
   // Alongside it, the pauses that do real work: proposed from the text, kept if they sound deliberate.
   const praising = timed(
     "pauseStrengths",
-    pauses && decoded
+    pauses && decoded && config.strengths
       ? findPauseStrengths(
           transcript,
           pauses,
@@ -718,6 +730,8 @@ export async function reviewAudio(audio: Buffer) {
           openaiCompletion(),
           process.env.GEMINI_API_KEY ? geminiJudgment() : undefined,
           transcript === recognized ? undefined : recognized,
+          config.pauseStrength,
+          config.hearing,
         ).catch(() => undefined)
       : Promise.resolve(undefined),
   );
@@ -748,7 +762,7 @@ export async function reviewAudio(audio: Buffer) {
       praising,
     ]);
   const segments = segmentWords(transcript);
-  const analysis = detectRate(transcript, {}, pauses, pacing);
+  const analysis = detectRate(transcript, config.rate, pauses, pacing);
   // Without the waveform, silence cannot be told from speech; without the prediction, contrast is unjudged.
   const status =
     !!decoded && analysis.reliable && analysis.contrast
@@ -758,20 +772,16 @@ export async function reviewAudio(audio: Buffer) {
   const toneMarks = tone?.reliable ? onto(tone.marks, transcript) : undefined;
   const pauseMarks = pause?.reliable ? pause.marks : undefined;
   const rateStrengths =
-    decoded && analysis.reliable
+    decoded && analysis.reliable && config.strengths
       ? analysis.strengths.filter(
-          (s) => !faulted(s, pauseMarks, ["PAUSE_UNNECESSARY"]),
+          (s) => !faulted(s, pauseMarks, config.faults.rate),
         )
       : [];
   const kept = (pauseStrengths ?? []).filter(
-    (s) =>
-      !faulted(s, pauseMarks, [
-        "PAUSE_UNNECESSARY",
-        "PAUSE_TOO_SHORT",
-        "PAUSE_TOO_LONG",
-      ]),
+    (s) => !faulted(s, pauseMarks, config.faults.pauses),
   );
-  const toneStrengths = tone?.reliable ? onto(tone.strengths, transcript) : [];
+  const toneStrengths =
+    tone?.reliable && config.strengths ? onto(tone.strengths, transcript) : [];
   const rate = rateReview(segments, marks, "", status, rateStrengths);
   const volumeMarks = measured?.volume;
   // Pitch movement is measured inside the spoken words; what Gemini heard counts only where the measurement agrees.
@@ -781,12 +791,13 @@ export async function reviewAudio(audio: Buffer) {
       decoded.samples,
       decoded.sampleRate,
       transcript,
-      {},
+      config.pitch,
       heard,
       measured?.track,
     );
   const pitchMarks = melody && melody.reliable ? melody.marks : undefined;
-  const pitchStrengths = melody && melody.reliable ? melody.strengths : [];
+  const pitchStrengths =
+    melody && melody.reliable && config.strengths ? melody.strengths : [];
   const review = {
     ...rate,
     assessments: rate.assessments.map((a) =>
@@ -799,15 +810,14 @@ export async function reviewAudio(audio: Buffer) {
                 segments,
                 toneMarks,
                 toneStrengths,
-                (tone?.usual ?? 0) >= tonalityConfig().expressiveScore,
+                (tone?.usual ?? 0) >= config.tonality.expressiveScore,
               )
             : a.foundation === "pitch_melody"
               ? pitchAssessment(
                   segments,
                   pitchMarks,
                   pitchStrengths,
-                  !!melody &&
-                    (melody.spread ?? 0) >= DEFAULT_PITCH_CONFIG.melodySpread,
+                  !!melody && (melody.spread ?? 0) >= config.pitch.melodySpread,
                 )
               : a,
     ),

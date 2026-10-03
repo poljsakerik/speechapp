@@ -21,9 +21,12 @@ import type { Timed } from "./pause.ts";
 export type Audio = { samples: Float32Array; sampleRate: number };
 export type PauseSound = "deliberate" | "hesitant" | "ordinary";
 export const HEARING_VERSION = 1;
-/** Seconds of context around the moment: the lead-in and what follows. */
-const BEFORE = 6,
-  AFTER = 2.5;
+/** Seconds of context the audio model hears around the moment. */
+export const DEFAULT_HEARING_CONFIG = {
+  leadInSeconds: 6, // Before the pause, back to the start of its phrase at most.
+  afterSeconds: 2.5, // After it, so the model hears how the speaker goes on.
+};
+export type HearingConfig = typeof DEFAULT_HEARING_CONFIG;
 
 /** What the audio model is asked about one pause, `at` seconds into its clip. */
 export function hearingPrompt(at: number, seconds: number, before: string) {
@@ -78,13 +81,18 @@ export async function hearPause(
   audio: Audio,
   judge: AudioJudgment,
   first = Math.max(0, at - 5),
+  config: Partial<HearingConfig> = {},
 ): Promise<PauseSound | undefined> {
+  const c = { ...DEFAULT_HEARING_CONFIG, ...config };
   const pause = words[at].end,
-    from = Math.max(0, Math.max(words[first].start, pause - BEFORE) - 0.3);
+    from = Math.max(
+      0,
+      Math.max(words[first].start, pause - c.leadInSeconds) - 0.3,
+    );
   const reply = (await judge({
     prompt: hearingPrompt(pause - from, seconds, said(words, first, at)),
     schema: HEARING_SCHEMA,
-    wav: clip(audio, from, pause + seconds + AFTER),
+    wav: clip(audio, from, pause + seconds + c.afterSeconds),
   })) as { pause?: unknown };
   return ["deliberate", "hesitant", "ordinary"].includes(reply?.pause as string)
     ? (reply.pause as PauseSound)
@@ -97,13 +105,15 @@ export async function hearsRunOn(
   at: number,
   audio: Audio,
   judge: AudioJudgment,
+  config: Partial<HearingConfig> = {},
 ): Promise<boolean> {
+  const c = { ...DEFAULT_HEARING_CONFIG, ...config };
   const end = words[at].end,
-    from = Math.max(0, end - BEFORE);
+    from = Math.max(0, end - c.leadInSeconds);
   const reply = (await judge({
     prompt: runOnPrompt(end - from, said(words, Math.max(0, at - 5), at)),
     schema: RUN_ON_SCHEMA,
-    wav: clip(audio, from, end + AFTER + 0.5),
+    wav: clip(audio, from, end + c.afterSeconds + 0.5),
   })) as { moment?: unknown };
   return reply?.moment === "runs_on";
 }

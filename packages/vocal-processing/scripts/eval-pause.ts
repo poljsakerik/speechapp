@@ -21,6 +21,7 @@ import {
   type PauseRule,
 } from "../src/pause.ts";
 import { decodeWav } from "../src/pauses.ts";
+import { reviewConfig } from "../src/review-config.ts";
 import { cachedJudgment } from "./cache.ts";
 import { cachedCompletion, loadTake } from "./take-audio.ts";
 
@@ -52,6 +53,8 @@ const corpus = loadCorpus(root),
 if (positionals.some((id) => !corpus.takes.some((t) => t.id === id)))
   throw new Error("Unknown take ID");
 const settings = { ...rateModelSettings(), run: values.run };
+// How findings are heard, as in the live review, environment overrides included.
+const config = reviewConfig();
 const rows: Record<string, unknown>[] = [];
 let spans = 0,
   found = 0,
@@ -90,6 +93,8 @@ for (const take of takes) {
               join(root, take.base, "..", ".cache"),
               values.run,
             ),
+            config: config.pauseHeard,
+            hearing: config.hearing,
           }
         : undefined,
     );

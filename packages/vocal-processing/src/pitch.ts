@@ -43,7 +43,8 @@
  * from each other, and the take's `spread` lets the summary say the melody
  * moves throughout.
  * Stretches with a measured mark or a badly distracting heard problem are cut
- * out of it, so a squeak or a sing-song isn't praised.
+ * out of it, so a squeak or a sing-song isn't praised, and what remains must
+ * be that lively itself.
  *
  * Only frames inside spoken words count, so music and noise between words
  * don't add movement. A word is never credited with more than 1 s per
@@ -88,7 +89,8 @@ export const DEFAULT_PITCH_CONFIG = {
   windowSeconds: 10,
   minSpread: 2.6, // Hincks (2005): PVQ 0.15.
   melodySpread: 4.5, // The course coach's typical 10 s of teaching.
-  melodyPerMinute: 1, // At most this many lively stretches are named per minute of speaking, the liveliest first.
+  melodyPerMinute: 1, // At most this many lively stretches are named per minute of speaking, the liveliest first...
+  melodyAtLeast: 1, // ...and a short take may still have this many.
   registerShift: 7,
   squeakSeconds: 5, // A shorter stretch counts as high only an octave up: excited speech reaches 10 semitones for a moment.
   squeakShift: 12,
@@ -330,20 +332,33 @@ export function detectPitch(
       .filter((i) => i.length)
       .map((i) => ({ from: i[0], to: i.at(-1)! })),
   ];
-  const most = Math.max(1, Math.round((total / 60) * c.melodyPerMinute));
+  const most = Math.max(
+    c.melodyAtLeast,
+    Math.round((total / 60) * c.melodyPerMinute),
+  );
   const peaks: { from: number; to: number; spread: number }[] = [];
   for (const hit of hits
     .filter((h) => h.rule === "PITCH_MELODY")
     .sort((x, y) => y.spread - x.spread)) {
     if (peaks.length >= most) break;
     if (peaks.some((p) => hit.from <= p.to && p.from <= hit.to)) continue;
-    const [clear] = outside(hit.from, hit.to, problems).filter(
-      (p) =>
-        ws.slice(p.from, p.to + 1).reduce((n, w) => n + w.notes.length, 0) *
-          HOP >=
-        c.minVoicedSeconds,
-    );
-    if (clear) peaks.push({ ...clear, spread: hit.spread });
+    // What is left after cutting a problem out is judged afresh: the window's
+    // spread says nothing about the part of it that remains.
+    for (const part of outside(hit.from, hit.to, problems)) {
+      const notes = ws.slice(part.from, part.to + 1).flatMap((w) => w.notes);
+      if (notes.length * HOP < c.minVoicedSeconds) continue;
+      const spread =
+        part.from === hit.from && part.to === hit.to
+          ? hit.spread
+          : deviation(notes);
+      if (
+        spread < c.melodySpread ||
+        Math.abs(median(notes) - normal) >= c.registerShift
+      )
+        continue;
+      peaks.push({ ...part, spread });
+      break;
+    }
   }
   const strengths = peaks
     .sort((x, y) => x.from - y.from)

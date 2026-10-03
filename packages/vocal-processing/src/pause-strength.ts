@@ -28,7 +28,12 @@
  */
 import { createHash } from "node:crypto";
 import type { AudioJudgment } from "./gemini.ts";
-import { hearPause, type Audio } from "./pause-hearing.ts";
+import {
+  hearPause,
+  type Audio,
+  type HearingConfig,
+  type PauseSound,
+} from "./pause-hearing.ts";
 import {
   confirmedPauses,
   reviewParts,
@@ -62,10 +67,15 @@ export type PauseStrengthMark = {
   seconds: number;
 };
 export const PAUSE_STRENGTH_VERSION = 2;
-/** Shorter pauses are breaths and ordinary phrasing; the course's examples hold 0.9-2.2 s. */
-export const MIN_STRENGTH_SECONDS = 0.6;
-/** At most this many are named per minute (and never fewer than two allowed), the longest-held first. */
-export const STRENGTHS_PER_MINUTE = 2;
+export const DEFAULT_PAUSE_STRENGTH_CONFIG = {
+  minSeconds: 0.6, // Shorter pauses are breaths and ordinary phrasing; the course's examples hold 0.9-2.2 s.
+  sounds: ["deliberate"] as PauseSound[], // What the audio model must hear in a proposed pause.
+  perMinute: 2, // At most this many are named per minute, the longest-held first...
+  atLeast: 2, // ...and a short take may still have this many.
+  wordsBefore: 5, // The highlight reaches this many words back from the pause, or to the pause before it...
+  wordsAfter: 6, // ...and this many words on, or to the next pause.
+};
+export type PauseStrengthConfig = typeof DEFAULT_PAUSE_STRENGTH_CONFIG;
 
 type Verdict = "lets_it_land" | "builds_anticipation" | "ordinary";
 const RULES: Record<Exclude<Verdict, "ordinary">, PauseStrength> = {
@@ -162,8 +172,10 @@ export async function findPauseStrengths(
   complete?: JsonCompletion,
   judge?: AudioJudgment,
   recognized?: Word[],
-  minSeconds = MIN_STRENGTH_SECONDS,
+  config: Partial<PauseStrengthConfig> = {},
+  hearing: Partial<HearingConfig> = {},
 ): Promise<PauseStrengthMark[] | undefined> {
+  const c = { ...DEFAULT_PAUSE_STRENGTH_CONFIG, ...config };
   if (!timed(words) || !complete || !judge) return undefined;
   const marked = pauseAfterWords(words, pauses).flatMap((seconds, i) =>
     seconds > 0 ? [{ after: i, seconds }] : [],
@@ -174,7 +186,7 @@ export async function findPauseStrengths(
     ),
   );
   const candidates = marked.flatMap((p, k) =>
-    p.seconds >= minSeconds && sure.has(p.after) ? [k] : [],
+    p.seconds >= c.minSeconds && sure.has(p.after) ? [k] : [],
   );
   if (!candidates.length) return [];
   const parts = reviewParts(words, marked).filter(([from, to]) =>
@@ -216,8 +228,13 @@ export async function findPauseStrengths(
     const at = marked[k].after;
     let first = at,
       last = at + 1;
-    while (first > 0 && at - first < 5 && !breaks.has(first - 1)) first--;
-    while (last < words.length - 1 && last - at < 6 && !breaks.has(last))
+    while (first > 0 && at - first < c.wordsBefore && !breaks.has(first - 1))
+      first--;
+    while (
+      last < words.length - 1 &&
+      last - at < c.wordsAfter &&
+      !breaks.has(last)
+    )
       last++;
     return [
       {
@@ -239,14 +256,14 @@ export async function findPauseStrengths(
   try {
     const heard = await Promise.all(
       proposed.map((s) =>
-        hearPause(words, s.at, s.seconds, audio, judge, s.first),
+        hearPause(words, s.at, s.seconds, audio, judge, s.first, hearing),
       ),
     );
     // A talk full of good pauses gets its longest-held ones named, not every one.
     const minutes = (words.at(-1)!.end - words[0].start) / 60,
-      most = Math.max(2, Math.round(minutes * STRENGTHS_PER_MINUTE));
+      most = Math.max(c.atLeast, Math.round(minutes * c.perMinute));
     return proposed
-      .filter((_, i) => heard[i] === "deliberate")
+      .filter((_, i) => heard[i] && c.sounds.includes(heard[i]))
       .sort((a, b) => b.seconds - a.seconds)
       .slice(0, most)
       .sort((a, b) => a.at - b.at);

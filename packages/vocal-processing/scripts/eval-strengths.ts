@@ -51,6 +51,7 @@ import { decodeWav, findPauses } from "../src/pauses.ts";
 import { listenForPitch } from "../src/pitch-listen.ts";
 import { detectPitch, PITCH_VERSION } from "../src/pitch.ts";
 import { detectRate, RATE_VERSION } from "../src/rate.ts";
+import { reviewConfig } from "../src/review-config.ts";
 import { reviewTonality, TONALITY_VERSION } from "../src/tonality.ts";
 import type { Word } from "../src/types.ts";
 import { cachedJudgment, cachedCompletion as cachedPacing } from "./cache.ts";
@@ -142,6 +143,8 @@ const complete = cachedCompletion(
   { ...rateSettings, strength: 1 },
 );
 const judge = cachedJudgment(cache, run);
+// The live review's settings, environment overrides included, so a changed setting can be measured here first.
+const config = reviewConfig();
 let aligner: Aligner | undefined;
 
 async function strengthsOf(r: (typeof recordings)[number]) {
@@ -170,8 +173,22 @@ async function strengthsOf(r: (typeof recordings)[number]) {
   const audio = { samples, sampleRate };
   const [pacing, pauseReview, pauseStrengths, tone, heard] = await Promise.all([
     predictPacing(recognized, cachedPacing(cache, run)).catch(() => undefined),
-    reviewPause(words, pauses, complete, recognized, { audio, judge }),
-    findPauseStrengths(words, pauses, audio, complete, judge, recognized),
+    reviewPause(words, pauses, complete, recognized, {
+      audio,
+      judge,
+      config: config.pauseHeard,
+      hearing: config.hearing,
+    }),
+    findPauseStrengths(
+      words,
+      pauses,
+      audio,
+      complete,
+      judge,
+      recognized,
+      config.pauseStrength,
+      config.hearing,
+    ),
     reviewTonality(
       recognized,
       samples,
@@ -189,29 +206,23 @@ async function strengthsOf(r: (typeof recordings)[number]) {
         ...toneSettings,
         version: TONALITY_VERSION,
       }),
+      config.tonality,
     ).catch(() => undefined),
     listenForPitch(samples, sampleRate, recognized, judge).catch(() => []),
   ]);
   const marks = pauseReview.reliable ? pauseReview.marks : undefined;
-  const rate = detectRate(words, {}, pauses, pacing);
-  const melody = detectPitch(samples, sampleRate, words, {}, heard);
+  const rate = detectRate(words, config.rate, pauses, pacing);
+  const melody = detectPitch(samples, sampleRate, words, config.pitch, heard);
   const found: Found[] = [
     ...(rate.reliable ? rate.strengths : [])
-      .filter((s) => !faulted(s, marks, ["PAUSE_UNNECESSARY"]))
+      .filter((s) => !faulted(s, marks, config.faults.rate))
       .map((s) => ({
         ...s,
         foundation: "rate" as const,
         point: { start: s.focus.start, end: s.focus.end },
       })),
     ...(marks ? (pauseStrengths ?? []) : [])
-      .filter(
-        (s) =>
-          !faulted(s, marks, [
-            "PAUSE_UNNECESSARY",
-            "PAUSE_TOO_SHORT",
-            "PAUSE_TOO_LONG",
-          ]),
-      )
+      .filter((s) => !faulted(s, marks, config.faults.pauses))
       .map((s) => ({
         ...s,
         foundation: "pauses" as const,

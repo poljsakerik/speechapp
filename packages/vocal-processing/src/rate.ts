@@ -96,7 +96,8 @@ export const DEFAULT_RATE_CONFIG = {
   fastRate: 8,
   slowRate: 3,
   maxSyllableSeconds: 1, // Longer than this is not speech: music or noise the word timing absorbed.
-  highlightPace: -0.7, // log2 of a phrase's pace over the speaker's median phrase: 62% of their usual pace.
+  highlightPace: -0.7, // A strength at this or slower: log2 of a phrase's pace over the speaker's median phrase, 62% of their usual pace.
+  highlightScore: -1, // ...on a phrase the prediction scores this or lower (-1 = a little slower, -2 = clearly slower).
 };
 export type RateConfig = typeof DEFAULT_RATE_CONFIG;
 
@@ -299,7 +300,7 @@ export function detectRate(
   let previous = -2;
   phrases.forEach((p, k) => {
     if (
-      p.score >= 0 ||
+      p.score > c.highlightScore ||
       p.pace > c.highlightPace ||
       marks.some((m) => m.first <= p.last && p.first <= m.last)
     )
